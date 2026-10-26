@@ -1,0 +1,11 @@
+{
+  "terminal.integrated.env.windows": {
+    "PATH": "C:\\MEDEV\\tools\\node22;${env:PATH}"
+  },
+  "files.eol": "\n",
+  "editor.tabSize": 2,
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true
+  }
+}

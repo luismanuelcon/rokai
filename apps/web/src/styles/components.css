@@ -1,0 +1,430 @@
+/* ───────────────────────────────────────────────────────────────────────────
+   Estándar de componentes. Implementa la sección "Components" de DESIGN.md.
+   Toda variante nueva de botón, chip o campo debe nacer aquí, no en una
+   página suelta.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ═══ BOTONES ══════════════════════════════════════════════════════════════
+
+   Tres variantes, ninguna más:
+     .button            Kinetic primario  — lima sobre grafito
+     .button.dark       Grafito secundario — administración y acciones de flota
+     .button.outline    Fantasma          — acción terciaria
+   Modificador de tamaño: .button.small
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 13px 22px;
+  border: 1.5px solid transparent;
+  border-radius: var(--r-pill);
+  background: var(--c-lime);
+  color: var(--c-graphite);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.button:hover:not([disabled]) {
+  background: var(--c-lime-bright);
+}
+
+.button.dark {
+  background: var(--c-graphite);
+  border-color: var(--c-graphite);
+  color: var(--c-on-dark);
+}
+
+.button.dark:hover:not([disabled]) {
+  background: var(--c-graphite-deep);
+}
+
+.button.outline {
+  background: var(--c-surface);
+  /* El ancho se declara aquí porque la regla heredada usa el atajo `border`. */
+  border: 1.5px solid var(--c-border);
+  color: var(--c-graphite);
+}
+
+.button.outline:hover:not([disabled]) {
+  background: var(--c-canvas);
+  border-color: var(--c-border);
+}
+
+.button.subtle {
+  background: var(--c-canvas);
+  border-color: transparent;
+  color: var(--c-graphite);
+}
+
+.button.subtle.active {
+  background: var(--c-graphite);
+  color: var(--c-on-dark);
+}
+
+.button.small {
+  min-height: 40px;
+  padding: 10px 16px;
+  font-size: 12px;
+}
+
+.button[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.button .icon {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+/* ═══ CHIPS DE ESTADO ══════════════════════════════════════════════════════
+   Los colores codifican significado operativo, no decoración.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--r-pill);
+  background: var(--c-canvas);
+  color: var(--c-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Disponible / batería sana: tinte lima con punto latente. */
+.status.ok {
+  background: var(--c-ok-bg);
+  color: var(--c-lime-ink);
+}
+
+.status.ok::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-lime-ink);
+  animation: status-pulse 2.4s var(--ease-out) infinite;
+}
+
+@keyframes status-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+/* En uso: arena costera. */
+.status.busy {
+  background: var(--c-sand);
+  color: var(--c-graphite);
+}
+
+/* Alerta: tiempo cumplido, equipo bloqueado. */
+.status.alert {
+  background: var(--c-alert-bg);
+  color: var(--c-alert);
+}
+
+/* Preventivo: mantenimiento programado. */
+.status.warning {
+  background: var(--c-warning-bg);
+  color: var(--c-warning);
+}
+
+/* ═══ CAMPOS ═══════════════════════════════════════════════════════════════
+   DESIGN.md: radio 14px, relleno blanco, borde 1.5px, al enfocar pasa a
+   grafito "sin glow excesivo".
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.field input,
+.field select,
+.field textarea,
+.country-search,
+.toolbar input[type='search'] {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--r-input);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.field input::placeholder,
+.field textarea::placeholder,
+.toolbar input[type='search']::placeholder {
+  color: var(--c-text-muted);
+}
+
+.field input:hover:not(:focus),
+.field select:hover:not(:focus),
+.field textarea:hover:not(:focus) {
+  border-color: var(--c-text-muted);
+}
+
+.field label,
+.field-label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--c-text);
+}
+
+.field small {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--c-text-muted);
+}
+
+/* ═══ FOCO ═════════════════════════════════════════════════════════════════
+   El documento pide "sin glow excesivo": contorno grafito nítido, no halo. Un
+   aro translucido no basta, porque en enlaces y botones sin borde el cambio de
+   `border-color` no se percibe y el indicador se queda muy por debajo del 3:1
+   que exige WCAG 2.2.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--c-graphite);
+  outline-offset: 2px;
+  border-color: var(--c-graphite);
+  box-shadow: var(--focus-ring);
+}
+
+/* ═══ SUPERFICIES ══════════════════════════════════════════════════════════ */
+
+.panel,
+.metric,
+.fleet-card,
+.price-card {
+  border-radius: var(--r-lg);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  box-shadow: var(--elev-1);
+}
+
+.price-card {
+  border-radius: var(--r-xl);
+}
+
+dialog,
+.country-popover {
+  box-shadow: var(--elev-2);
+}
+
+/* ═══ TABLAS ═══════════════════════════════════════════════════════════════
+   Sin bordes verticales; solo separadores inferiores y cabecera en
+   mayúsculas con tracking amplio.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+table th {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-text-muted);
+}
+
+table td,
+table th {
+  border-bottom: 1px solid var(--c-border);
+}
+
+table tr:last-child td {
+  border-bottom: none;
+}
+
+/* ═══ CIFRAS ═══════════════════════════════════════════════════════════════
+   Precios, contadores y métricas van en figuras tabulares para que no
+   bailen al actualizarse.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.price-value,
+.summary-price,
+.metric strong,
+.pair-price strong,
+.countdown-clock,
+table td {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ═══ ETIQUETAS DE SECCIÓN ═════════════════════════════════════════════════ */
+
+.eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-text-muted);
+}
+
+/* ═══ PASOS DEL FORMULARIO ═════════════════════════════════════════════════ */
+
+.step-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.step-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-base);
+  background: var(--c-ok-bg);
+  color: var(--c-lime-ink);
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+/* ═══ SELECCIÓN DE EQUIPOS ═════════════════════════════════════════════════
+   Tarjeta táctil, no casilla. La casilla real queda accesible pero oculta.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.equipment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 10px;
+  margin: 10px 0 22px;
+}
+
+.equipment-check {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px 12px;
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--r-input);
+  background: var(--c-surface);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-text);
+  user-select: none;
+}
+
+.equipment-check:hover {
+  border-color: var(--c-graphite);
+}
+
+.equipment-check .icon {
+  width: 22px;
+  height: 22px;
+  opacity: 0.55;
+}
+
+.equipment-check input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.equipment-check:has(input:checked) {
+  background: var(--c-graphite);
+  border-color: var(--c-graphite);
+  color: var(--c-on-dark);
+}
+
+.equipment-check:has(input:checked) .icon {
+  opacity: 1;
+  color: var(--c-lime);
+}
+
+.equipment-check::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--c-border);
+}
+
+.equipment-check:has(input:checked)::after {
+  background: var(--c-lime);
+  border-color: var(--c-lime);
+  transform: scale(1.1);
+}
+
+.equipment-check:has(input:focus-visible) {
+  border-color: var(--c-graphite);
+  box-shadow: var(--focus-ring);
+}
+
+/* ═══ RESUMEN DEL ALQUILER ═════════════════════════════════════════════════ */
+
+.summary {
+  position: sticky;
+  top: var(--s-lg);
+}
+
+.summary-row strong.is-ready {
+  color: var(--c-lime-ink);
+}
+
+.summary-progress {
+  display: block;
+  height: 4px;
+  margin: 14px 0 4px;
+  border-radius: var(--r-pill);
+  background: var(--c-border);
+  overflow: hidden;
+}
+
+.summary-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--c-graphite);
+}
+
+.summary-progress.is-ready > span {
+  background: var(--c-lime);
+}
+
+.summary-price {
+  letter-spacing: -0.03em;
+}
+
+.summary-hint {
+  margin-top: 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--c-text-muted);
+  text-align: center;
+}

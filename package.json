@@ -1,1 +1,39 @@
-{"name":"rokai","version":"1.0.0","private":true,"type":"module","engines":{"node":">=24.0.0"},"scripts":{"start":"node server.mjs","dev":"node --watch server.mjs","test":"node --test tests/*.test.mjs","create-user":"node server.mjs --create-user"}}
+{
+  "name": "rokai",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace @rokai/api",
+    "dev:web": "npm run dev --workspace @rokai/web",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "db:generate": "npm run generate --workspace @rokai/db",
+    "db:migrate": "npm run migrate --workspace @rokai/db",
+    "db:seed": "npm run seed --workspace @rokai/db",
+    "db:reset": "npm run reset --workspace @rokai/db",
+    "db:studio": "npm run studio --workspace @rokai/db",
+    "create-user": "npm run create-user --workspace @rokai/api",
+    "legacy:start": "node server.mjs",
+    "legacy:test": "node --test tests/*.test.mjs",
+    "legacy:create-user": "node server.mjs --create-user"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "eslint": "^9.39.1",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.1"
+  }
+}

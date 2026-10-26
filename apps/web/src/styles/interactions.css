@@ -1,0 +1,302 @@
+/* ───────────────────────────────────────────────────────────────────────────
+   Capa de movimiento. Solo transiciones y animaciones: el color y la forma
+   los define components.css; el layout, polish.css.
+
+   Principio: movimiento corto y horizontal, como brisa. Nunca rebota.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.field input,
+.field select,
+.field textarea,
+.country-search {
+  transition:
+    border-color var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out);
+}
+
+/* ─── Paneles por paso: la sección en uso se levanta y se marca ──────────── */
+
+.step-panel {
+  position: relative;
+  overflow: hidden;
+  transition:
+    box-shadow var(--t-base) var(--ease-out),
+    border-color var(--t-base) var(--ease-out);
+}
+
+.step-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--c-lime);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform var(--t-base) var(--ease-out);
+}
+
+.step-panel:focus-within {
+  box-shadow: var(--elev-2);
+}
+
+.step-panel:focus-within::before {
+  transform: scaleY(1);
+}
+
+.step-badge {
+  transition:
+    background-color var(--t-base) var(--ease-out),
+    color var(--t-base) var(--ease-out);
+}
+
+.step-panel:focus-within .step-badge {
+  background: var(--c-lime);
+  color: var(--c-graphite);
+}
+
+/* ─── Equipos ────────────────────────────────────────────────────────────── */
+
+.equipment-check {
+  transition:
+    transform var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out),
+    background-color var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out);
+}
+
+.equipment-check:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--elev-2);
+}
+
+.equipment-check .icon {
+  transition:
+    opacity var(--t-fast) var(--ease-out),
+    transform var(--t-base) var(--ease-out);
+}
+
+.equipment-check:has(input:checked) .icon {
+  transform: translateX(2px);
+}
+
+.equipment-check::after {
+  transition:
+    background-color var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
+}
+
+/* ─── Botones: el documento pide una leve compresión al pulsar ───────────── */
+
+.button {
+  transition:
+    transform var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out),
+    background-color var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out);
+}
+
+.button:hover:not([disabled]) {
+  box-shadow: var(--elev-2);
+}
+
+.button:active:not([disabled]) {
+  transform: scale(0.98);
+  box-shadow: none;
+}
+
+/* La flecha avanza: refuerza la idea de movimiento de la marca. */
+.button .icon {
+  transition: transform var(--t-base) var(--ease-out);
+}
+
+.button:hover:not([disabled]) .icon {
+  transform: translateX(3px);
+}
+
+.iconbutton {
+  transition:
+    background-color var(--t-fast) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
+}
+
+.iconbutton:active {
+  transform: scale(0.95);
+}
+
+/* ─── Navegación lateral ─────────────────────────────────────────────────── */
+
+.sidebar button {
+  transition:
+    background-color var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out),
+    padding-left var(--t-fast) var(--ease-out);
+}
+
+.sidebar button:hover:not(.active) {
+  padding-left: 18px;
+}
+
+.sidebar button .icon {
+  transition: transform var(--t-base) var(--ease-out);
+}
+
+.sidebar button:hover .icon {
+  transform: scale(1.08);
+}
+
+/* ─── Tarjetas ───────────────────────────────────────────────────────────── */
+
+.price-card,
+.fleet-card,
+.metric,
+.trust-item {
+  transition:
+    transform var(--t-base) var(--ease-out),
+    box-shadow var(--t-base) var(--ease-out),
+    border-color var(--t-base) var(--ease-out);
+}
+
+.price-card:hover,
+.fleet-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--c-graphite);
+  box-shadow: var(--elev-2);
+}
+
+.metric:hover {
+  box-shadow: var(--elev-2);
+}
+
+.price-card.featured {
+  position: relative;
+}
+
+.price-card.featured::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 1.5px solid var(--c-lime);
+  opacity: 0.55;
+  pointer-events: none;
+  transition: opacity var(--t-base) var(--ease-out);
+}
+
+.price-card.featured:hover::after {
+  opacity: 1;
+}
+
+/* ─── Enlaces del portal público ─────────────────────────────────────────── */
+
+.navlinks a {
+  position: relative;
+  transition: color var(--t-fast) var(--ease-out);
+}
+
+.navlinks a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -5px;
+  height: 2px;
+  background: var(--c-lime);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--t-base) var(--ease-out);
+}
+
+.navlinks a:hover::after {
+  transform: scaleX(1);
+}
+
+.footer-links a,
+.footer-links button {
+  transition: color var(--t-fast) var(--ease-out);
+}
+
+/* ─── Preguntas frecuentes ───────────────────────────────────────────────── */
+
+.faq summary {
+  cursor: pointer;
+  transition: color var(--t-fast) var(--ease-out);
+}
+
+.faq details[open] summary {
+  color: var(--c-lime-ink);
+}
+
+/* ─── Tablas ─────────────────────────────────────────────────────────────── */
+
+tbody tr {
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+
+tbody tr:hover {
+  background: var(--c-canvas);
+}
+
+/* ─── Resumen ────────────────────────────────────────────────────────────── */
+
+.summary-progress > span {
+  transition: width var(--t-base) var(--ease-out);
+}
+
+.summary-price.has-value {
+  animation: price-in var(--t-base) var(--ease-out);
+}
+
+@keyframes price-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+}
+
+/* ─── Entrada de contenido: una sola vez, discreta ───────────────────────── */
+
+.workspace > * {
+  animation: section-in var(--t-base) var(--ease-out) both;
+}
+
+.workspace > *:nth-child(2) {
+  animation-delay: 0.04s;
+}
+
+.workspace > *:nth-child(3) {
+  animation-delay: 0.08s;
+}
+
+@keyframes section-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* ─── Accesibilidad: la preferencia del sistema manda sobre todo lo anterior ─ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .button:hover:not([disabled]),
+  .button:active:not([disabled]),
+  .equipment-check:hover,
+  .price-card:hover,
+  .fleet-card:hover,
+  .iconbutton:active {
+    transform: none;
+  }
+
+  .status.ok::before {
+    animation: none;
+  }
+}

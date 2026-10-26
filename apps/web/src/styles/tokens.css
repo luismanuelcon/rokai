@@ -1,0 +1,74 @@
+/* ───────────────────────────────────────────────────────────────────────────
+   Tokens del sistema de diseño "Coastal Kinetic Tech".
+   Fuente única: docs/DESIGN.md. Si un valor cambia allí, cambia aquí.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ─── Color: roles principales ─────────────────────────────────────────── */
+  --c-graphite: #242628;
+  --c-graphite-deep: #0f1113;
+  --c-lime: #b1d72e;
+  --c-lime-bright: #caf248;
+  --c-lime-ink: #566c00;
+  --c-sand: #d8c3a5;
+  --c-canvas: #f5f4f0;
+  --c-surface: #ffffff;
+  --c-border: #e4e5e2;
+  --c-text: #242628;
+  --c-text-muted: #6b6f72;
+  --c-on-dark: #ffffff;
+
+  /* ─── Color: retroalimentación del sistema ─────────────────────────────── */
+  --c-alert: #d64545;
+  --c-alert-bg: #fee2e2;
+  --c-warning: #d89a26;
+  --c-warning-bg: #fef3c7;
+  --c-ok: var(--c-lime-ink);
+  --c-ok-bg: rgb(177 215 46 / 20%);
+
+  /* ─── Elevación: niveles definidos, no sombras improvisadas ────────────── */
+  --elev-1: 0 2px 8px -2px rgb(36 38 40 / 4%), 0 8px 24px -4px rgb(36 38 40 / 6%);
+  --elev-2: 0 4px 12px -2px rgb(36 38 40 / 6%), 0 16px 36px -6px rgb(36 38 40 / 10%);
+  --elev-3: 0 12px 32px -4px rgb(36 38 40 / 12%), 0 24px 60px -8px rgb(36 38 40 / 18%);
+  --elev-inset: inset 0 1px 2px rgb(0 0 0 / 25%);
+
+  /* ─── Radios ───────────────────────────────────────────────────────────── */
+  --r-sm: 4px;
+  --r-base: 8px;
+  --r-md: 12px;
+  --r-input: 14px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --r-pill: 9999px;
+
+  /* ─── Ritmo vertical: incrementos de 4/8 px ────────────────────────────── */
+  --s-xs: 0.25rem;
+  --s-sm: 0.5rem;
+  --s-md: 1rem;
+  --s-lg: 1.5rem;
+  --s-xl: 2.5rem;
+
+  /* ─── Movimiento ───────────────────────────────────────────────────────── */
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --t-fast: 0.16s;
+  --t-base: 0.24s;
+
+  /* El documento pide foco sin glow excesivo: borde grafito y aro discreto. */
+  /* Anillo claro intercalado: sobre fondos oscuros separa el contorno grafito
+     del elemento, para que el foco se vea en ambos extremos de la paleta. */
+  --focus-ring: 0 0 0 2px var(--c-canvas);
+}
+
+/* Puente con los nombres heredados de rokai.css para que ambas capas
+   compartan una sola verdad de color. */
+:root {
+  --ink: var(--c-graphite);
+  --lime: var(--c-lime);
+  --lime-light: var(--c-ok-bg);
+  --muted: var(--c-text-muted);
+  --line: var(--c-border);
+  --white: var(--c-surface);
+  --wash: var(--c-canvas);
+  --sand: var(--c-sand);
+  --red: var(--c-alert);
+}
