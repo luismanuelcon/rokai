@@ -35,6 +35,7 @@ El comando `read` anterior corresponde a zsh. Roles admitidos: `admin`, `worker`
 - Login obligatorio para registrar alquileres; no existe autoservicio de clientes.
 - Roles y autorización en servidor. Sesiones de ocho horas con cookies HttpOnly, SameSite y protección CSRF; contraseñas con scrypt y salt aleatorio; límite de intentos.
 - Registro con nombre, documento, teléfono opcional, tarifa vigente, patinetas, cascos y novedades.
+- Firma manuscrita opcional del cliente con dedo, lápiz o mouse, botón para borrar y recuperación en borrador. Se conserva como trazos normalizados con fecha del servidor y se muestra en el detalle privado del alquiler; no representa certificación de identidad ni aceptación de condiciones no definidas. Los registros anteriores permanecen sin firma.
 - Tarifas y tiempos calculados por el servidor; no se aceptan precios enviados por el cliente.
 - Exclusión transaccional de equipos en uso y de mantenimiento. Reintentos de registro idempotentes.
 - Borrador privado en servidor, guardado con 600 ms de espera tras cambios. Recuperable desde «Registrar alquiler» al recargar. No se guarda información del cliente en localStorage. Reintento al recuperar conexión; sin conexión hay que mantener abierta la página. El cierre de sesión elimina el borrador.
@@ -58,7 +59,7 @@ El comando `read` anterior corresponde a zsh. Roles admitidos: `admin`, `worker`
 npm test
 ```
 
-Diez pruebas de integración con base temporal aislada: acceso público/privado, autenticación, CSRF/origen, roles, borradores aislados, ciclo de alquiler, concurrencia de asignación, idempotencia, precio histórico, vigencia de tarifas, parejas, mantenimiento, publicación de FAQ, revocación de sesiones y persistencia. La suite abre un puerto local temporal.
+Once pruebas de integración con base temporal aislada: acceso público/privado, autenticación, CSRF/origen, roles, borradores aislados, ciclo de alquiler, concurrencia de asignación, idempotencia, precio histórico, vigencia de tarifas, parejas, mantenimiento, publicación de FAQ, revocación de sesiones, persistencia y validación/conservación de firmas. La suite abre un puerto local temporal.
 
 ## Configuración y despliegue
 

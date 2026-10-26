@@ -12,3 +12,139 @@
 @media(min-width:761px) and (max-width:950px){.navlinks{gap:12px;font-size:11px}.nav .brand img{width:120px}.nav .button{font-size:11px;padding:11px 14px}.nav{gap:18px}.navlinks a{white-space:nowrap}.hero h1{font-size:60px}}
 
 .auth-lock{width:48px;height:48px;align-items:center;justify-content:center}.auth-caption .eyebrow{color:var(--lime)}
+
+/* Coastal Kinetic: restrained depth, readable states, and accessible motion. */
+:root{--ease-out:cubic-bezier(.2,.7,.2,1);--motion-fast:160ms;--motion-medium:280ms;--elevation-card:0 2px 8px -2px #2426280a,0 8px 24px -4px #2426280f;--elevation-raised:0 4px 12px -2px #2426280f,0 16px 36px -6px #2426281a;--focus:#526600}
+::selection{background:var(--lime);color:var(--ink)}
+h1,h2,h3{text-wrap:balance}p{text-wrap:pretty}
+:focus-visible{outline:3px solid var(--focus);outline-offset:4px}
+.station :focus-visible,.summary-panel :focus-visible{outline-color:var(--lime)}
+main:focus{outline:none}button:disabled{transform:none;box-shadow:none}
+.button,.iconbutton,.visual-arrow,.map-link{transition:background var(--motion-fast),border-color var(--motion-fast),box-shadow var(--motion-medium),transform var(--motion-medium) var(--ease-out)}
+.button .icon,.map-link .icon,.visual-arrow .icon{transition:transform var(--motion-medium) var(--ease-out)}
+.button:active:not(:disabled),.iconbutton:active,.visual-arrow:active{transform:scale(.98)}
+.button.small,.nav-actions>.button,.cookie-actions .button,.cookie-actions .text-button{min-height:44px}
+.visual-arrow{width:44px;height:44px;flex-shrink:0}
+.navlinks a{position:relative;min-height:44px;display:flex;align-items:center;transition:color var(--motion-fast)}
+.navlinks a:after{content:'';position:absolute;left:0;right:0;bottom:5px;height:2px;background:var(--lime);transform:scaleX(0);transform-origin:left;transition:transform var(--motion-medium) var(--ease-out)}
+.navlinks a[aria-current=location]{color:var(--focus)}
+.navlinks a[aria-current=location]:after{transform:scaleX(1)}
+.hero h1 em{isolation:isolate}.hero h1 em:after{bottom:3px;height:11px;border-radius:2px}
+.hero-visual{box-shadow:var(--elevation-raised)}
+.hero-visual>img,.experience-photo>img{transition:transform 700ms var(--ease-out)}
+.visual-top{backdrop-filter:blur(10px)}
+.price-card{box-shadow:var(--elevation-card);transition:transform var(--motion-medium) var(--ease-out),box-shadow var(--motion-medium),border-color var(--motion-medium)}
+.price-card.featured{box-shadow:0 0 0 4px #b1d72e16,var(--elevation-card)}
+.price-description,.price-label,.pair-price,.price-value small{font-size:12px}
+.popular{font-size:10px}.price-card .button{font-size:12px}
+.switcher button{transition:background var(--motion-fast),color var(--motion-fast),box-shadow var(--motion-fast)}
+.step-number,.icon-box{transition:background var(--motion-medium),border-color var(--motion-medium)}
+summary{border-radius:8px;transition:color var(--motion-fast),background var(--motion-fast)}
+summary:after{display:grid;place-items:center;min-width:30px;height:30px;border-radius:50%;background:var(--wash);transition:background var(--motion-fast),color var(--motion-fast)}
+details[open] summary{color:var(--focus)}details[open] summary:after{background:var(--lime-light)}
+.station-info a{min-height:44px;display:inline-flex;align-items:center;overflow-wrap:anywhere}
+.station-info:has(a){align-items:center}.station-info>div{min-width:0}
+.station-info a,.footer-links a,.footer-links button{text-underline-offset:4px;text-decoration-thickness:1px}
+.footer-links a,.footer-links button{min-height:44px;display:flex;align-items:center;font-size:12px}
+.footer-links{gap:8px 20px}.footer-bottom{font-size:12px}
+.auth-main{background:radial-gradient(ellipse at top right,#eef5d855,transparent 60%)}
+.field label,.field-label{font-size:13px}
+.field input,.field select,.field textarea,.toolbar input{border-color:#8a8e83;transition:border-color var(--motion-fast),box-shadow var(--motion-fast)}
+.field input:focus,.field select:focus,.field textarea:focus,.toolbar input:focus{border-color:var(--ink);box-shadow:0 0 0 3px #b1d72e20}
+.field small,.draft-status{font-size:12px}
+.field input:user-invalid,.field textarea:user-invalid,.field select:user-invalid{border-color:var(--red)}
+.panel,.metric,.fleet-card{box-shadow:var(--elevation-card)}
+.metric strong,.summary-price,.summary-row,td{font-variant-numeric:tabular-nums}
+.sidebar button{transition:background var(--motion-fast),color var(--motion-fast)}
+.sidebar button.active{box-shadow:inset 3px 0 var(--lime)}
+.table-wrap{border-radius:10px;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#a2ac91 var(--wash)}
+th{font-size:11px}td small{font-size:11px}.status{font-size:11px;font-weight:500}
+tbody tr{transition:background var(--motion-fast)}tbody tr:focus-within{background:var(--lime-light)}
+.equipment-check{transition:border-color var(--motion-fast),background var(--motion-fast)}
+.equipment-check:focus-within{outline:3px solid var(--focus);outline-offset:3px}
+.equipment-check input,.check-row input{flex-shrink:0}.equipment-check{overflow-wrap:anywhere}
+.summary-panel{box-shadow:var(--elevation-raised);border-top:3px solid var(--lime)}
+.fleet-card .status{display:inline-block;max-width:100%;white-space:normal}
+.legal-copy{overflow-wrap:anywhere}
+dialog{overscroll-behavior:contain;box-shadow:0 12px 32px -4px #2426281f,0 24px 60px -8px #2426282e}
+dialog[open]{animation:sheet-in 220ms var(--ease-out)}
+.cookie-banner{padding-bottom:max(20px,env(safe-area-inset-bottom));max-height:calc(100dvh - 100px);overflow:auto}
+.cookie-banner p{font-size:12px}
+.is-busy{cursor:wait;opacity:.75}
+.button.is-busy:after{content:'';width:15px;height:15px;flex-shrink:0;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:busy-spin 700ms linear infinite}
+@keyframes busy-spin{to{transform:rotate(360deg)}}
+@keyframes sheet-in{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}
+@media(hover:hover) and (pointer:fine){
+ .button:hover:not(:disabled){box-shadow:0 5px 14px #24262816;transform:translateY(-2px)}
+ .button:hover:not(:disabled) .icon:last-child,.map-link:hover .icon,.visual-arrow:hover .icon{transform:translateX(3px)}
+ .navlinks a:hover:after{transform:scaleX(1)}
+ .price-card:hover{transform:translateY(-5px);box-shadow:var(--elevation-raised);border-color:#a3b475}
+ .hero-visual:hover>img,.experience-photo:hover>img{transform:scale(1.035)}
+ .visual-arrow:hover{background:#ffffff20}.map-link:hover{box-shadow:var(--elevation-raised)}
+ .station-info a:hover,.footer-links a:hover,.footer-links button:hover{text-decoration:underline}
+ summary:hover{color:var(--focus)}
+ tbody tr:hover{background:var(--paper)}
+ .equipment-check:hover{border-color:var(--focus)}
+}
+@media(hover:none){.button:hover{transform:none}.button:active:not(:disabled){transform:scale(.98)}}
+@media(max-width:760px){
+ html{scroll-padding-top:95px}.management #main :is(input,select,textarea,button),.management .panel{scroll-margin-top:155px}
+ .navlinks{box-shadow:var(--elevation-raised);max-height:calc(100dvh - 74px);overflow:auto}
+ .navlinks a:after{left:12px;right:12px;bottom:3px}
+ .navlinks.open{animation:sheet-in 180ms var(--ease-out)}
+ .field input,.field select,.field textarea,.toolbar input{font-size:16px}
+ .hero-note{align-items:flex-start;font-size:12px}.hero-note .icon{margin-top:2px}
+ .trust-item strong,.trust-item small{font-size:12px}
+ .pricing-foot{font-size:12px;align-items:flex-start}
+ .price-grid{row-gap:26px}.price-card .button{font-size:12px}
+ .equipment-check{font-size:12px}.sidebar{scrollbar-width:thin}
+ .workspace-head{flex-wrap:wrap}.workspace-head>div{min-width:0}
+ .metric p{font-size:11px}.metric{min-width:0}
+ .cookie-actions{flex-wrap:wrap}.cookie-actions .text-button{flex-basis:100%}
+ .station-copy{padding:28px}.station-info{font-size:13px}
+ .footer{padding-bottom:calc(30px + env(safe-area-inset-bottom))}
+ .modal-actions{flex-wrap:wrap}.modal-actions .button{flex:1}
+}
+@media(max-width:380px){
+ .container{padding-left:16px;padding-right:16px}.nav{gap:6px}.brand img{width:110px}
+ .nav-actions>.button{font-size:10px;padding:10px}.nav-actions>.button .icon{width:14px}
+ .hero h1{font-size:58px}.hero-visual{height:340px}.visual-bottom{left:20px;right:20px;gap:8px}
+ .visual-bottom h3{font-size:22px}.visual-bottom .eyebrow{font-size:9px}
+ .price-grid{grid-template-columns:1fr}.price-card{padding:26px}.pair-price{display:flex}.pair-price strong{margin-top:0}
+ .fleet-grid,.equipment-grid{grid-template-columns:1fr}.metrics{grid-template-columns:1fr}.metric .icon-box{display:flex}
+ .step p{font-size:13px}.trust-item{padding-left:0;gap:8px}.trust-item small{font-size:11px}
+ .station-copy{padding:24px 20px}.station h2{font-size:28px}
+}
+@media(prefers-reduced-motion:reduce){
+ html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}
+ .button:hover,.button:active,.iconbutton:active,.price-card:hover,.hero-visual:hover>img,.experience-photo:hover>img,.button:hover .icon,.map-link:hover .icon,.visual-arrow:hover .icon{transform:none!important}
+}
+@media(prefers-reduced-motion:no-preference){
+ .hero>div:first-child{animation:content-in 650ms var(--ease-out) both}
+ .hero-visual{animation:content-in 800ms 90ms var(--ease-out) both}
+ .auth-card,.workspace-head{animation:content-in 350ms var(--ease-out) both}
+}
+@keyframes content-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+.summary-panel .eyebrow{color:var(--lime)}
+.reports-metrics .metric>div{min-width:0;max-width:100%}
+.reports-metrics .metric strong{display:block;overflow-wrap:anywhere}
+@media(max-width:760px){.reports-metrics{grid-template-columns:1fr}}
+.signature-section{margin-top:26px;border-top:1px solid var(--line);padding-top:24px}.signature-section h3{margin-bottom:10px}.signature-section canvas{display:block;width:100%;height:auto;aspect-ratio:2/1;background:#fff;border:1px solid #8a8e83;border-radius:12px;touch-action:none;cursor:crosshair;margin:16px 0;background-image:linear-gradient(transparent calc(100% - 35px),var(--line) calc(100% - 35px),var(--line) calc(100% - 34px),transparent calc(100% - 34px))}.signature-actions{display:flex;justify-content:space-between;align-items:center;gap:16px}.signature-actions button{flex-shrink:0}.signature-record{margin:22px 0}.signature-record img{width:100%;background:white;border:1px solid var(--line);border-radius:12px;margin:12px 0}.signature-record h3{font-size:16px}@media(max-width:600px){.signature-actions{align-items:flex-start;flex-direction:column}}
+
+/* Efectos ROKAI: movimiento con intención. Las reglas globales de prefers-reduced-motion lo desactivan. */
+body{overflow-x:clip}
+.hero{position:relative;isolation:isolate}
+.hero:before{content:'';position:absolute;z-index:-1;top:-30px;left:0;width:48%;height:72%;background:radial-gradient(circle at 35% 35%,#b1d72e4d,transparent 68%);filter:blur(55px);pointer-events:none;animation:rokai-aurora 15s ease-in-out infinite}
+@keyframes rokai-aurora{0%,100%{transform:translate(0,0) scale(1);opacity:.6}50%{transform:translate(28px,24px) scale(1.18);opacity:.95}}
+@keyframes rokai-pulse{0%{box-shadow:0 0 0 0 #7c9c1f66}70%{box-shadow:0 0 0 7px #7c9c1f00}100%{box-shadow:0 0 0 0 #7c9c1f00}}
+.badge .dot,.visual-top .dot{animation:rokai-pulse 2.4s var(--ease-out) infinite}
+@keyframes rokai-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes rokai-pin-ring{0%{box-shadow:0 10px 40px #24262833,0 0 0 0 #b1d72e73}70%{box-shadow:0 10px 40px #24262833,0 0 0 16px #b1d72e00}100%{box-shadow:0 10px 40px #24262833,0 0 0 0 #b1d72e00}}
+.map-pin{animation:rokai-float 5.5s ease-in-out infinite,rokai-pin-ring 3s var(--ease-out) infinite}
+@keyframes rokai-feature{0%,100%{box-shadow:0 0 0 4px #b1d72e16,var(--elevation-card)}50%{box-shadow:0 0 0 5px #b1d72e45,0 14px 32px -10px #8aad1f88}}
+.price-card.featured{animation:rokai-feature 3.6s ease-in-out infinite}
+@keyframes rokai-bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-3px)}}
+.popular{animation:rokai-bob 3.6s ease-in-out infinite}
+.trust-item{transition:transform var(--motion-medium) var(--ease-out),color var(--motion-fast)}
+@media(hover:hover) and (pointer:fine){.trust-item:hover{transform:translateY(-4px)}.trust-item:hover .icon{color:var(--focus)}}

@@ -1,3 +1,4 @@
+import { validateSignature } from './public/signature.js';
 import http from 'node:http';
 import { DatabaseSync } from 'node:sqlite';
 import { randomBytes, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
@@ -21,6 +22,10 @@ CREATE TABLE IF NOT EXISTS faqs(id INTEGER PRIMARY KEY, question TEXT NOT NULL, 
 CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS drafts(user_id INTEGER PRIMARY KEY REFERENCES users(id), content TEXT NOT NULL, updated_at INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS login_attempts(key TEXT PRIMARY KEY, count INTEGER NOT NULL, reset_at INTEGER NOT NULL);`);
+const rentalColumns = db.prepare('PRAGMA table_info(rentals)').all().map(column => column.name);
+if (!rentalColumns.includes('signature')) db.exec("ALTER TABLE rentals ADD COLUMN signature TEXT NOT NULL DEFAULT '[]'");
+if (!rentalColumns.includes('signed_at')) db.exec('ALTER TABLE rentals ADD COLUMN signed_at TEXT');
+function signature(value) { try { return validateSignature(value); } catch(error) { fail(400,error.message); } }
 const all = (sql,...args)=>db.prepare(sql).all(...args);
 const get = (sql,...args)=>db.prepare(sql).get(...args);
 const run = (sql,...args)=>db.prepare(sql).run(...args);
@@ -34,8 +39,8 @@ if(!get('SELECT id FROM rates LIMIT 1')) transaction(()=>{
  for(const [period,single,pair] of [['special',[5000,9000,13000,18000],[9000,16000,24000,32000]],['weekend',[7000,12000,17000,22000],[12000,22000,31000,40000]]])
   [15,30,45,60].forEach((minutes,i)=>[single,pair].forEach((prices,j)=>run('INSERT INTO rates(period,minutes,quantity,price) VALUES(?,?,?,?)',period,minutes,j+1,prices[i])));
  for(let i=1;i<=4;i++) for(const kind of ['scooter','helmet']) run('INSERT INTO equipment(code,kind) VALUES(?,?)',`${kind==='scooter'?'ROKAI':'CASCO'}-${String(i).padStart(2,'0')}`,kind);
- [['¿Qué necesito para alquilar?','Acércate a la estación con tu documento de identidad. Nuestro equipo realiza el registro y te explica las condiciones antes de salir.'],['¿El casco está incluido?','Sí. Te entregamos la patineta y el casco, junto con una breve inducción de seguridad.'],['¿Puedo reservar desde la página?','Por ahora el alquiler es presencial. Consulta las tarifas y visítanos en el Malecón de Arboletes.'],['¿Pueden conducir menores de edad?','Consulta las condiciones y la edad permitida con el equipo en la estación antes de contratar el servicio.'],['¿Qué métodos de pago reciben?','Consulta los medios de pago disponibles con nuestro equipo en la estación.']].forEach(([q,a],i)=>run('INSERT INTO faqs(question,answer,position) VALUES(?,?,?)',q,a,i));
- for(const [k,v] of Object.entries({location:'Malecón de Arboletes, Antioquia',hours:'8:00 a. m. a 10:00 p. m.',whatsapp:'573106817317',terms:'Las condiciones definitivas del servicio están pendientes de aprobación por ROKAI. Antes de contratar, consulta con el personal las reglas de uso, edad permitida, devolución, daños y tiempo adicional.',privacy:'El documento definitivo de privacidad está pendiente de aprobación por ROKAI. Esta versión registra datos de clientes para gestionar alquileres y restringe su acceso al personal autorizado. El responsable, canal de atención y plazo de conservación deben ser definidos antes de usar datos reales.',cookies:'Utilizamos una cookie de sesión necesaria para proteger el acceso del personal. Guardamos tus preferencias de cookies en este navegador. Esta versión no incorpora analítica, publicidad ni rastreadores de terceros.'})) run('INSERT INTO settings(key,value) VALUES(?,?)',k,v);
+ [['¿Qué necesito para alquilar?','Acércate a la estación con tu documento de identidad. Nuestro equipo realiza el registro y te explica las condiciones antes de salir.'],['¿El casco está incluido?','Sí. Te entregamos la patineta y el casco, junto con una breve inducción de seguridad.'],['¿Puedo reservar desde la página?','Por ahora el alquiler es presencial. Consulta las tarifas y visítanos en el Parque Principal de Arboletes.'],['¿Pueden conducir menores de edad?','Consulta las condiciones y la edad permitida con el equipo en la estación antes de contratar el servicio.'],['¿Qué métodos de pago reciben?','Consulta los medios de pago disponibles con nuestro equipo en la estación.']].forEach(([q,a],i)=>run('INSERT INTO faqs(question,answer,position) VALUES(?,?,?)',q,a,i));
+ for(const [k,v] of Object.entries({location:'Parque Principal de Arboletes, Antioquia',hours:'8:00 a. m. a 10:00 p. m.',whatsapp:'573106817317',terms:'Las condiciones definitivas del servicio están pendientes de aprobación por ROKAI. Antes de contratar, consulta con el personal las reglas de uso, edad permitida, devolución, daños y tiempo adicional.',privacy:'El documento definitivo de privacidad está pendiente de aprobación por ROKAI. Esta versión registra datos de clientes para gestionar alquileres y restringe su acceso al personal autorizado. El responsable, canal de atención y plazo de conservación deben ser definidos antes de usar datos reales.',cookies:'Utilizamos una cookie de sesión necesaria para proteger el acceso del personal. Guardamos tus preferencias de cookies en este navegador. Esta versión no incorpora analítica, publicidad ni rastreadores de terceros.'})) run('INSERT INTO settings(key,value) VALUES(?,?)',k,v);
 });
 // Add contact fields to existing installations without overwriting edited settings.
 for (const [key,value] of Object.entries({instagram:'roaki_patinetas',email:'rokai.pat@gmail.com'})) run('INSERT OR IGNORE INTO settings(key,value) VALUES(?,?)',key,value);
@@ -53,7 +58,7 @@ const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bogota',year:
 const activeRates=()=>all("SELECT * FROM rates WHERE active=1 AND (valid_from='' OR valid_from<=?) AND (valid_until='' OR valid_until>=?) ORDER BY period,minutes,quantity",today(),today());
 const settings=()=>Object.fromEntries(all('SELECT * FROM settings').map(x=>[x.key,x.value]));
 const equipment=()=>all("SELECT e.*, EXISTS(SELECT 1 FROM rental_equipment re JOIN rentals r ON r.id=re.rental_id WHERE re.equipment_id=e.id AND r.ended_at IS NULL) AS busy FROM equipment e ORDER BY code");
-function rentals(){return all('SELECT r.*, u.name AS created_name, e.name AS ended_name FROM rentals r JOIN users u ON u.id=r.created_by LEFT JOIN users e ON e.id=r.ended_by ORDER BY r.id DESC').map(r=>({...r,equipment:all('SELECT e.code,e.kind FROM equipment e JOIN rental_equipment re ON re.equipment_id=e.id WHERE re.rental_id=?',r.id)}));}
+function rentals(){return all('SELECT r.*, u.name AS created_name, e.name AS ended_name FROM rentals r JOIN users u ON u.id=r.created_by LEFT JOIN users e ON e.id=r.ended_by ORDER BY r.id DESC').map(r=>({...r,signature:JSON.parse(r.signature),equipment:all('SELECT e.code,e.kind FROM equipment e JOIN rental_equipment re ON re.equipment_id=e.id WHERE re.rental_id=?',r.id)}));}
 const MIME={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2','.ttf':'font/ttf','.svg':'image/svg+xml'};
 export const server=http.createServer(async(req,res)=>{
  res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');res.setHeader('X-Frame-Options','DENY');
@@ -98,11 +103,12 @@ export const server=http.createServer(async(req,res)=>{
  if(path==='/api/dashboard'&&req.method==='GET')return json({rentals:rentals(),equipment:equipment(),rates:activeRates()});
  if(path==='/api/draft'){
   if(req.method==='GET'){const draft=get('SELECT * FROM drafts WHERE user_id=? AND updated_at>?',session.user_id,Date.now()-86400000);return json(draft?JSON.parse(draft.content):{});}
-  if(req.method==='PUT'){const safe={};for(const k of ['customer','document','phone','notes'])safe[k]=str(body[k]||'',k,k==='notes'?2000:200,false);for(const k of ['rate_id','equipment_ids','request_id'])if(body[k]!==undefined)safe[k]=body[k];run('INSERT INTO drafts VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET content=excluded.content,updated_at=excluded.updated_at',session.user_id,JSON.stringify(safe),Date.now());return json({ok:true});}
+  if(req.method==='PUT'){const safe={};for(const k of ['customer','document','phone','notes'])safe[k]=str(body[k]||'',k,k==='notes'?2000:200,false);safe.signature=signature(body.signature);for(const k of ['rate_id','equipment_ids','request_id'])if(body[k]!==undefined)safe[k]=body[k];run('INSERT INTO drafts VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET content=excluded.content,updated_at=excluded.updated_at',session.user_id,JSON.stringify(safe),Date.now());return json({ok:true});}
   if(req.method==='DELETE'){run('DELETE FROM drafts WHERE user_id=?',session.user_id);return json({ok:true});}
  }
  if(path==='/api/rentals'&&req.method==='POST'){
   const customer=str(body.customer,'Nombre',120),document=str(body.document,'Documento',40),phone=str(body.phone||'','Teléfono',30,false),notes=str(body.notes||'','Novedades',2000,false),requestId=str(body.request_id,'Identificador',100);
+  const strokes=signature(body.signature);
   const result=transaction(()=>{
    const existing=get('SELECT id,created_by FROM rentals WHERE request_id=?',requestId);if(existing){if(existing.created_by!==session.user_id)fail(409,'Identificador ya utilizado.');return {id:existing.id};}
    const rate=activeRates().find(r=>r.id===body.rate_id);if(!rate)fail(400,'Selecciona una tarifa vigente.');
@@ -110,6 +116,7 @@ export const server=http.createServer(async(req,res)=>{
    const selected=equipment().filter(e=>ids.includes(e.id));
    if(selected.length!==ids.length||selected.some(e=>e.busy||e.status!=='available')||selected.filter(e=>e.kind==='scooter').length!==rate.quantity||selected.filter(e=>e.kind==='helmet').length!==rate.quantity)fail(409,'Algún equipo ya no está disponible. Revisa la selección.');
    const id=Number(run('INSERT INTO rentals(customer,document,phone,rate_id,minutes,price,started_at,created_by,notes,request_id) VALUES(?,?,?,?,?,?,?,?,?,?)',customer,document,phone,rate.id,rate.minutes,rate.price,now(),session.user_id,notes,requestId).lastInsertRowid);
+   run('UPDATE rentals SET signature=?,signed_at=? WHERE id=?',JSON.stringify(strokes),strokes.length?now():null,id);
    for(const eid of ids)run('INSERT INTO rental_equipment VALUES(?,?)',id,eid);audit(session.user_id,'crear_alquiler',id);run('DELETE FROM drafts WHERE user_id=?',session.user_id);return {id};
   });return json(result,201);
  }
