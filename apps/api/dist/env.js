@@ -4,6 +4,8 @@ const EnvSchema = z.object({
     PORT: z.coerce.number().int().min(0).max(65535).default(3000),
     HOST: z.string().default('127.0.0.1'),
     DATABASE_URL: z.string().min(1, 'DATABASE_URL es obligatoria.'),
+    /** Carpeta del build del frontend. Por defecto, `apps/web/dist`. */
+    WEB_ROOT: z.string().optional(),
     /** Origen externo exacto. En desarrollo se deriva del host recibido. */
     APP_ORIGIN: z.string().url().optional(),
     COOKIE_SECURE: z

@@ -9,6 +9,7 @@ import { registerAdminRoutes } from './routes/admin.js';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerPublicRoutes } from './routes/public.js';
 import { registerRentalRoutes } from './routes/rentals.js';
+import { registerWeb } from './web.js';
 
 export async function buildApp(env: Env, db: Db): Promise<FastifyInstance> {
   const app = Fastify({
@@ -28,6 +29,8 @@ export async function buildApp(env: Env, db: Db): Promise<FastifyInstance> {
   registerAuthRoutes(app, db, env);
   registerRentalRoutes(app, db);
   registerAdminRoutes(app, db);
+
+  await registerWeb(app, env.WEB_ROOT);
 
   return app;
 }

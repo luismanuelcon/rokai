@@ -1,0 +1,93 @@
+name: Despliegue (App Service)
+
+# Ruta alternativa a Container Apps: solo se lanza a mano.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: despliegue-produccion
+  cancel-in-progress: false
+
+env:
+  APP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
+  RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+  PG_SERVER: ${{ vars.AZURE_PG_SERVER }}
+
+permissions:
+  contents: read
+  id-token: write # Necesario para autenticarse en Azure con OIDC, sin secretos de larga vida.
+
+jobs:
+  desplegar:
+    name: Construir, migrar y desplegar
+    runs-on: ubuntu-latest
+    environment: produccion
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Construir
+        run: npm run build
+
+      - name: Autenticar en Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # El runner recibe una IP distinta en cada ejecución, así que se abre el
+      # acceso solo durante la migración y se cierra siempre al terminar.
+      - name: Abrir acceso temporal a PostgreSQL
+        id: firewall
+        run: |
+          IP=$(curl -s https://api.ipify.org)
+          REGLA="ci-${{ github.run_id }}"
+          az postgres flexible-server firewall-rule create \
+            --resource-group "$RESOURCE_GROUP" --name "$PG_SERVER" \
+            --rule-name "$REGLA" --start-ip-address "$IP" --end-ip-address "$IP"
+          echo "regla=$REGLA" >> "$GITHUB_OUTPUT"
+
+      - name: Migraciones
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run db:migrate
+
+      - name: Cerrar acceso a PostgreSQL
+        if: always() && steps.firewall.outputs.regla != ''
+        run: |
+          az postgres flexible-server firewall-rule delete \
+            --resource-group "$RESOURCE_GROUP" --name "$PG_SERVER" \
+            --rule-name "${{ steps.firewall.outputs.regla }}" --yes
+
+      - name: Preparar paquete
+        run: |
+          npm prune --omit=dev
+          # `zip` sigue los enlaces simbólicos de los workspaces y guarda el
+          # contenido real, que es lo que necesita Node al resolver @rokai/*.
+          zip -r --quiet despliegue.zip . \
+            -x '.git/*' '.github/*' 'imagenes/*' 'mockups/*' 'docs/*' \
+               '*.map' 'apps/web/src/*' 'apps/api/src/*' 'packages/*/src/*'
+
+      - name: Desplegar
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.APP_NAME }}
+          package: despliegue.zip
+
+      - name: Verificar salud
+        run: |
+          for i in $(seq 1 10); do
+            CODIGO=$(curl -s -o /dev/null -w '%{http_code}' "https://${APP_NAME}.azurewebsites.net/api/v1/ready" || true)
+            if [ "$CODIGO" = "200" ]; then echo "Listo."; exit 0; fi
+            echo "Intento $i: $CODIGO"; sleep 15
+          done
+          echo "La aplicación no respondió correctamente tras el despliegue."
+          exit 1

@@ -8,6 +8,7 @@ declare const EnvSchema: z.ZodObject<{
     PORT: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
     HOST: z.ZodDefault<z.ZodString>;
     DATABASE_URL: z.ZodString;
+    WEB_ROOT: z.ZodOptional<z.ZodString>;
     APP_ORIGIN: z.ZodOptional<z.ZodString>;
     COOKIE_SECURE: z.ZodPipe<z.ZodDefault<z.ZodEnum<{
         0: "0";

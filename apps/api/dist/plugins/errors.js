@@ -2,7 +2,14 @@ import fp from 'fastify-plugin';
 import { ZodError } from 'zod';
 import { HttpError } from '../lib/http-error.js';
 export const errorsPlugin = fp(function errorsPlugin(app) {
-    app.setNotFoundHandler((_req, reply) => {
+    app.setNotFoundHandler((req, reply) => {
+        // El frontend es una SPA: sus rutas de cliente no existen en el servidor y
+        // deben recibir index.html. `sendFile` solo existe si hay build servido.
+        const esRutaDeCliente = req.method === 'GET' && !req.url.startsWith('/api/');
+        if (esRutaDeCliente && typeof reply.sendFile === 'function') {
+            void reply.header('Cache-Control', 'no-cache').sendFile('index.html');
+            return;
+        }
         void reply.status(404).send({ error: 'Recurso no encontrado.' });
     });
     app.setErrorHandler((error, req, reply) => {
