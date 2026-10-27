@@ -5,13 +5,6 @@ import { money } from '../lib/format';
 import { useAsync } from '../lib/useAsync';
 import type { PublicData, Rate } from '../lib/types';
 
-const DESCRIPTIONS: Record<number, string> = {
-  15: 'Una dosis de brisa',
-  30: 'Desconecta y disfruta',
-  45: 'Un poco más de libertad',
-  60: 'Sin prisa, a tu ritmo',
-};
-
 const TRUST = [
   ['clock', 'Fácil de alquilar', 'Te acompañamos en el registro'],
   ['helmet', 'Casco incluido', 'Tu seguridad va primero'],
@@ -26,58 +19,62 @@ const STEPS = [
   ['Siente el aire', 'Recorre Arboletes a tu ritmo y devuelve el equipo al terminar.'],
 ] as const;
 
-function PriceCards({ rates, period }: { rates: Rate[]; period: Rate['period'] }) {
-  const singles = rates.filter((r) => r.period === period && r.quantity === 1);
-  if (singles.length === 0) return <p>No hay tarifas vigentes para este período.</p>;
+function RateSheet({
+  rates,
+  period,
+  title,
+}: {
+  rates: Rate[];
+  period: Rate['period'];
+  title: string;
+}) {
+  const periodRates = rates.filter((rate) => rate.period === period);
+  const singles = periodRates
+    .filter((rate) => rate.quantity === 1)
+    .sort((a, b) => a.minutes - b.minutes);
 
   return (
-    <>
-      {singles.map((rate) => {
-        const pair = rates.find(
-          (p) => p.period === period && p.quantity === 2 && p.minutes === rate.minutes,
-        );
-        const featured = rate.minutes === 30;
-        return (
-          <article key={rate.id} className={`price-card${featured ? ' featured' : ''}`}>
-            {featured && <span className="popular">EL PLAN FAVORITO</span>}
-            <div className="duration">
-              {rate.minutes === 60 ? (
-                <>
-                  1 <small>hora</small>
-                </>
-              ) : (
-                <>
-                  {rate.minutes} <small>minutos</small>
-                </>
-              )}
-            </div>
-            <p className="price-description">
-              {DESCRIPTIONS[rate.minutes] ?? 'Tiempo para disfrutar'}
-            </p>
-            <span className="price-label">1 patineta</span>
-            <div className="price-value">
-              {money(rate.priceCents)} <small>COP</small>
-            </div>
-            <div className="pair-price">
-              <span>
-                <Icon name="users" />2 patinetas
-              </span>
-              <strong>{pair ? money(pair.priceCents) : 'No disponible'}</strong>
-            </div>
-            <a className={`button${featured ? '' : ' outline'}`} href="#ubicacion">
-              Visita la estación
-              <Icon name="arrow" />
-            </a>
-          </article>
-        );
-      })}
-    </>
+    <article className="rate-sheet">
+      <header className="rate-sheet-heading">
+        <h3>{title}</h3>
+        <span>Precios por plan</span>
+      </header>
+      {singles.length === 0 ? (
+        <p className="rate-sheet-empty">No hay tarifas vigentes para este período.</p>
+      ) : (
+        <table className="rate-table" aria-label={`Tarifas: ${title}`}>
+          <thead>
+            <tr>
+              <th scope="col">Tiempo</th>
+              <th scope="col">1 patineta</th>
+              <th scope="col">2 patinetas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {singles.map((rate) => {
+              const pair = periodRates.find(
+                (candidate) => candidate.quantity === 2 && candidate.minutes === rate.minutes,
+              );
+              return (
+                <tr key={rate.id}>
+                  <th scope="row">{rate.minutes === 60 ? '1 hora' : `${rate.minutes} min`}</th>
+                  <td>{money(rate.priceCents)}</td>
+                  <td>{pair ? money(pair.priceCents) : '—'}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+      <a className="button small outline rate-sheet-action" href="#ubicacion">
+        Visita la estación <Icon name="arrow" />
+      </a>
+    </article>
   );
 }
 
 export function PublicPage() {
   const { data, loading, error } = useAsync<PublicData>('/public');
-  const [period, setPeriod] = useState<Rate['period']>('special');
   const [showLogoReveal, setShowLogoReveal] = useState(() => {
     if (
       typeof window === 'undefined' ||
@@ -245,29 +242,10 @@ export function PublicPage() {
               <span className="eyebrow">Tarifas vigentes</span>
               <h2>Elige cuánto quieres volar.</h2>
             </div>
-            <div className="period-toggle" role="group" aria-label="Período de tarifas">
-              <button
-                data-period="special"
-                aria-pressed={period === 'special'}
-                onClick={() => {
-                  setPeriod('special');
-                }}
-              >
-                Martes a jueves
-              </button>
-              <button
-                data-period="weekend"
-                aria-pressed={period === 'weekend'}
-                onClick={() => {
-                  setPeriod('weekend');
-                }}
-              >
-                Viernes a domingo y festivos
-              </button>
-            </div>
           </div>
           <div className="prices" id="prices">
-            <PriceCards rates={data.rates} period={period} />
+            <RateSheet rates={data.rates} period="special" title="Martes a jueves" />
+            <RateSheet rates={data.rates} period="weekend" title="Viernes a domingo y festivos" />
           </div>
           <p className="small-copy muted">
             Los valores corresponden al total del plan contratado. Confirma el período aplicable con
