@@ -3,16 +3,24 @@ import fp from 'fastify-plugin';
 import { and, eq, gt } from 'drizzle-orm';
 import { sessions, users } from '@rokai/db';
 import type { UserRole } from '@rokai/contracts';
-import type { Db } from '../db.js';
+import type { Db, Executor } from '../db.js';
 import { sha256, safeEqual } from '../lib/crypto.js';
 import { forbidden, unauthorized } from '../lib/http-error.js';
 
 export const SESSION_COOKIE = 'rokai_session';
 
+export function publicRole(role: typeof users.$inferSelect.role): UserRole {
+  return role === 'admin' ? 'admin' : 'collaborator';
+}
+
 export interface SessionInfo {
   tokenHash: string;
   csrfToken: string;
   user: { id: number; name: string; email: string; role: UserRole };
+}
+
+export async function revokeSessions(exec: Executor, userId: number): Promise<void> {
+  await exec.delete(sessions).where(eq(sessions.userId, userId));
 }
 
 declare module 'fastify' {
@@ -51,7 +59,7 @@ async function lookup(db: Db, token: string): Promise<SessionInfo | null> {
   return {
     tokenHash: row.tokenHash,
     csrfToken: row.csrfToken,
-    user: { id: row.id, name: row.name, email: row.email, role: row.role },
+    user: { id: row.id, name: row.name, email: row.email, role: publicRole(row.role) },
   };
 }
 

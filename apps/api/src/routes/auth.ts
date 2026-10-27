@@ -7,7 +7,7 @@ import type { Env } from '../env.js';
 import { DUMMY_HASH, randomToken, sha256, verifyPassword } from '../lib/crypto.js';
 import { recordAudit } from '../lib/audit.js';
 import { tooMany, unauthorized } from '../lib/http-error.js';
-import { SESSION_COOKIE } from '../plugins/auth.js';
+import { publicRole, SESSION_COOKIE } from '../plugins/auth.js';
 import { rentalDrafts } from '@rokai/db';
 
 const WINDOW_MS = 15 * 60_000;
@@ -87,7 +87,7 @@ export function registerAuthRoutes(app: FastifyInstance, db: Db, env: Env): void
     });
 
     return {
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: { id: user.id, name: user.name, email: user.email, role: publicRole(user.role) },
       csrf: csrfToken,
     };
   });

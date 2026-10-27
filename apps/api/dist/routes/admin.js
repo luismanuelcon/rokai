@@ -1,12 +1,12 @@
-import { asc, desc, eq, sql } from 'drizzle-orm';
-import { auditLog, equipment, faqs, notifications, rates, rentals, settings, users, } from '@rokai/db';
+import { and, asc, desc, eq, or, sql } from 'drizzle-orm';
+import { auditLog, equipment, faqs, notifications, rates, rentals, sessions, settings, users, } from '@rokai/db';
 import { CreateEquipmentRequest, CreateRateRequest, CreateUserRequest, PublicSettings, UpdateEquipmentRequest, UpdateRateRequest, UpdateUserRequest, UpsertFaqRequest, } from '@rokai/contracts';
 import { hashPassword } from '../lib/crypto.js';
 import { recordAudit } from '../lib/audit.js';
 import { badRequest, conflict, notFound } from '../lib/http-error.js';
 import { allRates, equipmentById } from '../repositories/catalog.js';
 import { readSettings } from './public.js';
-import { revokeSessions } from './auth.js';
+import { publicRole } from '../plugins/auth.js';
 function idParam(req) {
     const id = Number(req.params.id);
     if (!Number.isInteger(id) || id <= 0)
@@ -44,7 +44,13 @@ export function registerAdminRoutes(app, db) {
                 .orderBy(desc(auditLog.id))
                 .limit(300),
         ]);
-        return { rates: rateRows, users: userRows, faqs: faqRows, settings: config, audit };
+        return {
+            rates: rateRows,
+            users: userRows.map((user) => ({ ...user, role: publicRole(user.role) })),
+            faqs: faqRows,
+            settings: config,
+            audit,
+        };
     });
     /* ------------------------------------------------------------- usuarios */
     app.post('/api/v1/admin/users', admin, async (req, reply) => {
@@ -52,7 +58,7 @@ export function registerAdminRoutes(app, db) {
         const existing = await db
             .select({ id: users.id })
             .from(users)
-            .where(eq(users.email, body.email));
+            .where(sql `lower(${users.email}) = ${body.email}`);
         if (existing.length > 0)
             throw conflict('Este correo ya está registrado.');
         const created = await db
@@ -61,7 +67,7 @@ export function registerAdminRoutes(app, db) {
             name: body.name,
             email: body.email,
             passwordHash: hashPassword(body.password),
-            role: body.role,
+            role: body.role === 'admin' ? 'admin' : 'worker',
         })
             .returning({ id: users.id });
         await recordAudit(db, {
@@ -75,23 +81,137 @@ export function registerAdminRoutes(app, db) {
     });
     app.patch('/api/v1/admin/users/:id', admin, async (req) => {
         const id = idParam(req);
-        if (id === req.session.user.id)
-            throw badRequest('No puedes desactivar tu propia cuenta.');
         const body = UpdateUserRequest.parse(req.body);
-        const updated = await db
-            .update(users)
-            .set({ active: body.active })
-            .where(eq(users.id, id))
-            .returning({ id: users.id });
-        if (updated.length === 0)
-            throw notFound('Usuario no encontrado.');
-        if (!body.active)
-            await revokeSessions(db, id);
-        await recordAudit(db, {
-            userId: req.session.user.id,
-            action: body.active ? 'activar_usuario' : 'desactivar_usuario',
-            entity: 'user',
-            entityId: id,
+        const actorId = req.session.user.id;
+        await db.transaction(async (tx) => {
+            await tx.execute(sql `SELECT pg_advisory_xact_lock(760417042)`);
+            const rows = await tx
+                .select({
+                id: users.id,
+                name: users.name,
+                email: users.email,
+                role: users.role,
+                active: users.active,
+            })
+                .from(users)
+                .where(eq(users.id, id))
+                .for('update')
+                .limit(1);
+            const before = rows[0];
+            if (!before)
+                throw notFound('Usuario no encontrado.');
+            const nextRole = body.role ? (body.role === 'admin' ? 'admin' : 'worker') : before.role;
+            const changesPrivileges = body.active === false || nextRole !== before.role;
+            if (id === actorId && changesPrivileges) {
+                throw badRequest('No puedes cambiar tu propio perfil ni desactivar tu cuenta.');
+            }
+            if (id === actorId && body.password) {
+                throw badRequest('No puedes cambiar tu propia contraseña desde esta pantalla.');
+            }
+            if (before.role === 'admin' &&
+                before.active &&
+                (body.active === false || nextRole !== 'admin')) {
+                const activeAdmins = await tx
+                    .select({ id: users.id })
+                    .from(users)
+                    .where(and(eq(users.role, 'admin'), eq(users.active, true)))
+                    .for('update');
+                if (activeAdmins.length <= 1) {
+                    throw conflict('Debe permanecer al menos un Administrador activo.');
+                }
+            }
+            if (body.email && body.email !== before.email) {
+                const duplicate = await tx
+                    .select({ id: users.id })
+                    .from(users)
+                    .where(sql `lower(${users.email}) = ${body.email}`)
+                    .limit(1);
+                if (duplicate.length > 0)
+                    throw conflict('Este correo ya está registrado.');
+            }
+            await tx
+                .update(users)
+                .set({
+                ...(body.name === undefined ? {} : { name: body.name }),
+                ...(body.email === undefined ? {} : { email: body.email }),
+                ...(body.password === undefined ? {} : { passwordHash: hashPassword(body.password) }),
+                ...(body.role === undefined ? {} : { role: nextRole }),
+                ...(body.active === undefined ? {} : { active: body.active }),
+            })
+                .where(eq(users.id, id));
+            if (changesPrivileges || body.password) {
+                await tx.delete(sessions).where(eq(sessions.userId, id));
+            }
+            await recordAudit(tx, {
+                userId: actorId,
+                action: body.active === undefined && body.role === undefined
+                    ? 'editar_usuario'
+                    : body.active === false
+                        ? 'desactivar_usuario'
+                        : body.active === true
+                            ? 'activar_usuario'
+                            : 'editar_usuario',
+                entity: 'user',
+                entityId: id,
+                before,
+                after: {
+                    ...body,
+                    role: body.role === undefined ? undefined : publicRole(nextRole),
+                    password: body.password ? '[actualizada]' : undefined,
+                },
+            });
+        });
+        return { ok: true };
+    });
+    app.delete('/api/v1/admin/users/:id', admin, async (req) => {
+        const id = idParam(req);
+        const actorId = req.session.user.id;
+        if (id === actorId)
+            throw badRequest('No puedes eliminar tu propia cuenta.');
+        await db.transaction(async (tx) => {
+            await tx.execute(sql `SELECT pg_advisory_xact_lock(760417042)`);
+            const rows = await tx
+                .select({
+                id: users.id,
+                name: users.name,
+                email: users.email,
+                role: users.role,
+                active: users.active,
+            })
+                .from(users)
+                .where(eq(users.id, id))
+                .for('update')
+                .limit(1);
+            const before = rows[0];
+            if (!before)
+                throw notFound('Usuario no encontrado.');
+            if (before.role === 'admin' && before.active) {
+                const activeAdmins = await tx
+                    .select({ id: users.id })
+                    .from(users)
+                    .where(and(eq(users.role, 'admin'), eq(users.active, true)))
+                    .for('update');
+                if (activeAdmins.length <= 1) {
+                    throw conflict('Debe permanecer al menos un Administrador activo.');
+                }
+            }
+            const rentalHistory = await tx
+                .select({ id: rentals.id })
+                .from(rentals)
+                .where(or(eq(rentals.createdBy, id), eq(rentals.endedBy, id)))
+                .limit(1);
+            if (rentalHistory.length > 0) {
+                throw conflict('El usuario tiene alquileres asociados. Desactívalo para conservar el historial.');
+            }
+            await tx.update(auditLog).set({ userId: null }).where(eq(auditLog.userId, id));
+            await tx.delete(users).where(eq(users.id, id));
+            await recordAudit(tx, {
+                userId: actorId,
+                action: 'eliminar_usuario',
+                entity: 'user',
+                entityId: id,
+                before,
+            });
         });
         return { ok: true };
     });

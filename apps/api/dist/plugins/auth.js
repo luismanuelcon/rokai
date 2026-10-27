@@ -4,6 +4,12 @@ import { sessions, users } from '@rokai/db';
 import { sha256, safeEqual } from '../lib/crypto.js';
 import { forbidden, unauthorized } from '../lib/http-error.js';
 export const SESSION_COOKIE = 'rokai_session';
+export function publicRole(role) {
+    return role === 'admin' ? 'admin' : 'collaborator';
+}
+export async function revokeSessions(exec, userId) {
+    await exec.delete(sessions).where(eq(sessions.userId, userId));
+}
 async function lookup(db, token) {
     const rows = await db
         .select({
@@ -24,7 +30,7 @@ async function lookup(db, token) {
     return {
         tokenHash: row.tokenHash,
         csrfToken: row.csrfToken,
-        user: { id: row.id, name: row.name, email: row.email, role: row.role },
+        user: { id: row.id, name: row.name, email: row.email, role: publicRole(row.role) },
     };
 }
 export const authPlugin = fp(function authPlugin(app, opts) {

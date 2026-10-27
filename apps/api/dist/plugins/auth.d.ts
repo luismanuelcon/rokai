@@ -1,7 +1,9 @@
 import type { FastifyInstance } from 'fastify';
+import { users } from '@rokai/db';
 import type { UserRole } from '@rokai/contracts';
-import type { Db } from '../db.js';
+import type { Db, Executor } from '../db.js';
 export declare const SESSION_COOKIE = "rokai_session";
+export declare function publicRole(role: typeof users.$inferSelect.role): UserRole;
 export interface SessionInfo {
     tokenHash: string;
     csrfToken: string;
@@ -12,6 +14,7 @@ export interface SessionInfo {
         role: UserRole;
     };
 }
+export declare function revokeSessions(exec: Executor, userId: number): Promise<void>;
 declare module 'fastify' {
     interface FastifyRequest {
         session: SessionInfo | null;

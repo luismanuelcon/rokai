@@ -1,19 +1,249 @@
 /* Ajustes propios de la v2. Se mantienen separados del sistema de diseño
    heredado (rokai.css) para que el diff de cada capa siga siendo legible. */
 
-/* Contacto: el CSS heredado no definía esta rejilla. */
-.contact-grid {
+/* Estación: foto costera y datos operativos en una sola superficie oscura. */
+.contact-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 20px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  overflow: hidden;
   margin-top: 32px;
+  border: 1px solid var(--c-graphite);
+  border-radius: var(--r-lg);
+  background: var(--c-graphite);
+  color: var(--c-on-dark);
+  box-shadow: var(--elev-2);
+}
+
+.contact-place {
+  position: relative;
+  min-height: 500px;
+  overflow: hidden;
+  background: var(--c-graphite-deep);
+}
+
+.contact-place::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(15 17 19 / 5%) 28%, rgb(15 17 19 / 88%) 100%);
+  content: '';
+}
+
+.contact-place img {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+  object-position: 55% center;
+}
+
+.contact-place-copy {
+  position: absolute;
+  z-index: 1;
+  right: 28px;
+  bottom: 28px;
+  left: 28px;
+}
+
+.contact-kicker {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  margin-bottom: 12px;
+  padding: 0 11px;
+  border: 1px solid rgb(255 255 255 / 45%);
+  border-radius: var(--r-pill);
+  background: rgb(15 17 19 / 52%);
+  color: var(--c-on-dark);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.contact-place-copy h3 {
+  max-width: 430px;
+  margin: 0;
+  color: var(--c-on-dark);
+  font-size: 36px;
+  line-height: 1.1;
+}
+
+.contact-place-copy p {
+  margin: 9px 0 0;
+  color: rgb(255 255 255 / 88%);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.contact-details {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 32px;
+}
+
+.contact-details .summary-row {
+  gap: 20px;
+  min-height: 54px;
+  border-color: rgb(255 255 255 / 18%);
+  color: var(--c-on-dark);
+}
+
+.contact-details .summary-row > span {
+  flex: none;
+  color: rgb(255 255 255 / 68%);
+}
+
+.contact-details .summary-row strong {
+  min-width: 0;
+  color: var(--c-on-dark);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.contact-details .summary-row a {
+  color: var(--c-on-dark);
+  text-decoration-color: rgb(255 255 255 / 45%);
+  text-underline-offset: 3px;
 }
 
 .contact-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 24px;
+}
+
+.contact-actions .button.outline {
+  border-color: rgb(255 255 255 / 40%);
+  background: transparent;
+  color: var(--c-on-dark);
+}
+
+.contact-actions .button.outline:hover {
+  background: rgb(255 255 255 / 10%);
+}
+
+.contact-actions .button.dark {
+  border-color: var(--c-lime);
+  background: var(--c-lime);
+  color: var(--c-graphite);
+}
+
+.contact-actions .button.dark:hover {
+  background: var(--c-lime-bright);
+}
+
+.hero-logo-reveal {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #000;
+  animation: logo-reveal-enter 220ms var(--ease-out);
+}
+
+.hero-logo-reveal video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.hero-logo-skip {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgb(255 255 255 / 48%);
+  border-radius: var(--r-pill);
+  background: rgb(15 17 19 / 80%);
+  color: var(--c-on-dark);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hero-logo-skip:hover {
+  background: var(--c-graphite);
+}
+
+.hero-logo-skip .icon {
+  width: 14px;
+  height: 14px;
+}
+
+@keyframes logo-reveal-enter {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .contact-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .contact-place,
+  .contact-place img {
+    min-height: 300px;
+  }
+
+  .contact-details {
+    padding: 18px 20px 22px;
+  }
+
+  .contact-place-copy h3 {
+    font-size: 30px;
+  }
+}
+
+@media (max-width: 420px) {
+  .contact-place,
+  .contact-place img {
+    min-height: 260px;
+  }
+
+  .contact-place-copy {
+    right: 20px;
+    bottom: 20px;
+    left: 20px;
+  }
+
+  .contact-place-copy h3 {
+    font-size: 26px;
+  }
+
+  .contact-details .summary-row {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .contact-details .summary-row strong {
+    max-width: 60%;
+  }
+
+  .contact-actions .button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-logo-reveal {
+    display: none;
+    animation: none;
+  }
 }
 
 /* La rejilla de tarifas no existía en el CSS heredado: las tarjetas se

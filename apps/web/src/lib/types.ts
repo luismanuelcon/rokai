@@ -59,7 +59,7 @@ export interface SessionUser {
   id: number;
   name: string;
   email: string;
-  role: 'admin' | 'worker' | 'operator';
+  role: 'admin' | 'collaborator';
 }
 
 export interface AdminUser extends SessionUser {

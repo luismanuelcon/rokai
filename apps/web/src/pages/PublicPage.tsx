@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Footer, PublicHeader } from '../components/Chrome';
 import { Icon } from '../components/Icon';
 import { money } from '../lib/format';
@@ -78,6 +78,35 @@ function PriceCards({ rates, period }: { rates: Rate[]; period: Rate['period'] }
 export function PublicPage() {
   const { data, loading, error } = useAsync<PublicData>('/public');
   const [period, setPeriod] = useState<Rate['period']>('special');
+  const [showLogoReveal, setShowLogoReveal] = useState(() => {
+    if (
+      typeof window === 'undefined' ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    )
+      return false;
+    try {
+      return window.sessionStorage.getItem('rokai-logo-reveal') !== 'played';
+    } catch {
+      return false;
+    }
+  });
+
+  function dismissLogoReveal() {
+    setShowLogoReveal(false);
+    try {
+      window.sessionStorage.setItem('rokai-logo-reveal', 'played');
+    } catch {
+      // El video solo se reproduce una vez cuando el almacenamiento está disponible.
+    }
+  }
+
+  useEffect(() => {
+    if (!showLogoReveal) return;
+    const timeout = window.setTimeout(dismissLogoReveal, 6000);
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [showLogoReveal]);
 
   if (loading) return <main className="loading">Preparando tu próxima aventura…</main>;
   if (error ?? !data)
@@ -129,7 +158,7 @@ export function PublicPage() {
           </div>
           <div className="hero-visual">
             <img
-              src="/assets/hero-rokai.jpg"
+              src="/assets/hero-rokai-atardecer.jpg"
               alt="Una pareja con casco se toma una foto junto a sus dos patinetas ROKAI, frente al mar y al atardecer"
               width={1100}
               height={917}
@@ -150,6 +179,26 @@ export function PublicPage() {
                 <Icon name="arrow" />
               </a>
             </div>
+            {showLogoReveal && (
+              <div className="hero-logo-reveal">
+                <video
+                  autoPlay
+                  muted
+                  playsInline
+                  preload="auto"
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  onEnded={dismissLogoReveal}
+                  onError={dismissLogoReveal}
+                >
+                  <source src="/assets/rokai-logo-reveal.mp4" type="video/mp4" />
+                </video>
+                <button type="button" className="hero-logo-skip" onClick={dismissLogoReveal}>
+                  Saltar intro
+                  <Icon name="arrow" />
+                </button>
+              </div>
+            )}
           </div>
         </section>
 
@@ -282,8 +331,23 @@ export function PublicPage() {
               <h2>Te esperamos en el parque principal.</h2>
             </div>
           </div>
-          <div className="contact-grid">
-            <div className="panel">
+          <div className="contact-card">
+            <div className="contact-place">
+              <img
+                src="/assets/contact-rokai-pro.jpg"
+                alt="Logo ROKAI y patineta eléctrica sobre la carretera costera al atardecer"
+                width={1200}
+                height={1000}
+                loading="lazy"
+                decoding="async"
+              />
+              <div className="contact-place-copy">
+                <span className="contact-kicker">ARBOLETES · ANTIOQUIA</span>
+                <h3>El paseo empieza aquí.</h3>
+                <p>{s['location']}</p>
+              </div>
+            </div>
+            <div className="contact-details">
               <div className="summary-row">
                 <span>
                   <Icon name="pin" />

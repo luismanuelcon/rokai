@@ -1,8 +1,7 @@
 import { z } from 'zod';
 export declare const UserRole: z.ZodEnum<{
     admin: "admin";
-    worker: "worker";
-    operator: "operator";
+    collaborator: "collaborator";
 }>;
 export type UserRole = z.infer<typeof UserRole>;
 export declare const EquipmentKind: z.ZodEnum<{

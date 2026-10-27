@@ -12,8 +12,7 @@ export declare const SessionUser: z.ZodObject<{
     email: z.ZodString;
     role: z.ZodEnum<{
         admin: "admin";
-        worker: "worker";
-        operator: "operator";
+        collaborator: "collaborator";
     }>;
 }, z.core.$strip>;
 export type SessionUser = z.infer<typeof SessionUser>;
@@ -24,8 +23,7 @@ export declare const SessionResponse: z.ZodObject<{
         email: z.ZodString;
         role: z.ZodEnum<{
             admin: "admin";
-            worker: "worker";
-            operator: "operator";
+            collaborator: "collaborator";
         }>;
     }, z.core.$strip>>;
     csrf: z.ZodOptional<z.ZodString>;
@@ -37,13 +35,19 @@ export declare const CreateUserRequest: z.ZodObject<{
     password: z.ZodString;
     role: z.ZodEnum<{
         admin: "admin";
-        worker: "worker";
-        operator: "operator";
+        collaborator: "collaborator";
     }>;
 }, z.core.$strip>;
 export type CreateUserRequest = z.infer<typeof CreateUserRequest>;
 export declare const UpdateUserRequest: z.ZodObject<{
-    active: z.ZodBoolean;
+    name: z.ZodOptional<z.ZodString>;
+    email: z.ZodOptional<z.ZodEmail>;
+    password: z.ZodOptional<z.ZodString>;
+    role: z.ZodOptional<z.ZodEnum<{
+        admin: "admin";
+        collaborator: "collaborator";
+    }>>;
+    active: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strip>;
 export type UpdateUserRequest = z.infer<typeof UpdateUserRequest>;
 //# sourceMappingURL=auth.d.ts.map

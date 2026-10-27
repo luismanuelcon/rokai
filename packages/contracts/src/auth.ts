@@ -36,7 +36,15 @@ export const CreateUserRequest = z.object({
 });
 export type CreateUserRequest = z.infer<typeof CreateUserRequest>;
 
-export const UpdateUserRequest = z.object({
-  active: z.boolean(),
-});
+export const UpdateUserRequest = z
+  .object({
+    name: z.string().trim().min(1).max(120).optional(),
+    email: Email.optional(),
+    password: Password.optional(),
+    role: UserRole.optional(),
+    active: z.boolean().optional(),
+  })
+  .refine((value) => Object.values(value).some((entry) => entry !== undefined), {
+    message: 'Debes enviar al menos un campo para actualizar.',
+  });
 export type UpdateUserRequest = z.infer<typeof UpdateUserRequest>;

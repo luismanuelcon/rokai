@@ -26,7 +26,7 @@ const NAV: [View, string, string][] = [
 const ADMIN_ONLY: View[] = ['reports', 'admin'];
 
 export function Workspace() {
-  const { user, logout } = useSession();
+  const { user, logout, refresh } = useSession();
   const [view, setView] = useState<View>('overview');
   const [dash, setDash] = useState<Dashboard | null>(null);
   const [admin, setAdmin] = useState<AdminData | null>(null);
@@ -158,7 +158,13 @@ export function Workspace() {
           )}
           {view === 'reports' && admin && <Reports dash={dash} admin={admin} />}
           {view === 'admin' && admin && (
-            <AdminPanel admin={admin} currentUserId={user.id} onReload={reload} notify={notify} />
+            <AdminPanel
+              admin={admin}
+              currentUserId={user.id}
+              refreshSession={refresh}
+              onReload={reload}
+              notify={notify}
+            />
           )}
         </main>
       </div>

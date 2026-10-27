@@ -180,7 +180,7 @@ test('El trabajador no accede a administración; desactivar revoca la sesión', 
   const created = await call(
     '/api/v1/admin/users',
     'POST',
-    { name: 'Operador', email: 'worker@test.local', password: PASSWORD, role: 'worker' },
+    { name: 'Colaborador', email: 'worker@test.local', password: PASSWORD, role: 'collaborator' },
     admin,
   );
   assert.equal(created.status, 201);
@@ -245,7 +245,7 @@ test('Ciclo de alquiler: idempotencia, colisión, precio inmutable y auditoría'
   // El precio enviado por el cliente se ignora: manda el del servidor.
   const after = await call('/api/v1/dashboard', 'GET', undefined, worker);
   assert.equal(after.body.rentals[0].priceCents, rate.priceCents);
-  assert.equal(after.body.rentals[0].createdByName, 'Operador');
+  assert.equal(after.body.rentals[0].createdByName, 'Colaborador');
   assert.equal(after.body.equipment.filter((e: { busy: boolean }) => e.busy).length, 2);
 
   // El borrador se elimina al confirmar.
@@ -270,7 +270,7 @@ test('Ciclo de alquiler: idempotencia, colisión, precio inmutable y auditoría'
 
   const final = await call('/api/v1/dashboard', 'GET', undefined, worker);
   assert.equal(final.body.rentals[0].finalPriceCents, rate.priceCents);
-  assert.equal(final.body.rentals[0].endedByName, 'Operador');
+  assert.equal(final.body.rentals[0].endedByName, 'Colaborador');
   assert.equal(final.body.equipment.filter((e: { busy: boolean }) => e.busy).length, 0);
 
   const adminData = await call('/api/v1/admin/data', 'GET', undefined, admin);
@@ -286,6 +286,142 @@ test('El outbox encola notificaciones en la misma transacción del alquiler', as
   assert.ok(keys.includes('rental.due_soon'), 'debe programar el aviso de vencimiento');
   // Ninguna notificación comercial: las campañas son fase 2.
   assert.ok(data.body.every((n: { category: string }) => n.category !== 'marketing'));
+});
+
+test('CRUD de usuarios: roles, cambios de perfil, baja segura e historial', async () => {
+  const created = await call(
+    '/api/v1/admin/users',
+    'POST',
+    {
+      name: 'Colaborador de prueba',
+      email: 'collaborator@test.local',
+      password: PASSWORD,
+      role: 'collaborator',
+    },
+    admin,
+  );
+  assert.equal(created.status, 201);
+  const userId = created.body.id;
+
+  const duplicate = await call(
+    '/api/v1/admin/users',
+    'POST',
+    {
+      name: 'Duplicado',
+      email: 'COLLABORATOR@test.local',
+      password: PASSWORD,
+      role: 'collaborator',
+    },
+    admin,
+  );
+  assert.equal(duplicate.status, 409);
+
+  const updated = await call(
+    `/api/v1/admin/users/${userId}`,
+    'PATCH',
+    { name: 'Colaborador actualizado', email: 'colaborador@test.local' },
+    admin,
+  );
+  assert.equal(updated.status, 200);
+  const collaborator = await login('colaborador@test.local');
+  const session = await call('/api/v1/auth/session', 'GET', undefined, collaborator);
+  assert.equal(session.body.user.role, 'collaborator');
+  assert.equal(
+    (await call(`/api/v1/admin/users/${userId}`, 'PATCH', { role: 'admin' }, collaborator)).status,
+    403,
+  );
+
+  const promoted = await call(`/api/v1/admin/users/${userId}`, 'PATCH', { role: 'admin' }, admin);
+  assert.equal(promoted.status, 200);
+  assert.equal((await call('/api/v1/dashboard', 'GET', undefined, collaborator)).status, 401);
+  const promotedSession = await login('colaborador@test.local');
+  assert.equal(
+    (await call('/api/v1/auth/session', 'GET', undefined, promotedSession)).body.user.role,
+    'admin',
+  );
+  assert.equal(
+    (
+      await call(
+        `/api/v1/admin/users/${userId}`,
+        'PATCH',
+        { role: 'collaborator' },
+        promotedSession,
+      )
+    ).status,
+    400,
+  );
+
+  const secondAdmin = await call(
+    '/api/v1/admin/users',
+    'POST',
+    {
+      name: 'Segundo administrador',
+      email: 'second-admin@test.local',
+      password: PASSWORD,
+      role: 'admin',
+    },
+    admin,
+  );
+  assert.equal(secondAdmin.status, 201);
+  const secondAdminSession = await login('second-admin@test.local');
+  assert.equal(
+    (
+      await call(
+        `/api/v1/admin/users/${secondAdmin.body.id}`,
+        'PATCH',
+        { role: 'collaborator' },
+        secondAdminSession,
+      )
+    ).status,
+    400,
+  );
+
+  assert.equal(
+    (await call(`/api/v1/admin/users/${admin.id}`, 'DELETE', undefined, admin)).status,
+    400,
+  );
+  assert.equal(
+    (await call(`/api/v1/admin/users/${worker.id}`, 'DELETE', undefined, admin)).status,
+    409,
+  );
+
+  assert.equal(
+    (await call(`/api/v1/admin/users/${userId}`, 'PATCH', { role: 'collaborator' }, admin)).status,
+    200,
+  );
+  assert.equal((await call('/api/v1/admin/data', 'GET', undefined, promotedSession)).status, 401);
+  const collaboratorAgain = await login('colaborador@test.local');
+  assert.equal((await call('/api/v1/admin/data', 'GET', undefined, collaboratorAgain)).status, 403);
+
+  assert.equal(
+    (await call(`/api/v1/admin/users/${userId}`, 'PATCH', { active: false }, admin)).status,
+    200,
+  );
+  assert.equal((await call('/api/v1/dashboard', 'GET', undefined, collaboratorAgain)).status, 401);
+  assert.equal(
+    (await call(`/api/v1/admin/users/${userId}`, 'PATCH', { active: true }, admin)).status,
+    200,
+  );
+  assert.equal(
+    (await call(`/api/v1/admin/users/${userId}`, 'DELETE', undefined, admin)).status,
+    200,
+  );
+  assert.equal(
+    (await call(`/api/v1/admin/users/${userId}`, 'DELETE', undefined, admin)).status,
+    404,
+  );
+
+  const finalAdminData = await call('/api/v1/admin/data', 'GET', undefined, admin);
+  assert.ok(!finalAdminData.body.users.some((user: { id: number }) => user.id === userId));
+  assert.ok(
+    finalAdminData.body.audit.some(
+      (entry: { action: string }) => entry.action === 'eliminar_usuario',
+    ),
+  );
+  assert.equal(
+    (await call(`/api/v1/admin/users/${secondAdmin.body.id}`, 'DELETE', undefined, admin)).status,
+    200,
+  );
 });
 
 test('Tarifas futuras, vencidas e inactivas quedan fuera; fechas validadas', async () => {

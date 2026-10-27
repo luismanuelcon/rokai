@@ -1,5 +1,5 @@
 import { z } from 'zod';
-export const UserRole = z.enum(['admin', 'worker', 'operator']);
+export const UserRole = z.enum(['admin', 'collaborator']);
 export const EquipmentKind = z.enum(['scooter', 'helmet']);
 export const EquipmentStatus = z.enum(['available', 'maintenance', 'inactive']);
 export const RatePeriod = z.enum(['special', 'weekend']);

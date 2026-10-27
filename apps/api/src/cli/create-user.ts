@@ -11,7 +11,7 @@ const password = process.env.ROKAI_PASSWORD;
 const parsed = CreateUserRequest.safeParse({ email, name, password, role });
 if (!parsed.success) {
   console.error(
-    'Uso: ROKAI_PASSWORD=<12+ caracteres> npm run create-user -- correo "Nombre" [admin|worker|operator]',
+    'Uso: ROKAI_PASSWORD=<12+ caracteres> npm run create-user -- correo "Nombre" [admin|collaborator]',
   );
   for (const issue of parsed.error.issues) {
     console.error(`  ${issue.path.join('.')}: ${issue.message}`);
@@ -35,7 +35,7 @@ try {
     name: parsed.data.name,
     email: parsed.data.email,
     passwordHash: hashPassword(parsed.data.password),
-    role: parsed.data.role,
+    role: parsed.data.role === 'admin' ? 'admin' : 'worker',
   });
   console.log(`Usuario ${parsed.data.email} creado con rol ${parsed.data.role}.`);
 } finally {
