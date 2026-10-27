@@ -24,7 +24,7 @@ const FAQS = [
     ],
     [
         '¿Puedo reservar desde la página?',
-        'Por ahora el alquiler es presencial. Consulta las tarifas y visítanos en el Malecón de Arboletes.',
+        'Por ahora el alquiler es presencial. Consulta las tarifas y visítanos en el parque principal de Arboletes.',
     ],
     [
         '¿Pueden conducir menores de edad?',
@@ -36,7 +36,8 @@ const FAQS = [
     ],
 ];
 const SETTINGS = {
-    location: 'Malecón de Arboletes, Antioquia',
+    location: 'Parque principal de Arboletes, Antioquia',
+    mapsUrl: 'https://maps.app.goo.gl/LEpwibszPgpBVpjT7',
     hours: '8:00 a. m. a 10:00 p. m.',
     whatsapp: '+573106817317',
     instagram: 'roaki_patinetas',

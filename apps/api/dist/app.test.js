@@ -11,6 +11,10 @@ import { loadEnv } from './env.js';
 import { hashPassword } from './lib/crypto.js';
 const ORIGIN = 'http://127.0.0.1:3000';
 const PASSWORD = 'Test-password-only-123';
+/** PNG de 1x1 válido: lo mínimo que acepta el contrato de la firma. */
+const SIGNATURE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+/** Campos de cierre que ahora exige todo alquiler. */
+const CLOSING = { signature: SIGNATURE, termsAccepted: true };
 let app;
 let handle;
 let admin;
@@ -165,6 +169,7 @@ test('Ciclo de alquiler: idempotencia, colisión, precio inmutable y auditoría'
         rateId: rate.id,
         equipmentIds: ids,
         notes: '',
+        ...CLOSING,
     };
     const first = await call('/api/v1/rentals', 'POST', payload, worker);
     assert.equal(first.status, 201);
@@ -230,6 +235,7 @@ test('Parejas exigen dos patinetas y dos cascos; mantenimiento bloquea el alquil
         customer: { fullName: 'Pareja', document: '999', phone: null },
         rateId: pairRate.id,
         notes: '',
+        ...CLOSING,
     };
     // Dos patinetas sin cascos: rechazado.
     const wrongMix = await call('/api/v1/rentals', 'POST', {
@@ -284,8 +290,35 @@ test('El teléfono inválido se rechaza y el cliente queda normalizado en E.164'
         rateId: rate.id,
         equipmentIds: [scooter.id, helmet.id],
         notes: '',
+        ...CLOSING,
     }, admin);
     assert.equal(bad.status, 400);
+});
+test('Sin firma o sin aceptar los términos no se puede iniciar el alquiler', async () => {
+    const dash = await call('/api/v1/dashboard', 'GET', undefined, admin);
+    const rate = dash.body.rates.find((r) => r.quantity === 1);
+    const free = dash.body.equipment.filter((e) => !e.busy && e.status === 'available');
+    const scooter = free.find((e) => e.kind === 'scooter');
+    const helmet = free.find((e) => e.kind === 'helmet');
+    const base = {
+        customer: { fullName: 'Sin firmar', document: '4321', phone: null },
+        rateId: rate.id,
+        equipmentIds: [scooter.id, helmet.id],
+        notes: '',
+    };
+    const sinFirma = await call('/api/v1/rentals', 'POST', { ...base, requestId: '99999999-9999-4999-8999-999999999999', termsAccepted: true }, admin);
+    assert.equal(sinFirma.status, 400);
+    const sinAceptar = await call('/api/v1/rentals', 'POST', {
+        ...base,
+        requestId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        signature: SIGNATURE,
+        termsAccepted: false,
+    }, admin);
+    assert.equal(sinAceptar.status, 400);
+    // Un rechazo no puede dejar los equipos marcados como ocupados.
+    const after = await call('/api/v1/dashboard', 'GET', undefined, admin);
+    const stillFree = after.body.equipment.filter((e) => [scooter.id, helmet.id].includes(e.id) && !e.busy);
+    assert.equal(stillFree.length, 2);
 });
 test('El tipo de documento usa cédula por defecto y distingue el mismo número', async () => {
     const dash = await call('/api/v1/dashboard', 'GET', undefined, admin);
@@ -300,6 +333,7 @@ test('El tipo de documento usa cédula por defecto y distingue el mismo número'
         rateId: rate.id,
         equipmentIds: [scooter.id, helmet.id],
         notes: '',
+        ...CLOSING,
     }, admin);
     assert.equal(omitted.status, 201);
     const listed = await call('/api/v1/rentals', 'GET', undefined, admin);
@@ -318,6 +352,7 @@ test('El tipo de documento usa cédula por defecto y distingue el mismo número'
         rateId: rate.id,
         equipmentIds: [scooter.id, helmet.id],
         notes: '',
+        ...CLOSING,
     }, admin);
     assert.equal(passport.status, 201);
     const after = await call('/api/v1/rentals', 'GET', undefined, admin);

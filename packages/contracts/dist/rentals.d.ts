@@ -17,6 +17,15 @@ export declare const CustomerInput: z.ZodObject<{
     phone: z.ZodDefault<z.ZodNullable<z.ZodString>>;
 }, z.core.$strip>;
 export type CustomerInput = z.infer<typeof CustomerInput>;
+/**
+ * Versión del texto legal que el cliente acepta al firmar. Se guarda con el
+ * alquiler y con el consentimiento para poder demostrar *qué* se aceptó.
+ * Súbela cada vez que cambie el contenido de `/terminos`.
+ */
+export declare const TERMS_VERSION = "2026-10";
+/** Firma manuscrita capturada en el lienzo, como PNG en data URL. */
+export declare const SignatureDataUrl: z.ZodString;
+export type SignatureDataUrl = z.infer<typeof SignatureDataUrl>;
 export declare const CreateRentalRequest: z.ZodObject<{
     requestId: z.ZodUUID;
     customer: z.ZodObject<{
@@ -35,6 +44,8 @@ export declare const CreateRentalRequest: z.ZodObject<{
     rateId: z.ZodNumber;
     equipmentIds: z.ZodArray<z.ZodNumber>;
     notes: z.ZodDefault<z.ZodString>;
+    signature: z.ZodString;
+    termsAccepted: z.ZodBoolean;
 }, z.core.$strip>;
 export type CreateRentalRequest = z.infer<typeof CreateRentalRequest>;
 export declare const FinishRentalRequest: z.ZodObject<{

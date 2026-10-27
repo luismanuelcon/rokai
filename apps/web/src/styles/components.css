@@ -428,3 +428,205 @@ table td {
   color: var(--c-text-muted);
   text-align: center;
 }
+
+/* ═══ CIERRE: ACEPTACIÓN Y FIRMA ═══════════════════════════════════════════
+   Último paso antes de entregar el equipo. Cuando el resto del formulario ya
+   está completo, el panel reclama atención: es el único obstáculo que queda.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.closing-intro {
+  margin: 0 0 var(--s-md);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--c-text-muted);
+}
+
+.closing-panel.needs-attention {
+  border-color: var(--c-warning);
+  animation: attention-pulse 2.4s var(--ease-out) infinite;
+}
+
+.closing-panel.needs-attention::before {
+  background: var(--c-warning);
+  transform: scaleY(1);
+}
+
+.closing-panel.is-complete::before {
+  background: var(--c-lime);
+  transform: scaleY(1);
+}
+
+@keyframes attention-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(216 154 38 / 0%);
+  }
+
+  45% {
+    box-shadow: 0 0 0 5px rgb(216 154 38 / 16%);
+  }
+}
+
+/* ─── Casilla de términos: diana grande, pensada para el mostrador ───────── */
+
+.consent-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: var(--s-lg);
+  padding: 14px 16px;
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--r-input);
+  background: var(--c-surface);
+  cursor: pointer;
+}
+
+.consent-check input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.consent-box {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--r-base);
+  background: var(--c-canvas);
+  color: transparent;
+  transition:
+    background-color var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out);
+}
+
+.consent-box .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.consent-copy {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--c-text-muted);
+}
+
+.consent-copy a {
+  color: var(--c-text);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.consent-check:hover {
+  border-color: var(--c-graphite);
+}
+
+.consent-check:has(input:checked) {
+  border-color: var(--c-lime);
+  background: var(--c-ok-bg);
+}
+
+.consent-check:has(input:checked) .consent-box {
+  border-color: var(--c-lime);
+  background: var(--c-lime);
+  color: var(--c-graphite);
+}
+
+.consent-check:has(input:focus-visible) {
+  border-color: var(--c-graphite);
+  box-shadow: var(--focus-ring);
+}
+
+.needs-attention .consent-check:not(:has(input:checked)) {
+  border-color: var(--c-warning);
+}
+
+/* ─── Lienzo de firma ────────────────────────────────────────────────────── */
+
+.signature {
+  position: relative;
+  border: 1.5px dashed var(--c-border);
+  border-radius: var(--r-input);
+  background: var(--c-surface);
+  overflow: hidden;
+  transition: border-color var(--t-fast) var(--ease-out);
+}
+
+.signature-canvas {
+  display: block;
+  width: 100%;
+  /* Sin esto, arrastrar el dedo para firmar desplaza la página. */
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.signature-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  pointer-events: none;
+}
+
+.signature-placeholder .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.signature-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-md);
+  padding: 10px 12px;
+  border-top: 1.5px dashed var(--c-border);
+  background: var(--c-canvas);
+}
+
+.signature-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--c-text-muted);
+}
+
+.signature-state .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.signature-state.is-ready {
+  color: var(--c-lime-ink);
+}
+
+.signature.is-active,
+.signature.is-signed {
+  border-style: solid;
+}
+
+.signature.is-signed {
+  border-color: var(--c-lime);
+}
+
+.needs-attention .signature:not(.is-signed) {
+  border-color: var(--c-warning);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .closing-panel.needs-attention {
+    animation: none;
+  }
+}

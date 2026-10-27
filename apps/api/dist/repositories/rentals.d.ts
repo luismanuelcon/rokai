@@ -39,6 +39,8 @@ export declare function findRental(exec: Executor, id: number): Promise<{
     createdBy: number;
     endedBy: number | null;
     notes: string;
+    signature: string;
+    termsVersion: string;
     requestId: string;
 } | null>;
 export declare function findByRequestId(exec: Executor, requestId: string): Promise<{

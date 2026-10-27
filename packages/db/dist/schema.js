@@ -130,6 +130,10 @@ export const rentals = pgTable('rentals', {
         .references(() => users.id),
     endedBy: bigint({ mode: 'number' }).references(() => users.id),
     notes: text().notNull().default(''),
+    /** Firma manuscrita del cliente (PNG en data URL): prueba de la entrega. */
+    signature: text().notNull().default(''),
+    /** Versión del texto legal aceptado al firmar. */
+    termsVersion: text().notNull().default(''),
     /** Idempotencia garantizada por la base de datos, no por la aplicación. */
     requestId: text().notNull(),
 }, (t) => [

@@ -1,6 +1,6 @@
 import { eq, sql } from 'drizzle-orm';
 import { consents, notifications, rentalDrafts, rentalEquipment, rentals } from '@rokai/db';
-import type { CreateRentalRequest } from '@rokai/contracts';
+import { TERMS_VERSION, type CreateRentalRequest } from '@rokai/contracts';
 import type { Db } from '../db.js';
 import { assertAssignable } from '../domain/rentals.js';
 import { recordAudit } from '../lib/audit.js';
@@ -46,9 +46,13 @@ export async function createRental(
     });
 
     // Base legal del servicio contratado. El consentimiento de marketing es fase 2.
-    await tx
-      .insert(consents)
-      .values({ customerId, kind: 'operational', granted: true, channel: 'presencial' });
+    await tx.insert(consents).values({
+      customerId,
+      kind: 'operational',
+      granted: true,
+      channel: 'presencial',
+      policyVersion: TERMS_VERSION,
+    });
 
     const startedAt = new Date();
     const inserted = await tx
@@ -62,6 +66,8 @@ export async function createRental(
         dueAt: addMinutes(startedAt, rate.minutes),
         createdBy: actor.id,
         notes: input.notes,
+        signature: input.signature,
+        termsVersion: TERMS_VERSION,
         requestId: input.requestId,
       })
       .returning({ id: rentals.id });

@@ -1012,6 +1012,40 @@ export declare const rentals: import("drizzle-orm/pg-core").PgTableWithColumns<{
             identity: undefined;
             generated: undefined;
         }, {}, {}>;
+        signature: import("drizzle-orm/pg-core").PgColumn<{
+            name: "signature";
+            tableName: "rentals";
+            dataType: "string";
+            columnType: "PgText";
+            data: string;
+            driverParam: string;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: [string, ...string[]];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        termsVersion: import("drizzle-orm/pg-core").PgColumn<{
+            name: "termsVersion";
+            tableName: "rentals";
+            dataType: "string";
+            columnType: "PgText";
+            data: string;
+            driverParam: string;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: [string, ...string[]];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
         requestId: import("drizzle-orm/pg-core").PgColumn<{
             name: "requestId";
             tableName: "rentals";

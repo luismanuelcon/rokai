@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { DocumentType } from '@rokai/contracts';
 import { CountrySelect } from '../../components/CountrySelect';
 import { Icon } from '../../components/Icon';
+import { SignaturePad } from '../../components/SignaturePad';
 import { api } from '../../lib/api';
 import { DEFAULT_DOCUMENT_TYPE, DOCUMENT_TYPES } from '../../lib/documents';
 import { money } from '../../lib/format';
@@ -33,6 +34,10 @@ const EMPTY: DraftState = {
 
 export function NewRental({ dash, onDone }: { dash: Dashboard; onDone: () => Promise<void> }) {
   const [draft, setDraft] = useState<DraftState>(EMPTY);
+  // La firma y la aceptación se quedan en esta pantalla: son un acto presencial
+  // del cliente, no un dato de trabajo que deba sobrevivir en un borrador.
+  const [signature, setSignature] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   // El teléfono se edita en dos partes y se guarda siempre como E.164.
   const [dial, setDial] = useState(DEFAULT_DIAL);
   const [iso, setIso] = useState('CO');
@@ -82,12 +87,21 @@ export function NewRental({ dash, onDone }: { dash: Dashboard; onDone: () => Pro
   const hint = phoneHint(dial, national);
   const needed = rate ? rate.quantity * 2 : 0;
   const equipmentReady = needed > 0 && draft.equipmentIds.length === needed;
-  const canSubmit = draft.fullName.trim() !== '' && draft.document.trim() !== '' && equipmentReady;
+  const identityReady = draft.fullName.trim() !== '' && draft.document.trim() !== '';
+  const closingReady = termsAccepted && signature !== '';
+  const canSubmit = identityReady && equipmentReady && closingReady;
+  // Cuando solo falta el cierre, el paso 04 se resalta: el resto ya está hecho
+  // y el operario necesita saber dónde mirar.
+  const closingPending = identityReady && equipmentReady && !closingReady;
   const blockingReason = !rate
     ? 'Selecciona una tarifa vigente.'
     : !equipmentReady
       ? `Asigna ${String(rate.quantity)} patineta(s) y ${String(rate.quantity)} casco(s).`
-      : 'Completa el nombre y el documento del cliente.';
+      : !identityReady
+        ? 'Completa el nombre y el documento del cliente.'
+        : !termsAccepted
+          ? 'El cliente debe aceptar los términos y condiciones.'
+          : 'Falta la firma del cliente.';
   const available = (kind: Equipment['kind']) =>
     dash.equipment.filter((e) => e.kind === kind && !e.busy && e.status === 'available');
 
@@ -125,11 +139,15 @@ export function NewRental({ dash, onDone }: { dash: Dashboard; onDone: () => Pro
           rateId: draft.rateId,
           equipmentIds: draft.equipmentIds,
           notes: draft.notes,
+          signature,
+          termsAccepted,
         },
       });
       setDraft({ ...EMPTY, requestId: crypto.randomUUID() });
       setDial(DEFAULT_DIAL);
       setNational('');
+      setSignature('');
+      setTermsAccepted(false);
       await onDone();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo registrar el alquiler.');
@@ -320,6 +338,47 @@ export function NewRental({ dash, onDone }: { dash: Dashboard; onDone: () => Pro
                 {status}
               </div>
             </div>
+
+            <div
+              className={`panel step-panel closing-panel${closingPending ? ' needs-attention' : ''}${
+                closingReady ? ' is-complete' : ''
+              }`}
+            >
+              <h2 className="step-title">
+                <span className="step-badge">04</span>Aceptación y firma
+              </h2>
+              <p className="closing-intro">
+                Lee las condiciones con el cliente y pide que firme en pantalla. Sin estos dos pasos
+                no se puede entregar el equipo.
+              </p>
+
+              <label className="consent-check">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => {
+                    setTermsAccepted(e.target.checked);
+                  }}
+                />
+                <span className="consent-box" aria-hidden="true">
+                  <Icon name="check" />
+                </span>
+                <span className="consent-copy">
+                  El cliente declara haber leído y aceptado los{' '}
+                  <a href="/terminos" target="_blank" rel="noreferrer">
+                    términos y condiciones
+                  </a>{' '}
+                  y la{' '}
+                  <a href="/privacidad" target="_blank" rel="noreferrer">
+                    política de tratamiento de datos
+                  </a>
+                  , y asume la responsabilidad del equipo durante el alquiler.
+                </span>
+              </label>
+
+              <span className="field-label">Firma del cliente</span>
+              <SignaturePad value={signature} onChange={setSignature} />
+            </div>
           </div>
 
           <aside className="panel summary">
@@ -337,6 +396,12 @@ export function NewRental({ dash, onDone }: { dash: Dashboard; onDone: () => Pro
               <strong className={equipmentReady ? 'is-ready' : undefined}>
                 {draft.equipmentIds.length}
                 {needed > 0 && ` / ${String(needed)}`}
+              </strong>
+            </div>
+            <div className="summary-row">
+              <span>Aceptación y firma</span>
+              <strong className={closingReady ? 'is-ready' : undefined}>
+                {closingReady ? 'Completo' : termsAccepted ? 'Falta firmar' : 'Pendiente'}
               </strong>
             </div>
 

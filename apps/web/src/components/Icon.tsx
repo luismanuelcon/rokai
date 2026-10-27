@@ -27,6 +27,7 @@ const PATHS: Record<string, string> = {
   leaf: 'M20 3C5 1 1 10 6 17s17 2 14-14Z M6 19 16 9',
   bell: 'M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9 M13.7 21a2 2 0 0 1-3.4 0',
   chevron: 'm6 9 6 6 6-6',
+  pen: 'M4 20h4L19 9a2.83 2.83 0 0 0-4-4L4 16v4 M14 6l4 4',
 };
 
 export function Icon({ name }: { name: string }) {

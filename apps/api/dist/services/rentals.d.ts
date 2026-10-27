@@ -1,4 +1,4 @@
-import type { CreateRentalRequest } from '@rokai/contracts';
+import { type CreateRentalRequest } from '@rokai/contracts';
 import type { Db } from '../db.js';
 export interface Actor {
     id: number;

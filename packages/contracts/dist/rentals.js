@@ -11,6 +11,17 @@ export const CustomerInput = z.object({
     document: z.string().trim().min(1, 'Documento: revisa el valor ingresado.').max(40),
     phone: PhoneE164.nullable().default(null),
 });
+/**
+ * Versión del texto legal que el cliente acepta al firmar. Se guarda con el
+ * alquiler y con el consentimiento para poder demostrar *qué* se aceptó.
+ * Súbela cada vez que cambie el contenido de `/terminos`.
+ */
+export const TERMS_VERSION = '2026-10';
+/** Firma manuscrita capturada en el lienzo, como PNG en data URL. */
+export const SignatureDataUrl = z
+    .string()
+    .max(250_000, 'La firma ocupa demasiado. Vuelve a firmarla.')
+    .regex(/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/, 'Firma: revisa el valor ingresado.');
 export const CreateRentalRequest = z.object({
     requestId: RequestId,
     customer: CustomerInput,
@@ -21,6 +32,10 @@ export const CreateRentalRequest = z.object({
         .max(4)
         .refine((ids) => new Set(ids).size === ids.length, 'No repitas el mismo equipo.'),
     notes: z.string().trim().max(2000).default(''),
+    signature: SignatureDataUrl,
+    termsAccepted: z
+        .boolean()
+        .refine((v) => v, 'El cliente debe aceptar los términos y condiciones.'),
 });
 export const FinishRentalRequest = z.object({
     notes: z.string().trim().max(2000).default(''),
