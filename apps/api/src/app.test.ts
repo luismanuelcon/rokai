@@ -314,6 +314,47 @@ test('Tarifas futuras, vencidas e inactivas quedan fuera; fechas validadas', asy
   assert.equal(invalid.status, 400);
 });
 
+test('Una tarifa sin uso se borra; la que ya se aplicó solo se desactiva', async () => {
+  const created = await call(
+    '/api/v1/admin/rates',
+    'POST',
+    { period: 'special', minutes: 77, quantity: 1, priceCents: 7700, validFrom: null },
+    admin,
+  );
+  assert.equal(created.status, 201);
+
+  const before = await call('/api/v1/admin/data', 'GET', undefined, admin);
+  const spare = before.body.rates.find((r: { minutes: number }) => r.minutes === 77);
+  assert.ok(spare, 'la tarifa recién creada debe aparecer en administración');
+
+  assert.equal(
+    (await call(`/api/v1/admin/rates/${spare.id}`, 'DELETE', undefined, admin)).status,
+    200,
+  );
+  assert.equal(
+    (await call(`/api/v1/admin/rates/${spare.id}`, 'DELETE', undefined, admin)).status,
+    404,
+  );
+
+  const after = await call('/api/v1/admin/data', 'GET', undefined, admin);
+  assert.ok(!after.body.rates.some((r: { id: number }) => r.id === spare.id));
+  assert.ok(after.body.audit.some((a: { action: string }) => a.action === 'eliminar_tarifa'));
+
+  // La tarifa del alquiler del ciclo anterior está referenciada por `rentals`.
+  const dash = await call('/api/v1/dashboard', 'GET', undefined, admin);
+  const used = dash.body.rates.find((r: { quantity: number }) => r.quantity === 1);
+  assert.equal(
+    (await call(`/api/v1/admin/rates/${used.id}`, 'DELETE', undefined, admin)).status,
+    409,
+  );
+
+  // El trabajador nunca puede borrar tarifas.
+  assert.equal(
+    (await call(`/api/v1/admin/rates/${used.id}`, 'DELETE', undefined, worker)).status,
+    403,
+  );
+});
+
 test('Parejas exigen dos patinetas y dos cascos; mantenimiento bloquea el alquiler', async () => {
   const dash = await call('/api/v1/dashboard', 'GET', undefined, admin);
   const pairRate = dash.body.rates.find((r: { quantity: number }) => r.quantity === 2);

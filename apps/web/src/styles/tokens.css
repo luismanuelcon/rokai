@@ -21,6 +21,9 @@
   /* ─── Color: retroalimentación del sistema ─────────────────────────────── */
   --c-alert: #d64545;
   --c-alert-bg: #fee2e2;
+  /* Rojo de relleno: #d64545 solo alcanza 4.39:1 sobre blanco, por debajo del
+     4.5:1 que exige WCAG para texto normal. */
+  --c-alert-ink: #9b1c1c;
   --c-warning: #d89a26;
   --c-warning-bg: #fef3c7;
   --c-ok: var(--c-lime-ink);

@@ -11,6 +11,7 @@
      .button.dark       Grafito secundario — administración y acciones de flota
      .button.outline    Fantasma          — acción terciaria
    Modificador de tamaño: .button.small
+   Modificador de riesgo: .button.danger — solo para confirmar un borrado
    ═════════════════════════════════════════════════════════════════════════ */
 
 .button {
@@ -68,6 +69,18 @@
 .button.subtle.active {
   background: var(--c-graphite);
   color: var(--c-on-dark);
+}
+
+/* Confirmación de una acción irreversible. Vive en el diálogo, nunca en la
+   fila: el color solo acompaña al texto, no lo sustituye. */
+.button.danger {
+  background: var(--c-alert-ink);
+  border-color: var(--c-alert-ink);
+  color: var(--c-on-dark);
+}
+
+.button.danger:hover:not([disabled]) {
+  background: #7f1616;
 }
 
 .button.small {
@@ -257,6 +270,12 @@ table th {
 
 table tr:last-child td {
   border-bottom: none;
+}
+
+/* Acciones por fila: nunca se apilan, la tabla ya desplaza en horizontal. */
+.row-actions {
+  display: flex;
+  gap: 8px;
 }
 
 /* ═══ CIFRAS ═══════════════════════════════════════════════════════════════

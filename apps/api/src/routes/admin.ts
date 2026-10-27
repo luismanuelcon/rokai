@@ -1,6 +1,15 @@
 import type { FastifyInstance } from 'fastify';
 import { asc, desc, eq, sql } from 'drizzle-orm';
-import { auditLog, equipment, faqs, notifications, rates, settings, users } from '@rokai/db';
+import {
+  auditLog,
+  equipment,
+  faqs,
+  notifications,
+  rates,
+  rentals,
+  settings,
+  users,
+} from '@rokai/db';
 import {
   CreateEquipmentRequest,
   CreateRateRequest,
@@ -141,6 +150,33 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db): void {
       entityId: id,
       before: before[0],
       after: body,
+    });
+    return { ok: true };
+  });
+
+  app.delete('/api/v1/admin/rates/:id', admin, async (req) => {
+    const id = idParam(req);
+    const before = await db.select().from(rates).where(eq(rates.id, id)).limit(1);
+    if (before.length === 0) throw notFound('Tarifa no encontrada.');
+
+    // `rentals.rate_id` guarda la tarifa aplicada: borrarla rompería la
+    // trazabilidad del histórico, así que esas solo se desactivan.
+    const used = await db
+      .select({ id: rentals.id })
+      .from(rentals)
+      .where(eq(rentals.rateId, id))
+      .limit(1);
+    if (used.length > 0) {
+      throw conflict('Esta tarifa ya se aplicó en un alquiler. Desactívala en lugar de borrarla.');
+    }
+
+    await db.delete(rates).where(eq(rates.id, id));
+    await recordAudit(db, {
+      userId: req.session!.user.id,
+      action: 'eliminar_tarifa',
+      entity: 'rate',
+      entityId: id,
+      before: before[0],
     });
     return { ok: true };
   });

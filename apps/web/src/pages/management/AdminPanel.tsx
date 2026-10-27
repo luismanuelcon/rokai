@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Icon } from '../../components/Icon';
 import { api } from '../../lib/api';
-import { datetime, money } from '../../lib/format';
+import { datetime } from '../../lib/format';
 import type { AdminData, Notification } from '../../lib/types';
+import { Rates } from './Rates';
 import { PageHeading } from './Shared';
 
 type Tab = 'rates' | 'users' | 'faqs' | 'settings' | 'notifications' | 'audit';
@@ -98,41 +99,7 @@ export function AdminPanel({
         ))}
       </div>
 
-      {tab === 'rates' && (
-        <div className="panel">
-          <h2>Tarifas y vigencia</h2>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Período</th>
-                  <th>Plan</th>
-                  <th>Valor</th>
-                  <th>Vigencia</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {admin.rates.map((r) => (
-                  <tr key={r.id}>
-                    <td>
-                      {r.period === 'special' ? 'Martes a jueves' : 'Fin de semana / festivos'}
-                    </td>
-                    <td>
-                      {r.minutes} min · {r.quantity} patineta(s)
-                    </td>
-                    <td>{money(r.priceCents)}</td>
-                    <td>
-                      {r.validFrom ?? 'Sin inicio'} → {r.validUntil ?? 'Sin fin'}
-                    </td>
-                    <td>{r.active ? 'Activa' : 'Inactiva'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {tab === 'rates' && <Rates rates={admin.rates} onReload={onReload} notify={notify} />}
 
       {tab === 'users' && (
         <div className="panel">

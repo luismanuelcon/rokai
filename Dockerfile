@@ -52,4 +52,7 @@ COPY --from=build /app/apps/web/dist ./apps/web/dist
 
 USER node
 EXPOSE 3000
-CMD ["sh", "-c", "node packages/db/dist/migrate.js && node apps/api/dist/server.js"]
+# La semilla es idempotente (solo rellena catálogos vacíos y respeta los ajustes
+# editados), así que puede correr en cada arranque: sin ella el despliegue queda
+# sin tarifas, equipos ni plantillas.
+CMD ["sh", "-c", "node packages/db/dist/migrate.js && node packages/db/dist/seed.js && node apps/api/dist/server.js"]
