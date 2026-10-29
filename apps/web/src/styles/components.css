@@ -1,0 +1,651 @@
+/* ───────────────────────────────────────────────────────────────────────────
+   Estándar de componentes. Implementa la sección "Components" de DESIGN.md.
+   Toda variante nueva de botón, chip o campo debe nacer aquí, no en una
+   página suelta.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ═══ BOTONES ══════════════════════════════════════════════════════════════
+
+   Tres variantes, ninguna más:
+     .button            Kinetic primario  — lima sobre grafito
+     .button.dark       Grafito secundario — administración y acciones de flota
+     .button.outline    Fantasma          — acción terciaria
+   Modificador de tamaño: .button.small
+   Modificador de riesgo: .button.danger — solo para confirmar un borrado
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 13px 22px;
+  border: 1.5px solid transparent;
+  border-radius: var(--r-pill);
+  background: var(--c-lime);
+  color: var(--c-graphite);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.button:hover:not([disabled]) {
+  background: var(--c-lime-bright);
+}
+
+.button.dark {
+  background: var(--c-graphite);
+  border-color: var(--c-graphite);
+  color: var(--c-on-dark);
+}
+
+.button.dark:hover:not([disabled]) {
+  background: var(--c-graphite-deep);
+}
+
+.button.outline {
+  background: var(--c-surface);
+  /* El ancho se declara aquí porque la regla heredada usa el atajo `border`. */
+  border: 1.5px solid var(--c-border);
+  color: var(--c-graphite);
+}
+
+.button.outline:hover:not([disabled]) {
+  background: var(--c-canvas);
+  border-color: var(--c-border);
+}
+
+.button.subtle {
+  background: var(--c-canvas);
+  border-color: transparent;
+  color: var(--c-graphite);
+}
+
+.button.subtle.active {
+  background: var(--c-graphite);
+  color: var(--c-on-dark);
+}
+
+/* Confirmación de una acción irreversible. Vive en el diálogo, nunca en la
+   fila: el color solo acompaña al texto, no lo sustituye. */
+.button.danger {
+  background: var(--c-alert-ink);
+  border-color: var(--c-alert-ink);
+  color: var(--c-on-dark);
+}
+
+.button.danger:hover:not([disabled]) {
+  background: #7f1616;
+}
+
+.button.small {
+  min-height: 40px;
+  padding: 10px 16px;
+  font-size: 12px;
+}
+
+.button[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.button .icon {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+/* ═══ CHIPS DE ESTADO ══════════════════════════════════════════════════════
+   Los colores codifican significado operativo, no decoración.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--r-pill);
+  background: var(--c-canvas);
+  color: var(--c-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Disponible / batería sana: tinte lima con punto latente. */
+.status.ok {
+  background: var(--c-ok-bg);
+  color: var(--c-lime-ink);
+}
+
+.status.ok::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-lime-ink);
+  animation: status-pulse 2.4s var(--ease-out) infinite;
+}
+
+@keyframes status-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+/* En uso: arena costera. */
+.status.busy {
+  background: var(--c-sand);
+  color: var(--c-graphite);
+}
+
+/* Alerta: tiempo cumplido, equipo bloqueado. */
+.status.alert {
+  background: var(--c-alert-bg);
+  color: var(--c-alert);
+}
+
+/* Preventivo: mantenimiento programado. */
+.status.warning {
+  background: var(--c-warning-bg);
+  color: var(--c-warning);
+}
+
+/* ═══ CAMPOS ═══════════════════════════════════════════════════════════════
+   DESIGN.md: radio 14px, relleno blanco, borde 1.5px, al enfocar pasa a
+   grafito "sin glow excesivo".
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.field input,
+.field select,
+.field textarea,
+.country-search,
+.toolbar input[type='search'] {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--r-input);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.field input::placeholder,
+.field textarea::placeholder,
+.toolbar input[type='search']::placeholder {
+  color: var(--c-text-muted);
+}
+
+.field input:hover:not(:focus),
+.field select:hover:not(:focus),
+.field textarea:hover:not(:focus) {
+  border-color: var(--c-text-muted);
+}
+
+.field label,
+.field-label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--c-text);
+}
+
+.field small {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--c-text-muted);
+}
+
+/* ═══ FOCO ═════════════════════════════════════════════════════════════════
+   El documento pide "sin glow excesivo": contorno grafito nítido, no halo. Un
+   aro translucido no basta, porque en enlaces y botones sin borde el cambio de
+   `border-color` no se percibe y el indicador se queda muy por debajo del 3:1
+   que exige WCAG 2.2.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--c-graphite);
+  outline-offset: 2px;
+  border-color: var(--c-graphite);
+  box-shadow: var(--focus-ring);
+}
+
+/* ═══ SUPERFICIES ══════════════════════════════════════════════════════════ */
+
+.panel,
+.metric,
+.fleet-card,
+.price-card {
+  border-radius: var(--r-lg);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  box-shadow: var(--elev-1);
+}
+
+.price-card {
+  border-radius: var(--r-xl);
+}
+
+dialog,
+.country-popover {
+  box-shadow: var(--elev-2);
+}
+
+/* ═══ TABLAS ═══════════════════════════════════════════════════════════════
+   Sin bordes verticales; solo separadores inferiores y cabecera en
+   mayúsculas con tracking amplio.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+table th {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-text-muted);
+}
+
+table td,
+table th {
+  border-bottom: 1px solid var(--c-border);
+}
+
+table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Acciones por fila: nunca se apilan, la tabla ya desplaza en horizontal. */
+.row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ═══ CIFRAS ═══════════════════════════════════════════════════════════════
+   Precios, contadores y métricas van en figuras tabulares para que no
+   bailen al actualizarse.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.price-value,
+.summary-price,
+.metric strong,
+.pair-price strong,
+.countdown-clock,
+table td {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ═══ ETIQUETAS DE SECCIÓN ═════════════════════════════════════════════════ */
+
+.eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-text-muted);
+}
+
+/* ═══ PASOS DEL FORMULARIO ═════════════════════════════════════════════════ */
+
+.step-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.step-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-base);
+  background: var(--c-ok-bg);
+  color: var(--c-lime-ink);
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+/* ═══ SELECCIÓN DE EQUIPOS ═════════════════════════════════════════════════
+   Tarjeta táctil, no casilla. La casilla real queda accesible pero oculta.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.equipment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 10px;
+  margin: 10px 0 22px;
+}
+
+.equipment-check {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px 12px;
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--r-input);
+  background: var(--c-surface);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-text);
+  user-select: none;
+}
+
+.equipment-check:hover {
+  border-color: var(--c-graphite);
+}
+
+.equipment-check .icon {
+  width: 22px;
+  height: 22px;
+  opacity: 0.55;
+}
+
+.equipment-check input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.equipment-check:has(input:checked) {
+  background: var(--c-graphite);
+  border-color: var(--c-graphite);
+  color: var(--c-on-dark);
+}
+
+.equipment-check:has(input:checked) .icon {
+  opacity: 1;
+  color: var(--c-lime);
+}
+
+.equipment-check::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--c-border);
+}
+
+.equipment-check:has(input:checked)::after {
+  background: var(--c-lime);
+  border-color: var(--c-lime);
+  transform: scale(1.1);
+}
+
+.equipment-check:has(input:focus-visible) {
+  border-color: var(--c-graphite);
+  box-shadow: var(--focus-ring);
+}
+
+/* ═══ RESUMEN DEL ALQUILER ═════════════════════════════════════════════════ */
+
+.summary {
+  position: sticky;
+  top: var(--s-lg);
+}
+
+.summary-row strong.is-ready {
+  color: var(--c-lime-ink);
+}
+
+.summary-progress {
+  display: block;
+  height: 4px;
+  margin: 14px 0 4px;
+  border-radius: var(--r-pill);
+  background: var(--c-border);
+  overflow: hidden;
+}
+
+.summary-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--c-graphite);
+}
+
+.summary-progress.is-ready > span {
+  background: var(--c-lime);
+}
+
+.summary-price {
+  letter-spacing: -0.03em;
+}
+
+.summary-hint {
+  margin-top: 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--c-text-muted);
+  text-align: center;
+}
+
+/* ═══ CIERRE: ACEPTACIÓN Y FIRMA ═══════════════════════════════════════════
+   Último paso antes de entregar el equipo. Cuando el resto del formulario ya
+   está completo, el panel reclama atención: es el único obstáculo que queda.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.closing-intro {
+  margin: 0 0 var(--s-md);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--c-text-muted);
+}
+
+.closing-panel.needs-attention {
+  border-color: var(--c-warning);
+  animation: attention-pulse 2.4s var(--ease-out) infinite;
+}
+
+.closing-panel.needs-attention::before {
+  background: var(--c-warning);
+  transform: scaleY(1);
+}
+
+.closing-panel.is-complete::before {
+  background: var(--c-lime);
+  transform: scaleY(1);
+}
+
+@keyframes attention-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(216 154 38 / 0%);
+  }
+
+  45% {
+    box-shadow: 0 0 0 5px rgb(216 154 38 / 16%);
+  }
+}
+
+/* ─── Casilla de términos: diana grande, pensada para el mostrador ───────── */
+
+.consent-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: var(--s-lg);
+  padding: 14px 16px;
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--r-input);
+  background: var(--c-surface);
+  cursor: pointer;
+}
+
+.consent-check input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.consent-box {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--r-base);
+  background: var(--c-canvas);
+  color: transparent;
+  transition:
+    background-color var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out);
+}
+
+.consent-box .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.consent-copy {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--c-text-muted);
+}
+
+.consent-copy a {
+  color: var(--c-text);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.consent-check:hover {
+  border-color: var(--c-graphite);
+}
+
+.consent-check:has(input:checked) {
+  border-color: var(--c-lime);
+  background: var(--c-ok-bg);
+}
+
+.consent-check:has(input:checked) .consent-box {
+  border-color: var(--c-lime);
+  background: var(--c-lime);
+  color: var(--c-graphite);
+}
+
+.consent-check:has(input:focus-visible) {
+  border-color: var(--c-graphite);
+  box-shadow: var(--focus-ring);
+}
+
+.needs-attention .consent-check:not(:has(input:checked)) {
+  border-color: var(--c-warning);
+}
+
+/* ─── Lienzo de firma ────────────────────────────────────────────────────── */
+
+.signature {
+  position: relative;
+  border: 1.5px dashed var(--c-border);
+  border-radius: var(--r-input);
+  background: var(--c-surface);
+  overflow: hidden;
+  transition: border-color var(--t-fast) var(--ease-out);
+}
+
+.signature-canvas {
+  display: block;
+  width: 100%;
+  /* Sin esto, arrastrar el dedo para firmar desplaza la página. */
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.signature-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  pointer-events: none;
+}
+
+.signature-placeholder .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.signature-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-md);
+  padding: 10px 12px;
+  border-top: 1.5px dashed var(--c-border);
+  background: var(--c-canvas);
+}
+
+.signature-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--c-text-muted);
+}
+
+.signature-state .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.signature-state.is-ready {
+  color: var(--c-lime-ink);
+}
+
+.signature.is-active,
+.signature.is-signed {
+  border-style: solid;
+}
+
+.signature.is-signed {
+  border-color: var(--c-lime);
+}
+
+.needs-attention .signature:not(.is-signed) {
+  border-color: var(--c-warning);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .closing-panel.needs-attention {
+    animation: none;
+  }
+}

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+drizzle/
+package-lock.json
+
+# MVP heredado: se retira en la fase de corte (F4). No se reformatea antes,
+# para que el diff de la migracion no quede contaminado por cambios de estilo.
+server.mjs
+tests/
+public/
+README.md
+mockups/
+imagenes/
