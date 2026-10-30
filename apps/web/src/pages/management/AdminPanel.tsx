@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { ExpandableNav, type ExpandableNavItem } from '../../components/ExpandableNav';
 import { Icon } from '../../components/Icon';
 import { Modal } from '../../components/Modal';
 import { api } from '../../lib/api';
@@ -11,13 +12,13 @@ import { PageHeading } from './Shared';
 
 type Tab = 'rates' | 'users' | 'faqs' | 'settings' | 'notifications' | 'audit';
 
-const TABS: [Tab, string][] = [
-  ['rates', 'Tarifas'],
-  ['users', 'Usuarios'],
-  ['faqs', 'Preguntas frecuentes'],
-  ['settings', 'Negocio y legales'],
-  ['notifications', 'Notificaciones'],
-  ['audit', 'Trazabilidad'],
+const TABS: ExpandableNavItem<Tab>[] = [
+  { value: 'rates', label: 'Tarifas', icon: 'chart' },
+  { value: 'users', label: 'Usuarios', icon: 'users' },
+  { value: 'faqs', label: 'Preguntas frecuentes', icon: 'bell' },
+  { value: 'settings', label: 'Negocio y legales', icon: 'settings' },
+  { value: 'notifications', label: 'Notificaciones', icon: 'mail' },
+  { value: 'audit', label: 'Trazabilidad', icon: 'history' },
 ];
 
 export function AdminPanel({
@@ -131,19 +132,7 @@ export function AdminPanel({
         title="Tu estación, tus ajustes."
         subtitle="Administra el equipo y la información que ven los visitantes."
       />
-      <div className="admin-tabs">
-        {TABS.map(([value, label]) => (
-          <button
-            key={value}
-            className={`button small subtle${tab === value ? ' active' : ''}`}
-            onClick={() => {
-              setTab(value);
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <ExpandableNav label="Sección" items={TABS} active={tab} onSelect={setTab} />
 
       {tab === 'rates' && <Rates rates={admin.rates} onReload={onReload} notify={notify} />}
 

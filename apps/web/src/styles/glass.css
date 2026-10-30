@@ -33,10 +33,16 @@
   --g-saturate: 140%;
 
   /* ─── Tintes de superficie ─────────────────────────────────────────────── */
+  /* Las opacidades bajaron respecto a la primera versión: al 96 % el vidrio se
+     leía como una tarjeta blanca y plana. Lo que hace que parezca vidrio es que
+     el fondo se adivine, no el desenfoque. */
   --g-nav: rgb(36 38 40 / 72%);
   --g-nav-strong: rgb(36 38 40 / 88%);
-  --g-raised: rgb(255 255 255 / 72%);
-  --g-solid: rgb(255 255 255 / 96%);
+  --g-raised: rgb(255 255 255 / 58%);
+  --g-solid: rgb(255 255 255 / 86%);
+  /* Vidrio oscuro: tarjeta de contacto, rótulos sobre fotografía. */
+  --g-dark: rgb(26 28 30 / 78%);
+  --g-dark-strong: rgb(26 28 30 / 90%);
   --g-inset: rgb(36 38 40 / 4%);
   --g-inset-on-dark: rgb(255 255 255 / 8%);
 
@@ -65,9 +71,15 @@
   --g-glow-lime: 0 0 0 1px rgb(177 215 46 / 45%), 0 6px 20px -6px rgb(177 215 46 / 45%);
 
   /* ─── Elevaciones de vidrio ────────────────────────────────────────────── */
+  /* Dos filos internos: la línea de luz superior (donde el canto recoge la luz)
+     y un contorno general tenue. Sin ellos la superficie parece papel. */
   --g-elev-nav: 0 1px 0 var(--g-edge-dark) inset, 0 8px 28px -12px rgb(15 17 19 / 55%);
-  --g-elev-card: 0 1px 0 var(--g-edge) inset, var(--elev-1);
-  --g-elev-float: 0 1px 0 var(--g-edge) inset, var(--elev-3);
+  --g-elev-card:
+    0 1px 0 rgb(255 255 255 / 85%) inset, 0 0 0 1px rgb(255 255 255 / 22%) inset, var(--elev-1);
+  --g-elev-float:
+    0 1px 0 rgb(255 255 255 / 92%) inset, 0 0 0 1px rgb(255 255 255 / 28%) inset, var(--elev-3);
+  --g-elev-dark:
+    0 1px 0 var(--g-edge-dark) inset, 0 0 0 1px rgb(255 255 255 / 8%) inset, var(--elev-2);
 
   /* ─── Movimiento ───────────────────────────────────────────────────────── */
   /* Curva con rebote mínimo: da la sensación líquida sin pasarse de 1 px. */
@@ -81,13 +93,15 @@
   --z-toast: 80;
 }
 
-/* Fondo de la aplicación: sin algo detrás, el vidrio no existe. Dos focos de
-   luz muy abiertos y de baja opacidad; no es una imagen, no cuesta descarga. */
+/* Fondo de la aplicación: sin algo detrás, el vidrio no existe. Tres focos de
+   luz muy abiertos; no es una imagen, no cuesta descarga y se mantiene fijo
+   para que el contenido pase por delante al desplazarse. */
 body {
   background-color: var(--c-canvas);
   background-image:
-    radial-gradient(90rem 45rem at 12% -10%, rgb(177 215 46 / 13%), transparent 60%),
-    radial-gradient(70rem 40rem at 105% 8%, rgb(36 38 40 / 8%), transparent 58%);
+    radial-gradient(75rem 42rem at 8% -8%, rgb(177 215 46 / 20%), transparent 62%),
+    radial-gradient(60rem 38rem at 104% 6%, rgb(36 38 40 / 12%), transparent 58%),
+    radial-gradient(70rem 40rem at 50% 108%, rgb(177 215 46 / 14%), transparent 60%);
   background-attachment: fixed;
 }
 
@@ -244,6 +258,12 @@ body {
   padding-bottom: 10px;
 }
 
+.navrail > .xnav {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+}
+
 .navrail-track {
   display: flex;
   align-items: center;
@@ -257,6 +277,9 @@ body {
   /* Sin esto el gesto horizontal compite con el scroll vertical de la página. */
   touch-action: pan-x;
   padding: 2px;
+  /* El elemento que asoma a medio cortar se desvanece: así se lee como "hay
+     más a los lados" y no como un fallo de maquetación. */
+  mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 22px), transparent);
 }
 
 .navrail-track::-webkit-scrollbar {
@@ -523,15 +546,35 @@ dialog::backdrop {
 /* El encabezado público comparte material con el de gestión, en versión clara:
    la portada vive sobre fondo luminoso y el logo es grafito. */
 .topbar {
-  background-color: rgb(250 249 245 / 72%);
+  background-color: var(--g-solid);
   background-image: var(--g-sheen);
   backdrop-filter: blur(var(--g-blur-lg)) saturate(var(--g-saturate));
   -webkit-backdrop-filter: blur(var(--g-blur-lg)) saturate(var(--g-saturate));
   border-bottom: 1px solid var(--g-hairline);
+  box-shadow: 0 4px 18px -14px rgb(36 38 40 / 36%);
+}
+
+.topbar .navlinks.open {
+  background-color: var(--g-solid);
+  background-image: var(--g-sheen);
+  border: 1px solid var(--g-hairline);
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  box-shadow: var(--g-elev-card);
+  backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
+  -webkit-backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
+}
+
+.topbar .navlinks a {
+  min-height: 44px;
+  align-items: center;
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .topbar {
+    background-color: var(--c-canvas);
+  }
+
+  .topbar .navlinks.open {
     background-color: var(--c-canvas);
   }
 
@@ -563,6 +606,13 @@ dialog::backdrop {
 
   .topbar {
     background-color: var(--c-canvas);
+    background-image: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .topbar .navlinks.open {
+    background-color: var(--c-surface);
     background-image: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -682,17 +732,37 @@ dialog::backdrop {
   box-shadow: var(--g-elev-float);
 }
 
-.contact-card,
-.contact-details {
-  background-color: var(--g-solid);
-  background-image: var(--g-sheen);
-  border: 1px solid var(--g-hairline);
+/* La tarjeta de la estación es la superficie OSCURA de la portada: su texto es
+   blanco. Pintarla de vidrio claro dejaba texto blanco sobre fondo blanco, y lo
+   que parecía un hueco enorme eran la ubicación, el horario y los contactos
+   vueltos invisibles. */
+.contact-card {
+  background-color: var(--g-dark-strong);
+  background-image: var(--g-sheen-dark);
+  border: 1px solid var(--g-hairline-dark);
   border-radius: var(--r-xl);
-  box-shadow: var(--g-elev-card);
+  box-shadow: var(--g-elev-dark);
+}
+
+.contact-place {
+  min-height: 0;
+  aspect-ratio: 1.2;
+}
+
+.contact-place img {
+  min-height: 0;
+}
+
+.contact-details {
+  background-color: transparent;
+  background-image: none;
+  border: 0;
+  box-shadow: none;
+  justify-content: flex-start;
 }
 
 .contact-place-copy {
-  background-color: var(--g-nav);
+  background-color: var(--g-dark);
   background-image: var(--g-sheen-dark);
   backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
   -webkit-backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
@@ -739,6 +809,7 @@ dialog::backdrop {
 
   .visual-bottom,
   .contact-place-copy,
+  .contact-card,
   .footer {
     background-color: var(--c-graphite);
     background-image: none;
@@ -746,11 +817,138 @@ dialog::backdrop {
     -webkit-backdrop-filter: none;
   }
 
-  .faq details,
-  .contact-card,
-  .contact-details {
+  .faq details {
     background-color: var(--c-surface);
     background-image: none;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Tarjeta de la estación: la altura la manda el contenido
+
+   En una sola columna no debe quedar espacio repartido. Se quitan el centrado
+   vertical y los mínimos heredados, y la acción de WhatsApp queda pegada a los
+   datos que la justifican.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 760px) {
+  .contact-details {
+    justify-content: flex-start;
+    padding: 20px;
+  }
+
+  .contact-place,
+  .contact-place img {
+    min-height: 0;
+  }
+
+  .contact-place {
+    aspect-ratio: 1.7;
+  }
+
+  .contact-actions {
+    margin-top: 18px;
+  }
+
+  .contact-actions .button {
+    width: 100%;
+    min-height: 48px;
+  }
+}
+
+/* Alternativa opaca para campos extensos y zonas de trabajo sensibles. */
+.signature,
+.signature-bar {
+  background-color: var(--g-solid);
+  background-image: var(--g-sheen);
+  border-color: var(--g-hairline);
+}
+
+.signature {
+  box-shadow: var(--g-elev-card);
+}
+
+.signature::before {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 23px, rgb(36 38 40 / 2%) 24px),
+    linear-gradient(145deg, rgb(255 255 255 / 50%), rgb(255 255 255 / 14%));
+}
+
+.signature-bar {
+  border-top-color: var(--g-hairline);
+}
+
+.signature.is-active {
+  border-color: var(--c-lime);
+  box-shadow: var(--g-glow-lime);
+}
+
+@media (max-width: 1099px) {
+  .navrail {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .navrail-cta {
+    justify-self: start;
+  }
+
+  .navrail > .xnav {
+    width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar .nav {
+    height: 74px;
+    gap: 8px;
+  }
+
+  .topbar .brand img {
+    width: clamp(88px, 25vw, 126px);
+  }
+
+  .topbar .nav-actions {
+    flex: none;
+    gap: 4px;
+  }
+
+  .topbar .nav-actions > .button {
+    min-height: 44px;
+    padding: 9px clamp(8px, 2.4vw, 13px);
+    font-size: clamp(10px, 2.8vw, 12px);
+  }
+
+  .topbar .mobile-menu {
+    display: grid;
+    flex: none;
+    width: 44px;
+    height: 44px;
+  }
+
+  .topbar .navlinks.open {
+    top: 74px;
+    z-index: 2;
+    padding: 12px 20px;
+    gap: 2px;
+  }
+}
+
+@media (max-width: 360px) {
+  .topbar .container {
+    padding-inline: 12px;
+  }
+
+  .trust-strip {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding-block: 18px;
+  }
+
+  .trust-item {
+    min-width: 0;
+    padding: 12px 14px;
   }
 }
 
@@ -878,6 +1076,246 @@ dialog::backdrop {
 
 .danger-zone .button.subtle:hover {
   background-color: var(--c-alert-bg);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Navegación horizontal plegable (administración y menú público en celular)
+
+   Comparte la pista `.navrail-track` con la barra principal: una sola
+   implementación del desplazamiento táctil para todo el portal.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.xnav {
+  margin-bottom: var(--s-lg);
+}
+
+.xnav-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--r-pill);
+  background-color: var(--g-raised);
+  background-image: var(--g-sheen);
+  box-shadow: var(--g-elev-card);
+  color: var(--c-text);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  backdrop-filter: blur(var(--g-blur-sm)) saturate(var(--g-saturate));
+  -webkit-backdrop-filter: blur(var(--g-blur-sm)) saturate(var(--g-saturate));
+  transition:
+    background-color var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out);
+}
+
+.xnav-trigger-label {
+  color: var(--c-text-muted);
+  font-weight: 550;
+}
+
+.xnav-trigger-value {
+  margin-left: auto;
+  color: var(--c-graphite);
+  font-weight: 700;
+}
+
+.xnav-trigger .icon:last-child {
+  flex: none;
+  color: var(--c-text-muted);
+  transition: transform var(--t-base) var(--g-spring);
+}
+
+.xnav-trigger.is-open {
+  box-shadow: var(--g-elev-float);
+}
+
+.xnav-trigger.is-open .icon:last-child {
+  transform: rotate(180deg);
+}
+
+/* De 0fr a 1fr: anima el alto real sin fijar una altura en píxeles y sin que el
+   contenido se recorte al terminar la transición. */
+.xnav-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition:
+    grid-template-rows var(--t-base) var(--ease-out),
+    opacity var(--t-exit) var(--ease-out);
+  opacity: 0;
+}
+
+.xnav-panel.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.xnav-panel-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.xnav-panel nav {
+  padding: 10px 2px 2px;
+}
+
+.xnav-item {
+  flex: none;
+  scroll-snap-align: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--r-pill);
+  background-color: var(--g-raised);
+  background-image: var(--g-sheen);
+  box-shadow: var(--g-elev-card);
+  color: var(--c-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out),
+    transform var(--t-fast) var(--g-spring);
+}
+
+.xnav-item:hover {
+  border-color: var(--c-text-muted);
+  color: var(--c-graphite);
+}
+
+.xnav-item:active {
+  transform: scale(0.97);
+}
+
+/* Seleccionado: relleno grafito. El contraste del texto y el relleno cambian a
+   la vez, así que no depende solo del color. */
+.xnav-item[aria-current='page'] {
+  border-color: var(--c-graphite);
+  background-color: var(--c-graphite);
+  background-image: var(--g-sheen-dark);
+  color: var(--c-on-dark);
+  box-shadow: var(--g-elev-dark);
+}
+
+.xnav-item[aria-current='page'] .icon {
+  color: var(--c-lime);
+}
+
+/* En escritorio la barra vive siempre desplegada: el disparador sobra. */
+@media (min-width: 1024px) {
+  .xnav-trigger {
+    display: none;
+  }
+
+  .xnav-panel {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  .xnav-panel nav {
+    padding: 0 2px 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xnav-panel,
+  .xnav-trigger .icon:last-child,
+  .xnav-item {
+    transition: none;
+  }
+
+  .signature.is-starting {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .xnav-trigger,
+  .xnav-item {
+    background-color: var(--c-surface);
+    background-image: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .signature,
+  .signature-bar {
+    background-color: var(--c-surface);
+    background-image: none;
+  }
+
+  .xnav-team .xnav-trigger,
+  .xnav-team .xnav-item {
+    background-color: var(--c-graphite);
+    background-image: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+.xnav-team .xnav-trigger {
+  border-color: var(--g-hairline-dark);
+  background-color: var(--g-inset-on-dark);
+  background-image: var(--g-sheen-dark);
+  color: var(--c-on-dark);
+}
+
+.xnav-team .xnav-trigger-label,
+.xnav-team .xnav-trigger-value,
+.xnav-team .xnav-trigger .icon:last-child {
+  color: var(--c-on-dark);
+}
+
+.xnav-team .xnav-item {
+  border-color: transparent;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  color: rgb(255 255 255 / 76%);
+}
+
+.xnav-team .xnav-item:hover {
+  border-color: var(--g-hairline-dark);
+  background-color: var(--g-inset-on-dark);
+  color: var(--c-on-dark);
+}
+
+.xnav-team .xnav-item[aria-current='page'] {
+  border-color: rgb(177 215 46 / 55%);
+  background-color: rgb(255 255 255 / 14%);
+  background-image: none;
+  color: var(--c-on-dark);
+  box-shadow: none;
+}
+
+.xnav-team .xnav-item[aria-current='page'] .icon {
+  color: var(--c-lime);
+}
+
+.xnav-team .xnav-panel nav {
+  padding: 4px 2px 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+  border: 0;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────

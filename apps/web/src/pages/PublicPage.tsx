@@ -370,17 +370,6 @@ export function PublicPage() {
                 </strong>
               </div>
               <div className="contact-actions">
-                {mapsUrl && (
-                  <a
-                    className="button outline"
-                    href={mapsUrl}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                  >
-                    Cómo llegar
-                    <Icon name="pin" />
-                  </a>
-                )}
                 {whatsapp && (
                   <a
                     className="button dark"
@@ -390,6 +379,17 @@ export function PublicPage() {
                   >
                     Escríbenos por WhatsApp
                     <Icon name="arrow" />
+                  </a>
+                )}
+                {mapsUrl && (
+                  <a
+                    className="button outline"
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                  >
+                    Cómo llegar
+                    <Icon name="pin" />
                   </a>
                 )}
               </div>

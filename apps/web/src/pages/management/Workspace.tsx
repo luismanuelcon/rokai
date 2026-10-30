@@ -89,7 +89,13 @@ export function Workspace() {
               <Icon name="logout" />
             </button>
           </div>
-          <NavRail label="Gestión" items={visible} cta={CTA} active={view} onSelect={setView} />
+          <NavRail
+            label="Acceso al equipo"
+            items={visible}
+            cta={CTA}
+            active={view}
+            onSelect={setView}
+          />
         </div>
       </header>
 

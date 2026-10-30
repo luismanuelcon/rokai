@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { ExpandableNav, type ExpandableNavItem } from './ExpandableNav';
 import { Icon } from './Icon';
 
 export interface NavRailItem<T extends string> {
@@ -8,8 +8,7 @@ export interface NavRailItem<T extends string> {
 }
 
 /**
- * Navegación horizontal con desplazamiento táctil. La acción principal queda
- * fuera de la pista que se desplaza, para que nunca se pierda de vista.
+ * Acción principal fija junto a la navegación expandible del equipo.
  */
 export function NavRail<T extends string>({
   label,
@@ -24,22 +23,14 @@ export function NavRail<T extends string>({
   active: T;
   onSelect: (value: T) => void;
 }) {
-  const track = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const current = track.current?.querySelector('[aria-current="page"]');
-    if (!(current instanceof HTMLElement)) return;
-    const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // `nearest` en ambos ejes: mover el eje vertical haría saltar la página.
-    current.scrollIntoView({
-      behavior: smooth ? 'smooth' : 'auto',
-      inline: 'nearest',
-      block: 'nearest',
-    });
-  }, [active]);
+  const navItems: ExpandableNavItem<T>[] = items.map((item) => ({
+    value: item.value,
+    icon: item.icon,
+    label: item.label,
+  }));
 
   return (
-    <nav className="navrail" aria-label={label}>
+    <div className="navrail">
       {cta && (
         <button
           type="button"
@@ -53,22 +44,13 @@ export function NavRail<T extends string>({
           {cta.label}
         </button>
       )}
-      <div className="navrail-track" ref={track}>
-        {items.map((item) => (
-          <button
-            key={item.value}
-            type="button"
-            className="navrail-item"
-            aria-current={active === item.value ? 'page' : undefined}
-            onClick={() => {
-              onSelect(item.value);
-            }}
-          >
-            <Icon name={item.icon} />
-            {item.label}
-          </button>
-        ))}
-      </div>
-    </nav>
+      <ExpandableNav
+        className="xnav-team"
+        label={label}
+        items={navItems}
+        active={active}
+        onSelect={onSelect}
+      />
+    </div>
   );
 }
