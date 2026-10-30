@@ -105,16 +105,11 @@ export function PublicPage() {
     };
   }, [showLogoReveal]);
 
-  if (loading) return <main className="loading">Preparando tu próxima aventura…</main>;
-  if (error ?? !data)
-    return (
-      <main className="container legal">
-        <h1>No pudimos cargar la estación.</h1>
-        <p>{error}</p>
-      </main>
-    );
-
-  const s = data.settings;
+  // La portada es estática salvo tarifas, FAQ y datos de contacto: se pinta ya y
+  // esas piezas se rellenan al llegar la respuesta, en vez de bloquear la página.
+  const s = data?.settings ?? {};
+  const rates = data?.rates ?? [];
+  const faqs = data?.faqs ?? [];
   const whatsapp = s['whatsapp']?.replace(/\D/g, '') ?? '';
   // Solo https: evita abrir esquemas arbitrarios si el ajuste se corrompe.
   const mapsUrl = s['mapsUrl']?.startsWith('https://') ? s['mapsUrl'] : '';
@@ -155,7 +150,9 @@ export function PublicPage() {
           </div>
           <div className="hero-visual">
             <img
-              src="/assets/hero-rokai-atardecer.jpg"
+              src="/assets/hero-rokai-atardecer.webp"
+              srcSet="/assets/hero-rokai-atardecer-640.webp 640w, /assets/hero-rokai-atardecer.webp 1100w"
+              sizes="(max-width: 900px) 100vw, 550px"
               alt="Una pareja con casco se toma una foto junto a sus dos patinetas ROKAI, frente al mar y al atardecer"
               width={1100}
               height={917}
@@ -243,10 +240,18 @@ export function PublicPage() {
               <h2>Elige cuánto quieres volar.</h2>
             </div>
           </div>
-          <div className="prices" id="prices">
-            <RateSheet rates={data.rates} period="special" title="Martes a jueves" />
-            <RateSheet rates={data.rates} period="weekend" title="Viernes a domingo y festivos" />
-          </div>
+          {loading ? (
+            <p className="rate-sheet-empty">Cargando tarifas…</p>
+          ) : error ? (
+            <p className="rate-sheet-empty">
+              No pudimos cargar las tarifas. Consúltanos por WhatsApp y te las pasamos.
+            </p>
+          ) : (
+            <div className="prices" id="prices">
+              <RateSheet rates={rates} period="special" title="Martes a jueves" />
+              <RateSheet rates={rates} period="weekend" title="Viernes a domingo y festivos" />
+            </div>
+          )}
           <p className="small-copy muted">
             Los valores corresponden al total del plan contratado. Confirma el período aplicable con
             nuestro equipo en la estación.
@@ -293,7 +298,7 @@ export function PublicPage() {
             </div>
           </div>
           <div className="faq">
-            {data.faqs.map((f) => (
+            {faqs.map((f) => (
               <details key={f.id}>
                 <summary>{f.question}</summary>
                 <p>{f.answer}</p>
@@ -312,10 +317,10 @@ export function PublicPage() {
           <div className="contact-card">
             <div className="contact-place">
               <img
-                src="/assets/contact-rokai-pro.jpg"
+                src="/assets/contact-rokai-pro.webp"
                 alt="Logo ROKAI y patineta eléctrica sobre la carretera costera al atardecer"
-                width={1200}
-                height={1000}
+                width={1000}
+                height={833}
                 loading="lazy"
                 decoding="async"
               />

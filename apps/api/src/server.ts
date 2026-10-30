@@ -6,6 +6,10 @@ const env = loadEnv();
 const { db, pool } = connect(env.DATABASE_URL);
 const app = await buildApp(env, db);
 
+// Abre la primera conexión antes de aceptar tráfico: el handshake TLS contra
+// PostgreSQL cuesta más de un segundo y, si no, lo paga la primera visita.
+await db.execute('select 1');
+
 await app.listen({ port: env.PORT, host: env.HOST });
 
 // Apagado ordenado: deja de aceptar conexiones, drena las en curso y cierra el pool.

@@ -1,5 +1,7 @@
 import Fastify, {} from 'fastify';
+import compress from '@fastify/compress';
 import cookie from '@fastify/cookie';
+import { constants as zlibConstants } from 'node:zlib';
 import { authPlugin } from './plugins/auth.js';
 import { errorsPlugin } from './plugins/errors.js';
 import { securityPlugin } from './plugins/security.js';
@@ -15,6 +17,15 @@ export async function buildApp(env, db) {
         trustProxy: env.NODE_ENV === 'production',
         bodyLimit: 32 * 1024,
         genReqId: () => crypto.randomUUID(),
+    });
+    // Antes que cualquier ruta: el hook `onSend` solo alcanza lo que se registre después.
+    // Calidad 5 de brotli en lugar de la 11 por defecto: comprime casi igual y cuesta
+    // una fracción de CPU, que es lo escaso en el contenedor (0.25 vCPU).
+    await app.register(compress, {
+        threshold: 1024,
+        encodings: ['br', 'gzip', 'deflate'],
+        brotliOptions: { params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 5 } },
+        zlibOptions: { level: 6 },
     });
     await app.register(cookie);
     await app.register(errorsPlugin);

@@ -339,6 +339,53 @@ export function registerAdminRoutes(app, db) {
         });
         return { ok: true };
     });
+    app.delete('/api/v1/admin/faqs/:id', admin, async (req) => {
+        const id = idParam(req);
+        const before = await db.select().from(faqs).where(eq(faqs.id, id)).limit(1);
+        if (before.length === 0)
+            throw notFound('Pregunta no encontrada.');
+        await db.delete(faqs).where(eq(faqs.id, id));
+        await recordAudit(db, {
+            userId: req.session.user.id,
+            action: 'eliminar_pregunta',
+            entity: 'faq',
+            entityId: id,
+            before: before[0],
+        });
+        return { ok: true };
+    });
+    /* ------------------------------------------------------------ alquileres */
+    /**
+     * Borrado definitivo de un registro de alquiler. Existe para limpiar datos de
+     * prueba, no para corregir la operación diaria: la entrada de auditoría
+     * sobrevive al borrado y deja constancia de quién lo hizo.
+     */
+    app.delete('/api/v1/admin/rentals/:id', admin, async (req) => {
+        const id = idParam(req);
+        await db.transaction(async (tx) => {
+            const rows = await tx.select().from(rentals).where(eq(rentals.id, id)).for('update').limit(1);
+            const before = rows[0];
+            if (!before)
+                throw notFound('Alquiler no encontrado.');
+            // `rental_equipment` y `notifications` caen por ON DELETE CASCADE, así que
+            // el equipo vuelve a quedar libre sin tocarlo a mano.
+            await tx.delete(rentals).where(eq(rentals.id, id));
+            await recordAudit(tx, {
+                userId: req.session.user.id,
+                action: 'eliminar_alquiler',
+                entity: 'rental',
+                entityId: id,
+                before: {
+                    customerId: before.customerId,
+                    priceCents: before.priceCents,
+                    finalPriceCents: before.finalPriceCents,
+                    startedAt: before.startedAt,
+                    endedAt: before.endedAt,
+                },
+            });
+        });
+        return { ok: true };
+    });
     /* ----------------------------------------------------------- ajustes */
     app.put('/api/v1/admin/settings', admin, async (req) => {
         const body = PublicSettings.parse(req.body);

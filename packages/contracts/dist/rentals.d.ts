@@ -50,6 +50,10 @@ export declare const CreateRentalRequest: z.ZodObject<{
 export type CreateRentalRequest = z.infer<typeof CreateRentalRequest>;
 export declare const FinishRentalRequest: z.ZodObject<{
     notes: z.ZodDefault<z.ZodString>;
+    paymentMethod: z.ZodEnum<{
+        cash: "cash";
+        transfer: "transfer";
+    }>;
 }, z.core.$strip>;
 export type FinishRentalRequest = z.infer<typeof FinishRentalRequest>;
 export declare const RentalEquipment: z.ZodObject<{
@@ -75,6 +79,12 @@ export declare const Rental: z.ZodObject<{
     minutes: z.ZodNumber;
     priceCents: z.ZodNumber;
     finalPriceCents: z.ZodNullable<z.ZodNumber>;
+    lateMinutes: z.ZodNullable<z.ZodNumber>;
+    lateFeeCents: z.ZodNullable<z.ZodNumber>;
+    paymentMethod: z.ZodNullable<z.ZodEnum<{
+        cash: "cash";
+        transfer: "transfer";
+    }>>;
     startedAt: z.ZodISODateTime;
     dueAt: z.ZodISODateTime;
     endedAt: z.ZodNullable<z.ZodISODateTime>;

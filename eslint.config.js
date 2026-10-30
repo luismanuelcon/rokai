@@ -45,6 +45,11 @@ export default tseslint.config(
     extends: [tseslint.configs.disableTypeChecked],
   },
   {
+    // Utilidades de línea de comandos: corren en Node, no en el navegador.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: { globals: { console: 'readonly', process: 'readonly' } },
+  },
+  {
     // Las pruebas inspeccionan respuestas HTTP sin tipar: verifican el contrato
     // observable, no las estructuras internas.
     files: ['**/*.test.ts'],

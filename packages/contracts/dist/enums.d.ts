@@ -20,6 +20,11 @@ export declare const RatePeriod: z.ZodEnum<{
     weekend: "weekend";
 }>;
 export type RatePeriod = z.infer<typeof RatePeriod>;
+export declare const PaymentMethod: z.ZodEnum<{
+    cash: "cash";
+    transfer: "transfer";
+}>;
+export type PaymentMethod = z.infer<typeof PaymentMethod>;
 /** Documentos admitidos en Colombia, incluidos los de visitantes extranjeros. */
 export declare const DocumentType: z.ZodEnum<{
     CC: "CC";

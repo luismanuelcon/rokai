@@ -10,5 +10,6 @@ export default defineConfig({
       '/api': { target: 'http://127.0.0.1:3000', changeOrigin: false },
     },
   },
-  build: { outDir: 'dist', sourcemap: true },
+  // Sin sourcemap en producción: eran 1,6 MB servidos públicamente (y el código fuente con ellos).
+  build: { outDir: 'dist', sourcemap: false },
 });

@@ -5,7 +5,7 @@ import { Icon } from './Icon';
 export function Brand() {
   return (
     <Link className="brand" to="/" aria-label="ROKAI, inicio">
-      <img src="/assets/logo.png" alt="ROKAI · Patinetas eléctricas" width={151} height={50} />
+      <img src="/assets/logo.webp" alt="ROKAI · Patinetas eléctricas" width={151} height={50} />
     </Link>
   );
 }
@@ -30,6 +30,7 @@ export function PublicHeader() {
           <button
             className="iconbutton mobile-menu"
             aria-label="Abrir menú"
+            title="Menú"
             aria-expanded={open}
             onClick={() => {
               setOpen((v) => !v);

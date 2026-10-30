@@ -39,7 +39,7 @@ export function LoginPage() {
       </header>
       <main id="main" className="auth-layout">
         <div className="auth-photo">
-          <img src="/assets/scooter-coast.jpg" alt="Patineta frente al mar" />
+          <img src="/assets/scooter-coast.webp" alt="Patineta frente al mar" />
           <div className="auth-caption">
             <span className="eyebrow">El equipo detrás de cada paseo</span>
             <h2>
@@ -93,6 +93,7 @@ export function LoginPage() {
                     type="button"
                     className="iconbutton"
                     aria-label={reveal ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    title={reveal ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                     onClick={() => {
                       setReveal((v) => !v);
                     }}

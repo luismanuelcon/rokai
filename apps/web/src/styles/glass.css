@@ -1,0 +1,956 @@
+/* ───────────────────────────────────────────────────────────────────────────
+   ROKAI · Capa "Vidrio costero" (Liquid Glass)
+
+   Extiende tokens.css; NO lo reemplaza. Se importa la última para poder afinar
+   las capas previas sin duplicar sus reglas.
+
+   Reglas de uso (leer antes de añadir una superficie nueva):
+
+   1. Solo cuatro superficies. No inventar mezclas sueltas de rgba + blur.
+        --g-nav     grafito translúcido · navegación, encabezados fijos
+        --g-raised  blanco translúcido  · tarjetas, métricas, paneles cortos
+        --g-solid   blanco casi opaco   · tablas, formularios largos, legales
+        --g-inset   superficie hundida  · campos, chips, pistas de navegación
+
+   2. `backdrop-filter` SOLO en capas fijas o flotantes (navegación, modales,
+      resumen pegajoso). En tarjetas se consigue el mismo efecto con tinte +
+      filo de luz + elevación, y sin coste de GPU por tarjeta. El desenfoque
+      por tarjeta es el error clásico que hunde el rendimiento en tablet.
+
+   3. Nunca texto largo sobre vidrio translúcido: tablas, formularios extensos
+      y documentos legales usan `--g-solid`.
+
+   4. Todo valor translúcido sale de la paleta oficial (grafito / lima /
+      blanco). No se introducen colores nuevos.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ─── Desenfoques ──────────────────────────────────────────────────────── */
+  --g-blur-sm: 10px;
+  --g-blur-md: 18px;
+  --g-blur-lg: 28px;
+  /* Saturar compensa el lavado de color que produce el desenfoque. */
+  --g-saturate: 140%;
+
+  /* ─── Tintes de superficie ─────────────────────────────────────────────── */
+  --g-nav: rgb(36 38 40 / 72%);
+  --g-nav-strong: rgb(36 38 40 / 88%);
+  --g-raised: rgb(255 255 255 / 72%);
+  --g-solid: rgb(255 255 255 / 96%);
+  --g-inset: rgb(36 38 40 / 4%);
+  --g-inset-on-dark: rgb(255 255 255 / 8%);
+
+  /* ─── Filos: la luz que define el canto del vidrio ─────────────────────── */
+  --g-edge: rgb(255 255 255 / 70%);
+  --g-edge-dark: rgb(255 255 255 / 16%);
+  --g-hairline: rgb(36 38 40 / 8%);
+  --g-hairline-dark: rgb(255 255 255 / 10%);
+
+  /* Reflejo diagonal fijo. Sin animación continua: se lee como material, no
+     como adorno, y no consume un frame por segundo. */
+  --g-sheen: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 55%) 0%,
+    rgb(255 255 255 / 10%) 32%,
+    rgb(255 255 255 / 0%) 60%
+  );
+  --g-sheen-dark: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 18%) 0%,
+    rgb(255 255 255 / 4%) 34%,
+    rgb(255 255 255 / 0%) 62%
+  );
+  /* El acento costero: la lima solo aparece como luz filtrada, nunca como
+     relleno de una superficie de vidrio. */
+  --g-glow-lime: 0 0 0 1px rgb(177 215 46 / 45%), 0 6px 20px -6px rgb(177 215 46 / 45%);
+
+  /* ─── Elevaciones de vidrio ────────────────────────────────────────────── */
+  --g-elev-nav: 0 1px 0 var(--g-edge-dark) inset, 0 8px 28px -12px rgb(15 17 19 / 55%);
+  --g-elev-card: 0 1px 0 var(--g-edge) inset, var(--elev-1);
+  --g-elev-float: 0 1px 0 var(--g-edge) inset, var(--elev-3);
+
+  /* ─── Movimiento ───────────────────────────────────────────────────────── */
+  /* Curva con rebote mínimo: da la sensación líquida sin pasarse de 1 px. */
+  --g-spring: cubic-bezier(0.34, 1.26, 0.48, 1);
+  --t-exit: 0.14s;
+
+  /* ─── Capas ────────────────────────────────────────────────────────────── */
+  --z-rail: 30;
+  --z-appbar: 40;
+  --z-overlay: 60;
+  --z-toast: 80;
+}
+
+/* Fondo de la aplicación: sin algo detrás, el vidrio no existe. Dos focos de
+   luz muy abiertos y de baja opacidad; no es una imagen, no cuesta descarga. */
+body {
+  background-color: var(--c-canvas);
+  background-image:
+    radial-gradient(90rem 45rem at 12% -10%, rgb(177 215 46 / 13%), transparent 60%),
+    radial-gradient(70rem 40rem at 105% 8%, rgb(36 38 40 / 8%), transparent 58%);
+  background-attachment: fixed;
+}
+
+/* ─── Clases de superficie ──────────────────────────────────────────────── */
+
+.glass-nav {
+  background-color: var(--g-nav);
+  background-image: var(--g-sheen-dark);
+  backdrop-filter: blur(var(--g-blur-lg)) saturate(var(--g-saturate));
+  -webkit-backdrop-filter: blur(var(--g-blur-lg)) saturate(var(--g-saturate));
+  border-bottom: 1px solid var(--g-hairline-dark);
+  box-shadow: var(--g-elev-nav);
+  color: var(--c-on-dark);
+}
+
+.glass-raised {
+  background-color: var(--g-raised);
+  background-image: var(--g-sheen);
+  border: 1px solid var(--g-hairline);
+  box-shadow: var(--g-elev-card);
+}
+
+/* El reflejo va como capa de fondo, no como pseudoelemento: un `::before`
+   absoluto se pinta por encima del contenido y lava el texto. */
+.glass-solid {
+  background-color: var(--g-solid);
+  background-image: var(--g-sheen);
+  border: 1px solid var(--g-hairline);
+  box-shadow: var(--g-elev-card);
+}
+
+.glass-float {
+  background-color: var(--g-solid);
+  background-image: var(--g-sheen);
+  backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
+  -webkit-backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
+  border: 1px solid var(--g-edge);
+  box-shadow: var(--g-elev-float);
+}
+
+/* ─── Alternativas obligatorias ─────────────────────────────────────────── */
+
+/* Sin soporte de `backdrop-filter` el vidrio se vuelve sólido: nunca se queda
+   un texto flotando sobre un fondo sin desenfocar. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-nav {
+    background-color: var(--c-graphite);
+  }
+
+  .glass-float,
+  .glass-raised {
+    background-color: var(--c-surface);
+  }
+}
+
+/* Quien pide menos transparencia en su sistema recibe superficies opacas. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-nav {
+    background-color: var(--c-graphite);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .glass-raised,
+  .glass-solid,
+  .glass-float {
+    background-color: var(--c-surface);
+    background-image: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --g-spring: linear;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Navegación horizontal (gestión y operación)
+
+   Una sola barra para los dos roles. La jerarquía no la da un menú distinto,
+   la da el orden: acción principal fija a la izquierda, destinos después.
+   Pensada primero para la tablet del trabajador: todo a un toque, sin menús
+   anidados y sin que la barra se coma el alto de la pantalla.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.appbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-appbar);
+}
+
+.appbar-inner {
+  max-width: 1540px;
+  margin-inline: auto;
+  padding-inline: clamp(12px, 3vw, 32px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.appbar-brand {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  flex: none;
+}
+
+.appbar-brand img {
+  width: 108px;
+  height: auto;
+  display: block;
+}
+
+.appbar-user {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.appbar-user .nav-user {
+  color: rgb(255 255 255 / 78%);
+  font-size: 12px;
+  font-weight: 550;
+  max-width: 14ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appbar .iconbutton {
+  color: var(--c-on-dark);
+  border: 1px solid var(--g-hairline-dark);
+  background: var(--g-inset-on-dark);
+}
+
+.appbar .iconbutton:hover {
+  background: rgb(255 255 255 / 16%);
+}
+
+/* Hasta escritorio la barra de destinos baja a su propia línea: en tablet el
+   ancho se necesita entero para que quepan las etiquetas sin cortarse. */
+.navrail {
+  flex: 1 0 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding-bottom: 10px;
+}
+
+.navrail-track {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  /* Sin esto el gesto horizontal compite con el scroll vertical de la página. */
+  touch-action: pan-x;
+  padding: 2px;
+}
+
+.navrail-track::-webkit-scrollbar {
+  display: none;
+}
+
+.navrail-item {
+  flex: none;
+  scroll-snap-align: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgb(255 255 255 / 72%);
+  font-size: 13px;
+  font-weight: 550;
+  white-space: nowrap;
+  transition:
+    background var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out);
+}
+
+.navrail-item:hover {
+  background: var(--g-inset-on-dark);
+  color: var(--c-on-dark);
+}
+
+/* El estado activo no depende solo del color: cambia el relleno, el filo y el
+   grosor del texto. */
+.navrail-item[aria-current='page'] {
+  background: rgb(255 255 255 / 14%);
+  border-color: rgb(177 215 46 / 55%);
+  color: var(--c-on-dark);
+  font-weight: 700;
+}
+
+.navrail-item[aria-current='page'] .icon {
+  color: var(--c-lime);
+}
+
+.navrail-cta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: var(--r-pill);
+  background: var(--c-lime);
+  color: var(--c-graphite);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: var(--g-glow-lime);
+  transition:
+    transform var(--t-fast) var(--g-spring),
+    background var(--t-fast) var(--ease-out);
+}
+
+.navrail-cta:hover {
+  background: var(--c-lime-bright);
+}
+
+.navrail-cta:active {
+  transform: scale(0.97);
+}
+
+.navrail-cta[aria-current='page'] {
+  background: var(--c-lime-bright);
+  box-shadow:
+    var(--g-glow-lime),
+    0 0 0 2px rgb(255 255 255 / 35%);
+}
+
+.appbar :focus-visible {
+  outline: 2px solid var(--c-lime-bright);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* Escritorio: todo en una sola fila para no gastar alto. */
+@media (min-width: 1100px) {
+  .navrail {
+    flex: 1 1 auto;
+    padding-bottom: 0;
+    margin-inline: 8px;
+  }
+
+  .appbar-brand {
+    min-height: 64px;
+  }
+
+  .appbar-user .nav-user {
+    max-width: 22ch;
+  }
+}
+
+/* Celular: etiquetas algo más compactas, pero el área táctil se mantiene. */
+@media (max-width: 560px) {
+  .appbar-brand img {
+    width: 92px;
+  }
+
+  .navrail-item {
+    padding: 10px 12px;
+    font-size: 12.5px;
+  }
+
+  .navrail-cta {
+    padding: 10px 14px;
+    font-size: 12.5px;
+  }
+}
+
+/* La gestión deja de ser una rejilla con barra lateral: una sola columna. */
+.management {
+  display: block;
+  min-height: auto;
+}
+
+.workspace {
+  padding: clamp(16px, 3vw, 36px);
+  padding-bottom: 72px;
+  margin-inline: auto;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Aplicación transversal del material
+
+   Las superficies no se redeclaran una por una: se mapean las clases que ya
+   existen en components.css a los cuatro tipos de vidrio. Añadir un
+   componente nuevo significa darle una de estas clases, no inventar otro
+   rgba suelto.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Contenido denso (tablas, formularios largos, legales): casi opaco. */
+.panel,
+.legal,
+.auth-card {
+  background-color: var(--g-solid);
+  background-image: var(--g-sheen);
+  border-color: var(--g-hairline);
+  box-shadow: var(--g-elev-card);
+}
+
+/* Tarjetas de un vistazo: translúcidas de verdad. */
+.metric,
+.fleet-card,
+.price-card,
+.rate-sheet,
+.trust-item,
+.step {
+  background-color: var(--g-raised);
+  background-image: var(--g-sheen);
+  border-color: var(--g-hairline);
+  box-shadow: var(--g-elev-card);
+}
+
+/* Respuesta al puntero: el vidrio sube, no cambia de color. */
+.metric,
+.fleet-card {
+  transition:
+    transform var(--t-base) var(--g-spring),
+    box-shadow var(--t-base) var(--ease-out);
+}
+
+.metric:hover,
+.fleet-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--g-elev-float);
+}
+
+/* Capas flotantes: aquí sí se desenfoca, porque son pocas y están encima. */
+dialog,
+.country-popover {
+  background-color: var(--g-solid);
+  background-image: var(--g-sheen);
+  backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
+  -webkit-backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
+  border: 1px solid var(--g-edge);
+  box-shadow: var(--g-elev-float);
+}
+
+dialog::backdrop {
+  background: rgb(15 17 19 / 48%);
+  backdrop-filter: blur(var(--g-blur-sm));
+  -webkit-backdrop-filter: blur(var(--g-blur-sm));
+}
+
+/* Campos: superficie hundida, filo claro. El foco mantiene el contorno
+   grafito de components.css; aquí solo se añade el halo lima del material. */
+.field input,
+.field select,
+.field textarea,
+.country-search,
+.toolbar input[type='search'] {
+  background-color: var(--c-surface);
+  border-color: var(--g-hairline);
+  box-shadow: inset 0 1px 2px rgb(36 38 40 / 4%);
+  transition:
+    border-color var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out);
+}
+
+.field input:focus-visible,
+.field select:focus-visible,
+.field textarea:focus-visible,
+.country-search:focus-visible,
+.toolbar input[type='search']:focus-visible {
+  box-shadow:
+    var(--focus-ring),
+    0 0 0 4px rgb(177 215 46 / 22%);
+}
+
+/* Botón primario: la lima es luz, así que proyecta luz. */
+.button:not(.outline):not(.subtle):not(.dark):not(.danger) {
+  box-shadow: var(--g-glow-lime);
+}
+
+.button.outline {
+  background-color: var(--g-raised);
+  background-image: var(--g-sheen);
+  border-color: var(--g-hairline);
+}
+
+.button.subtle {
+  background-color: var(--g-inset);
+}
+
+.button:active:not([disabled]) {
+  transform: scale(0.97);
+}
+
+.button {
+  transition:
+    transform var(--t-fast) var(--g-spring),
+    background-color var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out);
+}
+
+/* Avisos y estados: mismo material, distinto tinte. */
+.notice,
+.form-error,
+.offline:not(:empty) {
+  border: 1px solid var(--g-hairline);
+  box-shadow: var(--g-elev-card);
+}
+
+#toast:not(:empty) {
+  background-color: var(--g-nav-strong);
+  background-image: var(--g-sheen-dark);
+  backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
+  -webkit-backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
+  border: 1px solid var(--g-hairline-dark);
+  box-shadow: var(--g-elev-float);
+  z-index: var(--z-toast);
+}
+
+/* El encabezado público comparte material con el de gestión, en versión clara:
+   la portada vive sobre fondo luminoso y el logo es grafito. */
+.topbar {
+  background-color: rgb(250 249 245 / 72%);
+  background-image: var(--g-sheen);
+  backdrop-filter: blur(var(--g-blur-lg)) saturate(var(--g-saturate));
+  -webkit-backdrop-filter: blur(var(--g-blur-lg)) saturate(var(--g-saturate));
+  border-bottom: 1px solid var(--g-hairline);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .topbar {
+    background-color: var(--c-canvas);
+  }
+
+  dialog,
+  .country-popover,
+  #toast:not(:empty) {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .panel,
+  .legal,
+  .auth-card,
+  .metric,
+  .fleet-card,
+  .price-card,
+  .rate-sheet,
+  .trust-item,
+  .step,
+  dialog,
+  .country-popover {
+    background-color: var(--c-surface);
+    background-image: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .topbar {
+    background-color: var(--c-canvas);
+    background-image: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .metric,
+  .fleet-card,
+  .button,
+  .navrail-cta {
+    transition: none;
+  }
+
+  .metric:hover,
+  .fleet-card:hover {
+    transform: none;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Portada pública
+
+   Mismo material y misma paleta que la gestión. Sobre la foto del hero el
+   vidrio sí se desenfoca, porque ahí hay algo real detrás; en el resto de la
+   página basta el tinte, que no cuesta GPU.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Píldoras informativas: vidrio claro con filo de luz. */
+.badge,
+.visual-top,
+.hero-note,
+.contact-kicker {
+  background-color: rgb(255 255 255 / 70%);
+  background-image: var(--g-sheen);
+  border: 1px solid var(--g-edge);
+  box-shadow: var(--g-elev-card);
+}
+
+.badge {
+  backdrop-filter: blur(var(--g-blur-sm)) saturate(var(--g-saturate));
+  -webkit-backdrop-filter: blur(var(--g-blur-sm)) saturate(var(--g-saturate));
+}
+
+/* Encima de la fotografía: aquí el desenfoque hace su trabajo. */
+.visual-top {
+  backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
+  -webkit-backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
+}
+
+.hero-note {
+  display: inline-flex;
+  padding: 9px 14px;
+  border-radius: var(--r-pill);
+}
+
+.contact-kicker {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  color: var(--c-lime-ink);
+}
+
+/* Rótulo inferior del hero: vidrio oscuro sobre la foto, no texto suelto. */
+.visual-bottom {
+  background-color: var(--g-nav);
+  background-image: var(--g-sheen-dark);
+  backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
+  -webkit-backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
+  border: 1px solid var(--g-hairline-dark);
+  border-radius: var(--r-lg);
+  padding: 16px 18px;
+  box-shadow: var(--g-elev-nav);
+}
+
+.visual-arrow {
+  background-color: var(--g-inset-on-dark);
+  border-color: var(--g-edge-dark);
+  transition:
+    background-color var(--t-fast) var(--ease-out),
+    transform var(--t-fast) var(--g-spring);
+}
+
+.visual-arrow:hover {
+  background-color: rgb(255 255 255 / 20%);
+  transform: translateX(2px);
+}
+
+/* La franja de confianza deja de ser una fila con bordes: son tarjetas. */
+.trust-strip {
+  border-block: 0;
+  gap: 12px;
+}
+
+.trust-item {
+  padding: 16px;
+  border-radius: var(--r-md);
+}
+
+.step {
+  padding: 20px;
+  border-radius: var(--r-lg);
+}
+
+.faq details {
+  background-color: var(--g-raised);
+  background-image: var(--g-sheen);
+  border-color: var(--g-hairline);
+  box-shadow: var(--g-elev-card);
+  transition: box-shadow var(--t-base) var(--ease-out);
+}
+
+/* Abierta pasa a sólida: el texto de la respuesta debe leerse sin esfuerzo. */
+.faq details[open] {
+  background-color: var(--g-solid);
+  box-shadow: var(--g-elev-float);
+}
+
+.contact-card,
+.contact-details {
+  background-color: var(--g-solid);
+  background-image: var(--g-sheen);
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--r-xl);
+  box-shadow: var(--g-elev-card);
+}
+
+.contact-place-copy {
+  background-color: var(--g-nav);
+  background-image: var(--g-sheen-dark);
+  backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
+  -webkit-backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
+  border: 1px solid var(--g-hairline-dark);
+}
+
+/* La tabla de tarifas es dato puro: fondo sólido, sin reflejo que compita. */
+.rate-table {
+  background-color: var(--c-surface);
+}
+
+.rate-sheet {
+  border-radius: var(--r-xl);
+}
+
+.footer {
+  background-color: var(--g-nav-strong);
+  background-image: var(--g-sheen-dark);
+  border-top: 1px solid var(--g-hairline-dark);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .badge,
+  .visual-top {
+    background-color: rgb(255 255 255 / 95%);
+  }
+
+  .visual-bottom,
+  .contact-place-copy {
+    background-color: var(--c-graphite);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .badge,
+  .visual-top,
+  .hero-note,
+  .contact-kicker {
+    background-color: var(--c-surface);
+    background-image: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .visual-bottom,
+  .contact-place-copy,
+  .footer {
+    background-color: var(--c-graphite);
+    background-image: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .faq details,
+  .contact-card,
+  .contact-details {
+    background-color: var(--c-surface);
+    background-image: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visual-arrow,
+  .faq details {
+    transition: none;
+  }
+
+  .visual-arrow:hover {
+    transform: none;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Selector de opción única (método de pago, y cualquier elección corta)
+
+   Tarjetas táctiles en lugar de un `select`: en tablet se elige de un toque y
+   el estado seleccionado se ve sin desplegar nada.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.choice-group {
+  border: 0;
+  padding: 0;
+  margin: 0 0 var(--s-md);
+}
+
+.choice-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.choice {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+
+/* El radio real sigue en el árbol de accesibilidad; solo deja de verse. */
+.choice input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+
+.choice span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 56px;
+  padding: 12px 14px;
+  border-radius: var(--r-input);
+  border: 1.5px solid var(--g-hairline);
+  background-color: var(--g-raised);
+  background-image: var(--g-sheen);
+  box-shadow: var(--g-elev-card);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  transition:
+    border-color var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out);
+}
+
+.choice input:hover + span {
+  border-color: var(--c-text-muted);
+}
+
+/* Seleccionado: filo lima, texto grafito y relleno. No depende solo del color:
+   el grosor del borde y el contraste del texto cambian a la vez. */
+.choice input:checked + span {
+  border-color: var(--c-lime);
+  background-color: var(--c-surface);
+  color: var(--c-graphite);
+  box-shadow: var(--g-glow-lime);
+}
+
+.choice input:checked + span .icon {
+  color: var(--c-lime-ink);
+}
+
+.choice input:focus-visible + span {
+  outline: 2px solid var(--c-graphite);
+  outline-offset: 2px;
+}
+
+/* Fila de total y recargo dentro del resumen de devolución. */
+.summary-row.is-total {
+  border-bottom: 0;
+  padding-top: var(--s-md);
+}
+
+.summary-row.is-total strong {
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+
+.summary-row strong.is-surcharge {
+  color: var(--c-alert-ink);
+}
+
+/* Zona de acciones irreversibles: separada del flujo normal por una línea y un
+   tinte de alerta, para que nunca se pulse por inercia. */
+.danger-zone {
+  margin-top: var(--s-lg);
+  padding-top: var(--s-md);
+  border-top: 1px solid var(--g-hairline);
+}
+
+.danger-zone .small-copy {
+  margin-bottom: var(--s-sm);
+  color: var(--c-alert-ink);
+}
+
+.danger-zone .button.subtle {
+  color: var(--c-alert-ink);
+}
+
+.danger-zone .button.subtle:hover {
+  background-color: var(--c-alert-bg);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Áreas táctiles
+
+   El mínimo de 44 px solo se exige donde se toca con el dedo. Forzarlo también
+   con ratón engordaría las tablas sin ganar nada, así que se aplica por tipo de
+   puntero, no por ancho de pantalla: un portátil táctil también lo necesita.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.visual-arrow {
+  width: 44px;
+  height: 44px;
+}
+
+@media (pointer: coarse) {
+  .button,
+  .button.small,
+  .nav-actions > .button {
+    min-height: 44px;
+  }
+
+  /* El botón vive dentro del campo: el área táctil crece hasta el alto útil del
+     propio campo sin empujar el texto. */
+  .password-wrap .iconbutton {
+    width: 44px;
+    height: 44px;
+  }
+
+  .navlinks a,
+  .footer-links a,
+  .footer-links button,
+  .summary-row a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* Separación entre objetivos contiguos: sin ella se falla el toque. */
+  .row-actions {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Densidad para tablet: el dispositivo principal del trabajador.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 1100px) {
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

@@ -1,9 +1,15 @@
+import { Suspense, lazy } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import { SessionProvider, useSession } from './lib/session';
 import { PublicPage } from './pages/PublicPage';
-import { LegalPage } from './pages/LegalPage';
-import { LoginPage } from './pages/LoginPage';
-import { Workspace } from './pages/management/Workspace';
+
+// La portada es lo único que necesita el visitante: el resto (panel de gestión,
+// banderas, formularios) se descarga solo cuando se entra en esas rutas.
+const LegalPage = lazy(() => import('./pages/LegalPage').then((m) => ({ default: m.LegalPage })));
+const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
+const Workspace = lazy(() =>
+  import('./pages/management/Workspace').then((m) => ({ default: m.Workspace })),
+);
 
 function ManagementRoute() {
   const { user, loading } = useSession();
@@ -21,15 +27,17 @@ export function App() {
   return (
     <BrowserRouter>
       <SessionProvider>
-        <Routes>
-          <Route path="/" element={<PublicPage />} />
-          <Route path="/terminos" element={<LegalPage />} />
-          <Route path="/privacidad" element={<LegalPage />} />
-          <Route path="/cookies" element={<LegalPage />} />
-          <Route path="/login" element={<LoginRoute />} />
-          <Route path="/gestion" element={<ManagementRoute />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Suspense fallback={<main className="loading">Cargando…</main>}>
+          <Routes>
+            <Route path="/" element={<PublicPage />} />
+            <Route path="/terminos" element={<LegalPage />} />
+            <Route path="/privacidad" element={<LegalPage />} />
+            <Route path="/cookies" element={<LegalPage />} />
+            <Route path="/login" element={<LoginRoute />} />
+            <Route path="/gestion" element={<ManagementRoute />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </SessionProvider>
     </BrowserRouter>
   );

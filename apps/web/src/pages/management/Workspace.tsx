@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { Icon } from '../../components/Icon';
+import { NavRail, type NavRailItem } from '../../components/NavRail';
 import { api } from '../../lib/api';
 import { useSession } from '../../lib/session';
 import type { AdminData, Dashboard } from '../../lib/types';
@@ -13,14 +14,17 @@ import { AdminPanel } from './AdminPanel';
 
 export type View = 'overview' | 'new' | 'active' | 'history' | 'fleet' | 'reports' | 'admin';
 
-const NAV: [View, string, string][] = [
-  ['overview', 'grid', 'Resumen'],
-  ['new', 'plus', 'Registrar alquiler'],
-  ['active', 'clock', 'Alquileres activos'],
-  ['history', 'history', 'Historial'],
-  ['fleet', 'scooter', 'Flota y cascos'],
-  ['reports', 'chart', 'Reportes'],
-  ['admin', 'settings', 'Administración'],
+/** Fuera de la pista desplazable: el registro es la acción más frecuente. */
+const CTA: NavRailItem<View> = { value: 'new', icon: 'plus', label: 'Registrar alquiler' };
+
+// Orden por frecuencia de uso durante la atención, no por jerarquía de menú.
+const NAV: NavRailItem<View>[] = [
+  { value: 'active', icon: 'clock', label: 'Alquileres activos' },
+  { value: 'overview', icon: 'grid', label: 'Resumen' },
+  { value: 'fleet', icon: 'scooter', label: 'Disponibilidad' },
+  { value: 'history', icon: 'history', label: 'Historial' },
+  { value: 'reports', icon: 'chart', label: 'Reportes' },
+  { value: 'admin', icon: 'settings', label: 'Administración' },
 ];
 
 const ADMIN_ONLY: View[] = ['reports', 'admin'];
@@ -65,21 +69,27 @@ export function Workspace() {
 
   if (!dash || !user) return <main className="loading">Cargando la estación…</main>;
 
-  const visible = NAV.filter(([v]) => isAdmin || !ADMIN_ONLY.includes(v));
+  const visible = NAV.filter((item) => isAdmin || !ADMIN_ONLY.includes(item.value));
 
   return (
     <>
-      <header className="topbar">
-        <div className="container nav">
-          <Link className="brand" to="/" aria-label="ROKAI, inicio">
-            <img src="/assets/logo.png" alt="ROKAI" width={151} height={50} />
+      <header className="appbar glass-nav">
+        <div className="appbar-inner">
+          <Link className="appbar-brand" to="/" aria-label="ROKAI, inicio">
+            <img src="/assets/logo-inverse.webp" alt="ROKAI" width={108} height={36} />
           </Link>
-          <div className="nav-actions">
-            <span className="small-copy nav-user">{user.name}</span>
-            <button className="iconbutton" aria-label="Cerrar sesión" onClick={() => void logout()}>
+          <div className="appbar-user">
+            <span className="nav-user">{user.name}</span>
+            <button
+              className="iconbutton"
+              aria-label="Cerrar sesión"
+              title="Cerrar sesión"
+              onClick={() => void logout()}
+            >
               <Icon name="logout" />
             </button>
           </div>
+          <NavRail label="Gestión" items={visible} cta={CTA} active={view} onSelect={setView} />
         </div>
       </header>
 
@@ -90,28 +100,12 @@ export function Workspace() {
       </div>
 
       <div className="management">
-        <aside className="sidebar" aria-label="Gestión">
-          <span className="eyebrow">Estación Arboletes</span>
-          {visible.map(([v, icon, label]) => (
-            <button
-              key={v}
-              className={view === v ? 'active' : ''}
-              aria-current={view === v ? 'page' : undefined}
-              onClick={() => {
-                setView(v);
-              }}
-            >
-              <Icon name={icon} />
-              {label}
-            </button>
-          ))}
-        </aside>
-
         <main id="main" className="workspace">
           {view === 'overview' && (
             <Overview
               dash={dash}
               user={user}
+              isAdmin={isAdmin}
               onNew={() => {
                 setView('new');
               }}
@@ -134,6 +128,8 @@ export function Workspace() {
               title="Aventuras en curso."
               subtitle="Registra la devolución cuando el cliente regrese."
               rentals={dash.rentals.filter((r) => !r.endedAt)}
+              lateFeePerMinuteCents={dash.lateFeePerMinuteCents}
+              isAdmin={isAdmin}
               onNew={() => {
                 setView('new');
               }}
@@ -146,6 +142,8 @@ export function Workspace() {
               title="Cada paseo cuenta."
               subtitle="Historial conservado de los alquileres finalizados."
               rentals={dash.rentals.filter((r) => r.endedAt)}
+              lateFeePerMinuteCents={dash.lateFeePerMinuteCents}
+              isAdmin={isAdmin}
               onNew={() => {
                 setView('new');
               }}

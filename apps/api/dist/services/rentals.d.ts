@@ -1,4 +1,4 @@
-import { type CreateRentalRequest } from '@rokai/contracts';
+import { type CreateRentalRequest, type FinishRentalRequest } from '@rokai/contracts';
 import type { Db } from '../db.js';
 export interface Actor {
     id: number;
@@ -8,5 +8,5 @@ export declare function createRental(db: Db, actor: Actor, input: CreateRentalRe
     id: number;
     idempotent: boolean;
 }>;
-export declare function finishRental(db: Db, actor: Actor, rentalId: number, notes: string): Promise<void>;
+export declare function finishRental(db: Db, actor: Actor, rentalId: number, input: FinishRentalRequest): Promise<void>;
 //# sourceMappingURL=rentals.d.ts.map
