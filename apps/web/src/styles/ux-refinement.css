@@ -1,0 +1,408 @@
+/* Lucho UX: composición legible y respuestas consistentes a cada acción. */
+.public-page .section {
+  scroll-margin-top: 110px;
+}
+.public-page h2,
+.public-page h3 {
+  text-wrap: balance;
+}
+.public-page .section-heading p {
+  max-width: 40ch;
+  line-height: 1.65;
+}
+.public-page .trust-item strong {
+  font-size: 14px;
+}
+.public-page .trust-item small {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.public-page .step p,
+.public-page .faq details p {
+  font-size: 15px;
+  line-height: 1.7;
+}
+.public-page .faq summary {
+  min-height: 64px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.public-page .faq details[open] summary {
+  color: var(--c-lime-ink);
+}
+.public-page .rate-sheet-heading {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 6px;
+}
+.public-page .rate-sheet-heading span,
+.public-page .rate-table thead th {
+  font-size: 12px;
+}
+.public-page .rate-table tbody th,
+.public-page .rate-table td {
+  font-size: 15px;
+}
+.public-page .rate-table td {
+  font-variant-numeric: tabular-nums;
+}
+.public-page .contact-card {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text);
+  border-radius: var(--r-xl);
+  box-shadow: var(--elev-2);
+}
+.public-page .contact-place {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding: clamp(16px, 2.5vw, 32px);
+  aspect-ratio: auto;
+  background: var(--c-graphite-deep);
+}
+.public-page .contact-place::after {
+  display: none;
+}
+.public-page .contact-place img {
+  position: static;
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  object-fit: contain;
+  border-radius: var(--r-md);
+}
+.public-page .contact-details {
+  padding: clamp(24px, 3.5vw, 44px);
+}
+.station-kicker {
+  color: var(--c-lime-ink);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.station-heading h3 {
+  margin: 12px 0;
+  color: var(--c-text);
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+.station-heading p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--c-text-muted);
+  line-height: 1.6;
+}
+.station-facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 22px 20px;
+  margin: 28px 0 0;
+}
+.station-fact {
+  min-width: 0;
+}
+.station-fact dt {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--c-text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.station-fact dt .icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.station-fact dd {
+  margin: 6px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.station-fact a {
+  color: var(--c-text);
+  text-decoration: underline;
+  text-decoration-color: var(--c-border);
+  text-underline-offset: 4px;
+}
+.station-fact a .icon {
+  width: 14px;
+  height: 14px;
+  margin-left: 5px;
+}
+.public-page .contact-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--c-border);
+}
+.public-page .contact-actions .button {
+  width: 100%;
+  min-height: 48px;
+}
+.public-page .contact-actions .button.outline {
+  color: var(--c-text);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+}
+.public-page .contact-actions .button.outline:hover {
+  background: var(--c-canvas);
+}
+
+.workspace .panel,
+.workspace .step-panel,
+.auth-card {
+  background-color: var(--c-surface);
+}
+.workspace h1 {
+  text-wrap: balance;
+}
+.workspace .field label {
+  font-size: 13px;
+}
+.workspace .field input,
+.workspace .field select,
+.workspace .field textarea {
+  min-height: 46px;
+}
+.period-toggle button,
+.country-list button,
+.password-wrap .iconbutton {
+  min-height: 44px;
+}
+.form-error {
+  color: var(--c-alert-ink);
+}
+.notice {
+  color: var(--c-text);
+}
+.workspace .toolbar input[type='search'] {
+  min-height: 44px;
+}
+.workspace .table-wrap {
+  overscroll-behavior-x: contain;
+}
+dialog {
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+.skip-link {
+  position: fixed;
+  left: 16px;
+  top: 8px;
+  z-index: 100;
+  padding: 12px 20px;
+  color: var(--c-text);
+  background: var(--c-lime);
+  border-radius: var(--r-md);
+  transform: translateY(-150%);
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* La respuesta visual distingue interacción, selección y espera sin desplazar
+   el contenido ni depender del ratón. Mantiene los colores de cada acción. */
+:where(button, .button, summary, .navlinks a, .footer-links a, .station-fact a) {
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out),
+    opacity var(--t-fast) var(--ease-out);
+}
+:where(button, a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--c-graphite);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 2px var(--c-surface);
+}
+:where(button, .button):disabled,
+:where(button, .button)[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+button[aria-busy='true'],
+.button[aria-busy='true'] {
+  cursor: progress;
+}
+:where(button, .button):active:not(:disabled):not([aria-disabled='true']) {
+  filter: brightness(0.94);
+}
+.navlinks a,
+.footer-links a {
+  text-underline-offset: 6px;
+  text-decoration-thickness: 2px;
+}
+@media (hover: hover) {
+  .navlinks a:hover,
+  .footer-links a:hover {
+    text-decoration: underline;
+  }
+  .station-fact a:hover {
+    text-decoration-color: var(--c-lime-ink);
+  }
+  .iconbutton:hover:not(:disabled) {
+    background-color: var(--c-ok-bg);
+  }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .button,
+  .iconbutton,
+  .public-page .step,
+  .public-page .rate-sheet {
+    transition:
+      transform var(--t-base) var(--ease-out),
+      box-shadow var(--t-base) var(--ease-out),
+      background-color var(--t-fast),
+      border-color var(--t-fast);
+  }
+  .button:hover:not(:disabled):not([aria-disabled='true']) {
+    transform: translateY(-2px);
+    box-shadow: var(--elev-2);
+  }
+  .button:active:not(:disabled):not([aria-disabled='true']) {
+    transform: translateY(0) scale(0.985);
+    box-shadow: var(--elev-1);
+  }
+  .iconbutton:active:not(:disabled) {
+    scale: 0.94;
+  }
+  .public-page .step:hover,
+  .public-page .rate-sheet:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--elev-2);
+  }
+  .button .icon,
+  .station-fact a .icon {
+    transition: translate var(--t-fast) var(--ease-out);
+  }
+  .button:hover:not(:disabled) .icon,
+  .station-fact a:hover .icon {
+    translate: 2px 0;
+  }
+}
+@media (max-width: 900px) {
+  .public-page .contact-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .public-page .contact-place {
+    padding: 20px;
+    justify-content: center;
+  }
+  .public-page .contact-place img {
+    width: min(100%, 420px);
+  }
+  .public-page .contact-details {
+    padding: 28px;
+  }
+}
+@media (max-width: 520px) {
+  .public-page .contact-details {
+    padding: 24px 20px;
+  }
+  .public-page .contact-place {
+    padding: 16px;
+  }
+  .station-facts {
+    gap: 20px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .station-fact {
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--c-border);
+  }
+  .station-fact:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+  .station-fact dd {
+    font-size: 16px;
+  }
+  .public-page .contact-actions {
+    margin-top: 24px;
+  }
+  .public-page .step p,
+  .public-page .faq details p {
+    font-size: 16px;
+  }
+  .public-page .rate-table th,
+  .public-page .rate-table td {
+    padding: 14px 8px;
+  }
+  .public-page .rate-table td,
+  .public-page .rate-table tbody th {
+    font-size: 14px;
+  }
+  .workspace .field input,
+  .workspace .field select,
+  .workspace .field textarea,
+  .auth-card input {
+    font-size: 16px;
+  }
+  .workspace .toolbar input[type='search'] {
+    max-width: none;
+    width: 100%;
+  }
+  .auth-card {
+    padding: 28px 22px;
+  }
+  .modal-actions {
+    flex-wrap: wrap;
+  }
+  .modal-actions .button {
+    flex: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.appbar-brand img {
+  width: 140px;
+  height: auto;
+  object-fit: contain;
+}
+@media (max-width: 520px) {
+  .appbar-brand img {
+    width: 120px;
+  }
+}
+/* Neutraliza también hover heredado: un control deshabilitado no se eleva. */
+.button:disabled,
+.button:disabled:hover,
+.button[aria-disabled='true'],
+.button[aria-disabled='true']:hover,
+.iconbutton:disabled,
+.iconbutton:disabled:hover {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+  box-shadow: none;
+}
+.button:disabled .icon,
+.button[aria-disabled='true'] .icon {
+  translate: none;
+  transform: none;
+}

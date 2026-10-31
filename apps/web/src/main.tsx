@@ -10,6 +10,7 @@ import './styles/sections.css';
 import './styles/polish.css';
 import './styles/interactions.css';
 import './styles/glass.css';
+import './styles/ux-refinement.css';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Falta el contenedor #root.');

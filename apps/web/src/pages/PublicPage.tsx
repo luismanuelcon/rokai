@@ -117,7 +117,7 @@ export function PublicPage() {
   return (
     <>
       <PublicHeader />
-      <main id="main">
+      <main id="main" className="public-page">
         <section className="container hero">
           <div>
             <span className="badge">
@@ -297,7 +297,16 @@ export function PublicPage() {
               <h2>Resolvemos tus dudas.</h2>
             </div>
           </div>
-          <div className="faq">
+          <div className="faq" aria-busy={loading}>
+            {loading && <p role="status">Cargando preguntas frecuentes…</p>}
+            {error && (
+              <p>
+                No pudimos cargar las preguntas. Puedes consultar a nuestro equipo en la estación.
+              </p>
+            )}
+            {!loading && !error && faqs.length === 0 && (
+              <p>¿Tienes alguna duda? Escríbenos y te ayudamos a preparar tu paseo.</p>
+            )}
             {faqs.map((f) => (
               <details key={f.id}>
                 <summary>{f.question}</summary>
@@ -324,51 +333,62 @@ export function PublicPage() {
                 loading="lazy"
                 decoding="async"
               />
-              <div className="contact-place-copy">
-                <span className="contact-kicker">ARBOLETES · ANTIOQUIA</span>
-                <h3>El paseo empieza aquí.</h3>
-                <p>{s['location']}</p>
-              </div>
             </div>
             <div className="contact-details">
-              <div className="summary-row">
-                <span>
-                  <Icon name="pin" />
-                  Ubicación
-                </span>
-                <strong>{s['location']}</strong>
-              </div>
-              <div className="summary-row">
-                <span>
-                  <Icon name="clock" />
-                  Horario
-                </span>
-                <strong>{s['hours']}</strong>
-              </div>
-              <div className="summary-row">
-                <span>
-                  <Icon name="instagram" />
-                  Instagram
-                </span>
-                <strong>
-                  <a
-                    href={`https://instagram.com/${s['instagram'] ?? ''}`}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                  >
-                    @{s['instagram']}
-                  </a>
-                </strong>
-              </div>
-              <div className="summary-row">
-                <span>
-                  <Icon name="mail" />
-                  Correo
-                </span>
-                <strong>
-                  <a href={`mailto:${s['email'] ?? ''}`}>{s['email']}</a>
-                </strong>
-              </div>
+              <header className="station-heading">
+                <span className="station-kicker">ARBOLETES · ANTIOQUIA</span>
+                <h3>
+                  Nos vemos
+                  <br />
+                  en la estación.
+                </h3>
+                <p>Acércate, elige tu patineta y sal a sentir el aire.</p>
+              </header>
+              <dl className="station-facts">
+                <div className="station-fact">
+                  <dt>
+                    <Icon name="pin" />
+                    Punto de encuentro
+                  </dt>
+                  <dd>{s['location'] || 'Consulta la ubicación con nuestro equipo'}</dd>
+                </div>
+                <div className="station-fact">
+                  <dt>
+                    <Icon name="clock" />
+                    Horario de atención
+                  </dt>
+                  <dd>{s['hours'] || 'Consulta el horario con nuestro equipo'}</dd>
+                </div>
+                {s['instagram'] && (
+                  <div className="station-fact">
+                    <dt>
+                      <Icon name="instagram" />
+                      Instagram
+                    </dt>
+                    <dd>
+                      <a
+                        href={`https://instagram.com/${s['instagram'].replace(/^@/, '')}`}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                      >
+                        @{s['instagram'].replace(/^@/, '')}
+                        <Icon name="arrow" />
+                      </a>
+                    </dd>
+                  </div>
+                )}
+                {s['email'] && (
+                  <div className="station-fact">
+                    <dt>
+                      <Icon name="mail" />
+                      Correo electrónico
+                    </dt>
+                    <dd>
+                      <a href={`mailto:${s['email']}`}>{s['email']}</a>
+                    </dd>
+                  </div>
+                )}
+              </dl>
               <div className="contact-actions">
                 {whatsapp && (
                   <a
@@ -377,7 +397,7 @@ export function PublicPage() {
                     target="_blank"
                     rel="noreferrer noopener"
                   >
-                    Escríbenos por WhatsApp
+                    Hablemos por WhatsApp
                     <Icon name="arrow" />
                   </a>
                 )}

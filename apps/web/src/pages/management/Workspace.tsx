@@ -76,7 +76,12 @@ export function Workspace() {
       <header className="appbar glass-nav">
         <div className="appbar-inner">
           <Link className="appbar-brand" to="/" aria-label="ROKAI, inicio">
-            <img src="/assets/logo-inverse.webp" alt="ROKAI" width={108} height={36} />
+            <img
+              src="/assets/rokai-logo-oficial-blanco.png"
+              alt="ROKAI, patinetas eléctricas"
+              width={2172}
+              height={660}
+            />
           </Link>
           <div className="appbar-user">
             <span className="nav-user">{user.name}</span>

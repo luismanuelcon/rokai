@@ -26,7 +26,7 @@ export function PublicHeader() {
       setOpen(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && header.current?.querySelector('.navlinks.open')) {
         setOpen(false);
         menuButton.current?.focus();
       }
@@ -55,6 +55,9 @@ export function PublicHeader() {
     <header className="topbar glass-public-nav" ref={header}>
       <div className="container nav">
         <Brand />
+        <a className="skip-link" href="#main">
+          Saltar al contenido
+        </a>
         <nav
           className={`navlinks${open ? ' open' : ''}`}
           id="public-nav-links"
