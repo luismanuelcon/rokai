@@ -209,10 +209,7 @@ export function NewRental({ dash, onDone }: { dash: Dashboard; onDone: () => Pro
 
   return (
     <>
-      <PageHeading
-        title="Un nuevo paseo."
-        subtitle="Completa el registro y entrega los equipos al cliente."
-      />
+      <PageHeading title="Registrar alquiler" />
       <form onSubmit={(e) => void submit(e)}>
         <div className="rental-layout">
           <div>

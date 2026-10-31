@@ -74,6 +74,80 @@ function RentalRow({ rental, onSelect }: { rental: Rental; onSelect: () => void 
   );
 }
 
+function RentalCard({ rental, onSelect }: { rental: Rental; onSelect: () => void }) {
+  const timer = rental.endedAt ? null : countdown(rental.startedAt, rental.dueAt);
+  const ending =
+    !!timer && !timer.overdue && new Date(rental.dueAt).getTime() - Date.now() <= 300_000;
+  return (
+    <article
+      className={`rental-mobile-card${timer?.overdue ? ' is-overdue' : ending ? ' is-ending' : ''}`}
+    >
+      <header className="rental-card-heading">
+        <small>Alquiler #{String(rental.id).padStart(4, '0')}</small>
+        <h3>{rental.customerName}</h3>
+      </header>
+      <div className="rental-card-timer" aria-live="off">
+        <span>
+          {timer
+            ? timer.overdue
+              ? 'Tiempo excedido'
+              : ending
+                ? 'Por terminar · tiempo restante'
+                : 'Tiempo restante'
+            : 'Finalizado'}
+        </span>
+        {timer && (
+          <>
+            <strong>{timer.label}</strong>
+            <small>
+              {timer.label.replace('+', '').split(':').length === 3
+                ? 'horas : min : seg'
+                : 'min : seg'}
+            </small>
+            <span className="countdown-bar" aria-hidden="true">
+              <span style={{ width: `${timer.progress * 100}%` }} />
+            </span>
+          </>
+        )}
+      </div>
+      <dl className="rental-card-facts">
+        <div>
+          <dt>Patinetas</dt>
+          <dd>
+            {rental.equipment
+              .filter((e) => e.kind === 'scooter')
+              .map((e) => e.code)
+              .join(' · ') || '—'}
+          </dd>
+        </div>
+        <div>
+          <dt>Plan</dt>
+          <dd>
+            {rental.minutes} min · {money(rental.finalPriceCents ?? rental.priceCents)}
+          </dd>
+        </div>
+        <div>
+          <dt>{rental.endedAt ? 'Devolución' : 'Regreso previsto'}</dt>
+          <dd>{datetime(rental.endedAt ?? rental.dueAt)}</dd>
+        </div>
+        <div>
+          <dt>Registró</dt>
+          <dd>{rental.createdByName}</dd>
+        </div>
+      </dl>
+      <button
+        type="button"
+        className="button outline"
+        onClick={onSelect}
+        aria-label={`${rental.endedAt ? 'Ver detalle' : 'Registrar devolución'} de ${rental.customerName}, alquiler ${rental.id}`}
+      >
+        {rental.endedAt ? 'Ver detalle' : 'Registrar devolución'}
+        <Icon name="arrow" />
+      </button>
+    </article>
+  );
+}
+
 const PAYMENT_METHODS: [PaymentMethod, string][] = [
   ['cash', 'Efectivo'],
   ['transfer', 'Transferencia'],
@@ -329,7 +403,7 @@ export function RentalTable({
   showHeading = true,
 }: {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   rentals: Rental[];
   lateFeePerMinuteCents: number;
   isAdmin: boolean;
@@ -354,6 +428,10 @@ export function RentalTable({
           .includes(q),
       )
     : rentals;
+  const ordered = [...filtered].sort((a, b) => {
+    if (!a.endedAt && !b.endedAt) return Date.parse(a.dueAt) - Date.parse(b.dueAt);
+    return 0;
+  });
 
   return (
     <>
@@ -385,35 +463,46 @@ export function RentalTable({
         {filtered.length === 0 ? (
           <div className="empty">
             <Icon name="scooter" />
-            <h3>Aquí comienza el próximo paseo.</h3>
-            <p>No hay alquileres en esta vista.</p>
+            <h3>{search ? 'Sin resultados' : 'Sin alquileres'}</h3>
+            <p>
+              {search
+                ? 'No encontramos coincidencias. Prueba otro nombre o código.'
+                : 'No hay alquileres en esta vista.'}
+            </p>
           </div>
         ) : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">Alquiler / cliente</th>
-                  <th scope="col">Equipos</th>
-                  <th scope="col">Inicio / duración</th>
-                  <th scope="col">Valor</th>
-                  <th scope="col">Estado</th>
-                  <th scope="col">Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r) => (
-                  <RentalRow
-                    key={r.id}
-                    rental={r}
-                    onSelect={() => {
-                      setSelected(r);
-                    }}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="rental-mobile-list">
+              {ordered.map((r) => (
+                <RentalCard key={r.id} rental={r} onSelect={() => setSelected(r)} />
+              ))}
+            </div>
+            <div className="table-wrap rental-desktop-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Alquiler / cliente</th>
+                    <th scope="col">Equipos</th>
+                    <th scope="col">Inicio / duración</th>
+                    <th scope="col">Valor</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ordered.map((r) => (
+                    <RentalRow
+                      key={r.id}
+                      rental={r}
+                      onSelect={() => {
+                        setSelected(r);
+                      }}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

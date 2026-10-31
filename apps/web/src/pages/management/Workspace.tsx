@@ -130,8 +130,7 @@ export function Workspace() {
           )}
           {view === 'active' && (
             <RentalTable
-              title="Aventuras en curso."
-              subtitle="Registra la devolución cuando el cliente regrese."
+              title="Alquileres activos"
               rentals={dash.rentals.filter((r) => !r.endedAt)}
               lateFeePerMinuteCents={dash.lateFeePerMinuteCents}
               isAdmin={isAdmin}
@@ -144,8 +143,7 @@ export function Workspace() {
           )}
           {view === 'history' && (
             <RentalTable
-              title="Cada paseo cuenta."
-              subtitle="Historial conservado de los alquileres finalizados."
+              title="Historial de alquileres"
               rentals={dash.rentals.filter((r) => r.endedAt)}
               lateFeePerMinuteCents={dash.lateFeePerMinuteCents}
               isAdmin={isAdmin}

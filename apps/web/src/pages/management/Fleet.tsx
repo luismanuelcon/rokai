@@ -39,10 +39,7 @@ export function Fleet({
 
   return (
     <>
-      <PageHeading
-        title="Todo en su lugar."
-        subtitle="Disponibilidad de patinetas y cascos de la estación."
-      />
+      <PageHeading title="Disponibilidad de equipos" />
       <div className="fleet-grid">
         {dash.equipment.map((e) => (
           <article className="fleet-card" key={e.id}>

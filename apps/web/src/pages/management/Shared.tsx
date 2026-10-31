@@ -6,15 +6,14 @@ export function PageHeading({
   action,
 }: {
   title: string;
-  subtitle: string;
+  subtitle?: string | undefined;
   action?: ReactNode;
 }) {
   return (
     <div className="workspace-head">
       <div>
-        <span className="eyebrow">Portal de gestión</span>
         <h1>{title}</h1>
-        <p>{subtitle}</p>
+        {subtitle && <p>{subtitle}</p>}
       </div>
       {action}
     </div>

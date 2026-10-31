@@ -710,3 +710,274 @@ button[aria-busy='true'],
     filter: brightness(0.94);
   }
 }
+
+/* Público: el visitante encuentra primero la navegación; el acceso del equipo
+   sigue disponible en un control discreto, con área táctil de 44 px. */
+.topbar .team-access {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 1px solid var(--c-border);
+  border-radius: 50%;
+  background: var(--c-surface);
+  color: var(--c-text-muted);
+  transition:
+    color var(--t-fast),
+    border-color var(--t-fast),
+    box-shadow var(--t-fast);
+}
+.topbar .team-access .icon {
+  width: 18px;
+  height: 18px;
+}
+.topbar .navlinks a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  font-weight: 650;
+}
+.topbar .nav-actions {
+  gap: 12px;
+}
+.topbar .mobile-menu {
+  gap: 8px;
+  width: auto;
+  padding: 0 15px;
+  min-height: 44px;
+  border-radius: var(--r-md);
+  background: var(--c-graphite);
+  color: var(--c-on-dark);
+  font-size: 14px;
+  font-weight: 650;
+}
+.topbar .team-access:focus-visible {
+  outline: 2px solid var(--c-lime-ink);
+  outline-offset: 3px;
+}
+@media (max-width: 760px) {
+  .topbar .nav {
+    gap: 12px;
+  }
+  .topbar .nav-actions {
+    margin-left: auto;
+  }
+  .topbar .team-access {
+    order: 2;
+  }
+  .topbar .mobile-menu {
+    order: 1;
+    display: inline-flex;
+  }
+  .topbar .navlinks.open {
+    padding: 12px 20px;
+    background: var(--c-surface);
+    border-bottom: 1px solid var(--c-border);
+  }
+  .topbar .navlinks a {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: var(--r-md);
+  }
+}
+
+/* Listas de alquiler: la cuenta atrás se lee antes que los datos secundarios. */
+.rental-mobile-list {
+  display: none;
+}
+@media (max-width: 760px) {
+  .rental-desktop-table {
+    display: none;
+  }
+  .rental-mobile-list {
+    display: grid;
+    gap: 16px;
+  }
+  .rental-mobile-card {
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    background: var(--c-surface);
+    box-shadow: var(--elev-1);
+  }
+  .rental-card-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 16px;
+  }
+  .rental-card-heading small {
+    color: var(--c-text-muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .rental-card-heading h3 {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  .rental-card-timer {
+    display: grid;
+    gap: 5px;
+    padding: 16px 18px;
+    border-radius: var(--r-md);
+    background: var(--c-graphite);
+    color: var(--c-on-dark);
+  }
+  .rental-card-timer > span {
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .rental-card-timer > strong {
+    font-size: clamp(32px, 9vw, 44px);
+    letter-spacing: -0.035em;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    color: var(--c-lime-bright);
+  }
+  .rental-card-timer > small {
+    color: var(--c-on-dark);
+    font-size: 11px;
+  }
+  .rental-card-timer .countdown-bar {
+    width: 100%;
+    margin-top: 8px;
+    height: 4px;
+    background: rgb(255 255 255 / 20%);
+  }
+  .rental-mobile-card.is-ending .rental-card-timer {
+    background: #40320e;
+  }
+  .rental-mobile-card.is-ending .rental-card-timer > strong {
+    color: #ffe08a;
+  }
+  .rental-mobile-card.is-overdue .rental-card-timer {
+    background: var(--c-alert-ink);
+  }
+  .rental-mobile-card.is-overdue .rental-card-timer > strong {
+    color: var(--c-on-dark);
+  }
+  .rental-card-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 12px;
+    margin: 18px 0;
+  }
+  .rental-card-facts div {
+    min-width: 0;
+  }
+  .rental-card-facts dt {
+    margin-bottom: 4px;
+    color: var(--c-text-muted);
+    font-size: 12px;
+  }
+  .rental-card-facts dd {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+  .rental-mobile-card > .button {
+    width: 100%;
+    min-height: 46px;
+  }
+  .workspace .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .workspace .metric {
+    padding: 14px;
+    gap: 8px;
+  }
+  .workspace .metric strong {
+    font-size: clamp(21px, 6vw, 28px);
+    line-height: 1.15;
+  }
+  .workspace .metric p {
+    font-size: 10px;
+    line-height: 1.5;
+  }
+}
+/* Un filo de luz al interactuar, sin animación continua ni capas que bloqueen
+   el puntero. El foco tiene la misma señal aunque no se use ratón. */
+:where(.team-access, .navrail-cta, .xnav-item, .rental-mobile-card > .button):focus-visible {
+  box-shadow: 0 0 0 3px rgb(177 215 46 / 24%);
+}
+@media (hover: hover) {
+  .topbar .team-access:hover {
+    color: var(--c-text);
+    border-color: var(--c-lime-ink);
+    box-shadow: 0 0 0 4px rgb(177 215 46 / 12%);
+  }
+  .topbar .mobile-menu:hover {
+    background: var(--c-graphite-deep);
+    color: var(--c-on-dark);
+  }
+  .navrail-cta:hover:not(:disabled),
+  .rental-mobile-card > .button:hover:not(:disabled) {
+    box-shadow:
+      0 0 0 3px rgb(177 215 46 / 16%),
+      var(--elev-1);
+  }
+}
+.team-access:active,
+.navrail-cta:active:not(:disabled),
+.rental-mobile-card > .button:active:not(:disabled) {
+  box-shadow: inset 0 0 0 2px rgb(177 215 46 / 45%);
+}
+
+/* Contacto siempre disponible solo en la portada pública. */
+.whatsapp-float {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  filter: drop-shadow(0 4px 8px rgb(0 0 0 / 22%));
+}
+.whatsapp-float img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.whatsapp-float:focus-visible {
+  outline: 3px solid var(--c-lime-ink);
+  outline-offset: 5px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .whatsapp-float {
+    transition:
+      transform 180ms ease,
+      filter 180ms ease;
+  }
+  .whatsapp-float:active {
+    transform: scale(0.95);
+  }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .whatsapp-float:hover {
+    transform: translateY(-3px);
+    filter: drop-shadow(0 6px 12px rgb(86 108 0 / 35%)) brightness(1.06);
+  }
+}
+@media (max-width: 760px) {
+  .whatsapp-float {
+    width: 60px;
+    height: 60px;
+    right: max(12px, env(safe-area-inset-right));
+    bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+}
+/* Espacio al final para que el acceso flotante no tape enlaces del pie. */
+body:has(.whatsapp-float) .footer {
+  padding-bottom: calc(100px + env(safe-area-inset-bottom));
+}

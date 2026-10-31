@@ -418,6 +418,18 @@ export function PublicPage() {
         </section>
       </main>
       <Footer />
+      {whatsapp && (
+        <a
+          className="whatsapp-float"
+          href={`https://wa.me/${whatsapp}?text=${encodeURIComponent('Hola ROKAI, quisiera consultar la disponibilidad de patinetas.')}`}
+          target="_blank"
+          rel="noreferrer noopener"
+          aria-label="Hablemos por WhatsApp (abre una nueva pestaña)"
+          title="Hablemos por WhatsApp"
+        >
+          <img src="/assets/whatsapp-rokai.png" alt="" width={72} height={72} />
+        </a>
+      )}
     </>
   );
 }

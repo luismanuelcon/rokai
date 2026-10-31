@@ -78,9 +78,13 @@ export function PublicHeader() {
           </a>
         </nav>
         <div className="nav-actions">
-          <Link className="button dark" to="/gestion">
+          <Link
+            className="team-access"
+            to="/gestion"
+            aria-label="Acceso al equipo"
+            title="Acceso al equipo"
+          >
             <Icon name="lock" />
-            Acceso al equipo
           </Link>
           <button
             ref={menuButton}
@@ -95,6 +99,7 @@ export function PublicHeader() {
             }}
           >
             <Icon name={open ? 'close' : 'menu'} />
+            <span>Menú</span>
           </button>
         </div>
       </div>

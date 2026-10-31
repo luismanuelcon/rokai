@@ -128,10 +128,7 @@ export function AdminPanel({
 
   return (
     <>
-      <PageHeading
-        title="Tu estación, tus ajustes."
-        subtitle="Administra el equipo y la información que ven los visitantes."
-      />
+      <PageHeading title="Administración" />
       <ExpandableNav
         className="xnav-admin"
         label="Administración"

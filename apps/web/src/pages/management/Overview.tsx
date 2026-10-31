@@ -1,12 +1,11 @@
 import { Icon } from '../../components/Icon';
-import { minutesLeft } from '../../lib/format';
+import { useTicker } from '../../lib/countdown';
 import type { Dashboard, SessionUser } from '../../lib/types';
 import { PageHeading } from './Shared';
 import { RentalTable } from './RentalTable';
 
 export function Overview({
   dash,
-  user,
   isAdmin,
   onNew,
   onReload,
@@ -20,7 +19,8 @@ export function Overview({
   notify: (m: string) => void;
 }) {
   const active = dash.rentals.filter((r) => !r.endedAt);
-  const overdue = active.filter((r) => minutesLeft(r.dueAt) < 0);
+  useTicker(1000, active.length > 0);
+  const overdue = active.filter((r) => Date.parse(r.dueAt) <= Date.now());
   const free = (kind: 'scooter' | 'helmet') =>
     dash.equipment.filter((e) => e.kind === kind && !e.busy && e.status === 'available').length;
 
@@ -28,10 +28,7 @@ export function Overview({
     <>
       {/* Sin botón de acción: "Registrar alquiler" vive en la barra y está
           siempre visible; repetirlo aquí dejaba dos acciones principales. */}
-      <PageHeading
-        title={`Hola, ${user.name.split(' ')[0] ?? ''}.`}
-        subtitle="Todo lo que necesitas para poner la estación en movimiento."
-      />
+      <PageHeading title="Resumen" />
       <div className="metrics">
         <div className="metric">
           <div>
@@ -72,8 +69,7 @@ export function Overview({
       </div>
 
       <RentalTable
-        title="Ahora en recorrido"
-        subtitle="Alquileres que siguen en la calle."
+        title="Alquileres activos"
         rentals={active}
         lateFeePerMinuteCents={dash.lateFeePerMinuteCents}
         isAdmin={isAdmin}

@@ -10,7 +10,7 @@ export function Reports({ dash, admin }: { dash: Dashboard; admin: AdminData }) 
   return (
     <>
       <PageHeading
-        title="La estación en números."
+        title="Reportes"
         subtitle="Valores de alquileres finalizados. No representa confirmación de pagos."
       />
       <div className="metrics">
