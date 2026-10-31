@@ -1,9 +1,15 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import type { DocumentType } from '@rokai/contracts';
+import { CreateRentalRequest, type DocumentType } from '@rokai/contracts';
 import { CountrySelect } from '../../components/CountrySelect';
 import { Icon } from '../../components/Icon';
 import { SignaturePad } from '../../components/SignaturePad';
 import { api } from '../../lib/api';
+import {
+  jsonBytes,
+  MAX_RENTAL_BYTES,
+  prepareSignature,
+  rentalError,
+} from '../../lib/rentalSubmission';
 import { DEFAULT_DOCUMENT_TYPE, DOCUMENT_TYPES } from '../../lib/documents';
 import { money } from '../../lib/format';
 import { DEFAULT_DIAL, digitsOnly, phoneHint, splitE164, toE164 } from '../../lib/phone';
@@ -49,20 +55,31 @@ export function NewRental({ dash, onDone }: { dash: Dashboard; onDone: () => Pro
   const [busy, setBusy] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loaded = useRef(false);
+  const submitting = useRef(false);
+  const errorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error]);
 
   // El borrador vive en el servidor: nunca se guardan datos del cliente en el navegador.
   useEffect(() => {
-    void api<Partial<DraftState>>('/draft').then((saved) => {
-      setDraft((d) => ({ ...d, ...saved, requestId: saved.requestId ?? d.requestId }));
-      if (saved.phone) {
-        const parts = splitE164(saved.phone);
-        setDial(parts.dial);
-        setNational(parts.national);
-        // Un borrador antiguo puede traer el número sin indicativo.
-        setDraft((d) => ({ ...d, phone: toE164(parts.dial, parts.national) }));
-      }
-      loaded.current = true;
-    });
+    void api<Partial<DraftState>>('/draft')
+      .then((saved) => {
+        setDraft((d) => ({ ...d, ...saved, requestId: saved.requestId ?? d.requestId }));
+        if (saved.phone) {
+          const parts = splitE164(saved.phone);
+          setDial(parts.dial);
+          setNational(parts.national);
+          // Un borrador antiguo puede traer el número sin indicativo.
+          setDraft((d) => ({ ...d, phone: toE164(parts.dial, parts.national) }));
+        }
+        loaded.current = true;
+      })
+      .catch(() => {
+        setStatus(
+          'No pudimos recuperar el borrador. Conserva esta página abierta; los nuevos datos aún no se guardan automáticamente.',
+        );
+      });
   }, []);
 
   useEffect(() => {
@@ -86,10 +103,22 @@ export function NewRental({ dash, onDone }: { dash: Dashboard; onDone: () => Pro
   const rate = dash.rates.find((r) => r.id === draft.rateId);
   const hint = phoneHint(dial, national);
   const needed = rate ? rate.quantity * 2 : 0;
-  const equipmentReady = needed > 0 && draft.equipmentIds.length === needed;
+  const equipmentReady =
+    !!rate &&
+    draft.equipmentIds.length === needed &&
+    (['scooter', 'helmet'] as const).every(
+      (kind) =>
+        dash.equipment.filter(
+          (e) =>
+            e.kind === kind &&
+            e.status === 'available' &&
+            !e.busy &&
+            draft.equipmentIds.includes(e.id),
+        ).length === rate.quantity,
+    );
   const identityReady = draft.fullName.trim() !== '' && draft.document.trim() !== '';
   const closingReady = termsAccepted && signature !== '';
-  const canSubmit = identityReady && equipmentReady && closingReady;
+  const canSubmit = identityReady && equipmentReady && closingReady && !hint;
   // Cuando solo falta el cierre, el paso 04 se resalta: el resto ya está hecho
   // y el operario necesita saber dónde mirar.
   const closingPending = identityReady && equipmentReady && !closingReady;
@@ -99,9 +128,11 @@ export function NewRental({ dash, onDone }: { dash: Dashboard; onDone: () => Pro
       ? `Asigna ${String(rate.quantity)} patineta(s) y ${String(rate.quantity)} casco(s).`
       : !identityReady
         ? 'Completa el nombre y el documento del cliente.'
-        : !termsAccepted
-          ? 'El cliente debe aceptar los términos y condiciones.'
-          : 'Falta la firma del cliente.';
+        : hint
+          ? hint
+          : !termsAccepted
+            ? 'El cliente debe aceptar los términos y condiciones.'
+            : 'Falta la firma del cliente.';
   const available = (kind: Equipment['kind']) =>
     dash.equipment.filter((e) => e.kind === kind && !e.busy && e.status === 'available');
 
@@ -122,36 +153,56 @@ export function NewRental({ dash, onDone }: { dash: Dashboard; onDone: () => Pro
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting.current) return;
+    if (!canSubmit) {
+      setError(blockingReason);
+      return;
+    }
+    submitting.current = true;
     setBusy(true);
     setError('');
     try {
-      await api('/rentals', {
-        method: 'POST',
-        json: {
-          requestId: draft.requestId,
-          customer: {
-            fullName: draft.fullName,
-            documentType: draft.documentType,
-            document: draft.document,
-            // Se deriva de los campos visibles para que no pueda desincronizarse.
-            phone: toE164(dial, national) || null,
-          },
-          rateId: draft.rateId,
-          equipmentIds: draft.equipmentIds,
-          notes: draft.notes,
-          signature,
-          termsAccepted,
+      const preparedSignature = await prepareSignature(signature);
+      const parsed = CreateRentalRequest.safeParse({
+        requestId: draft.requestId,
+        customer: {
+          fullName: draft.fullName,
+          documentType: draft.documentType,
+          document: draft.document,
+          // Se deriva de los campos visibles para que no pueda desincronizarse.
+          phone: toE164(dial, national) || null,
         },
+        rateId: draft.rateId,
+        equipmentIds: draft.equipmentIds,
+        notes: draft.notes,
+        signature: preparedSignature,
+        termsAccepted,
       });
+      if (!parsed.success)
+        throw new Error(
+          `Revisa el formulario: ${parsed.error.issues[0]?.message ?? 'hay datos no válidos.'}`,
+        );
+      if (jsonBytes(parsed.data) > MAX_RENTAL_BYTES)
+        throw new Error(
+          'El registro supera el tamaño permitido. Reduce las observaciones o vuelve a capturar la firma. Tus datos se conservan.',
+        );
+      await api('/rentals', { method: 'POST', json: parsed.data });
       setDraft({ ...EMPTY, requestId: crypto.randomUUID() });
       setDial(DEFAULT_DIAL);
       setNational('');
       setSignature('');
       setTermsAccepted(false);
-      await onDone();
+      try {
+        await onDone();
+      } catch {
+        setError(
+          'El alquiler sí se guardó, pero no pudimos actualizar la lista. Consulta Alquileres activos antes de crear otro registro.',
+        );
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo registrar el alquiler.');
+      setError(rentalError(e));
     } finally {
+      submitting.current = false;
       setBusy(false);
     }
   }
@@ -170,7 +221,7 @@ export function NewRental({ dash, onDone }: { dash: Dashboard; onDone: () => Pro
                 <span className="step-badge">01</span>Datos del cliente
               </h2>
               {error && (
-                <div className="form-error" role="alert">
+                <div className="form-error" role="alert" ref={errorRef} tabIndex={-1}>
                   {error}
                 </div>
               )}
@@ -426,7 +477,12 @@ export function NewRental({ dash, onDone }: { dash: Dashboard; onDone: () => Pro
               {rate ? money(rate.priceCents) : '—'}
             </div>
             <p>Total contratado · COP</p>
-            <button className="button dark" type="submit" disabled={busy || !canSubmit}>
+            <button
+              className="button dark"
+              type="submit"
+              aria-busy={busy}
+              disabled={busy || !canSubmit}
+            >
               {busy ? 'Registrando…' : 'Confirmar alquiler'} <Icon name="check" />
             </button>
             {!canSubmit && !busy && <p className="summary-hint">{blockingReason}</p>}

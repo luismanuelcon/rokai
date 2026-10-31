@@ -406,3 +406,307 @@ button[aria-busy='true'],
   translate: none;
   transform: none;
 }
+
+/* Gestión: superficies sólidas y navegación que se adapta sin recortar opciones. */
+.appbar.glass-nav {
+  background: var(--c-graphite-deep);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 2px 12px rgb(15 17 19 / 12%);
+}
+.appbar-inner {
+  column-gap: 16px;
+}
+.appbar-user .nav-user {
+  color: var(--c-on-dark);
+}
+.navrail {
+  align-items: flex-start;
+}
+.navrail-track {
+  mask-image: none;
+  touch-action: auto;
+  flex-wrap: wrap;
+  overflow: visible;
+  gap: 8px;
+}
+.xnav-panel nav {
+  min-width: 0;
+}
+.xnav-item {
+  min-height: 44px;
+  border-radius: var(--r-md);
+  white-space: normal;
+  text-align: left;
+}
+.xnav-team .xnav-item {
+  color: var(--c-on-dark);
+}
+.xnav-team .xnav-item[aria-current='page'] {
+  background: var(--c-lime);
+  color: var(--c-graphite-deep);
+  border-color: var(--c-lime);
+}
+.xnav-team .xnav-item[aria-current='page'] .icon {
+  color: inherit;
+}
+.navrail-cta {
+  min-height: 46px;
+  border-radius: var(--r-md);
+}
+.xnav-trigger {
+  background: var(--c-surface);
+  background-image: none;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+.xnav-team .xnav-trigger {
+  background: var(--c-graphite);
+  border-color: rgb(255 255 255 / 24%);
+}
+.workspace .xnav-item {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  box-shadow: none;
+  color: var(--c-text);
+}
+.workspace .xnav-item[aria-current='page'] {
+  background: var(--c-graphite);
+  color: var(--c-on-dark);
+  border-color: var(--c-graphite);
+}
+.workspace .xnav-item[aria-current='page'] .icon {
+  color: var(--c-lime);
+}
+.workspace .panel,
+.workspace .metric,
+.workspace .step-panel,
+.workspace .equipment-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  box-shadow: var(--elev-1);
+}
+.workspace .workspace-head {
+  gap: 20px;
+  align-items: flex-start;
+}
+.workspace .workspace-head p {
+  max-width: 65ch;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.workspace .workspace-head h1 {
+  font-size: clamp(26px, 3vw, 36px);
+  line-height: 1.15;
+}
+.workspace .panel h2 {
+  font-size: 19px;
+  line-height: 1.35;
+}
+.workspace .table-wrap {
+  max-width: 100%;
+  overflow: auto;
+  scrollbar-width: thin;
+  border-radius: var(--r-md);
+}
+.workspace table {
+  font-size: 14px;
+}
+.workspace th {
+  background: var(--c-canvas);
+}
+.workspace td {
+  vertical-align: middle;
+}
+.workspace .metric strong {
+  overflow-wrap: anywhere;
+}
+.workspace .field input,
+.workspace .field select,
+.workspace .field textarea {
+  background: var(--c-surface);
+}
+.workspace .toolbar > div {
+  min-width: 0;
+}
+.workspace .summary-row {
+  align-items: flex-start;
+}
+.workspace .summary-row strong {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.xnav-trigger:focus-visible,
+.xnav-item:focus-visible,
+.navrail-cta:focus-visible {
+  outline: 2px solid var(--c-lime-ink);
+  outline-offset: 3px;
+}
+.appbar .xnav-trigger:focus-visible,
+.appbar .xnav-item:focus-visible,
+.appbar .navrail-cta:focus-visible {
+  outline-color: var(--c-lime-bright);
+}
+@media (hover: hover) {
+  .workspace .xnav-item:hover:not([aria-current='page']) {
+    background: var(--c-canvas);
+    border-color: var(--c-lime-ink);
+  }
+  .xnav-team .xnav-item:hover:not([aria-current='page']) {
+    background: var(--c-graphite);
+    border-color: rgb(255 255 255 / 30%);
+  }
+}
+@media (max-width: 1023px) {
+  /* La cabecera deja de ser pegajosa para que el menú nunca tape el formulario
+     ni consuma toda la pantalla cuando el usuario aumenta el tamaño de texto. */
+  .appbar {
+    position: relative;
+  }
+  .appbar-inner {
+    padding: 8px 16px 12px;
+    gap: 8px 12px;
+  }
+  .appbar-brand {
+    min-height: 40px;
+  }
+  .appbar-user {
+    max-width: calc(100% - 140px);
+  }
+  .appbar-user .nav-user {
+    max-width: 18ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .navrail {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    gap: 8px;
+    padding: 0;
+  }
+  .navrail-cta {
+    width: 100%;
+    justify-content: center;
+  }
+  .navrail > .xnav {
+    width: 100%;
+  }
+  .xnav-trigger {
+    min-height: 48px;
+    padding: 12px;
+    gap: 8px;
+  }
+  .xnav-trigger-label {
+    font-size: 12px;
+  }
+  .xnav-trigger-value {
+    min-width: 0;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+  .xnav-trigger .icon {
+    flex: none;
+  }
+  .xnav-panel.is-open {
+    margin-top: 8px;
+  }
+  .xnav-panel nav,
+  .xnav-team .xnav-panel nav {
+    padding: 4px;
+  }
+  .xnav .navrail-track {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    padding: 0;
+    overflow: visible;
+  }
+  .xnav .xnav-item {
+    width: 100%;
+    min-height: 48px;
+    justify-content: flex-start;
+    padding: 12px 14px;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .xnav .xnav-item .icon {
+    flex: none;
+  }
+  .xnav-team .xnav-panel-inner {
+    border-radius: var(--r-md);
+    background: var(--c-graphite-deep);
+  }
+  .workspace .xnav-panel-inner {
+    border-radius: var(--r-md);
+    background: var(--c-canvas);
+  }
+  .management .workspace {
+    padding-top: 24px;
+  }
+}
+@media (max-width: 620px) {
+  .workspace {
+    min-width: 0;
+  }
+  .workspace .workspace-head {
+    flex-direction: column;
+    margin-bottom: 24px;
+  }
+  .workspace .workspace-head > .button {
+    width: 100%;
+  }
+  .workspace .panel {
+    padding: 20px 16px;
+  }
+  .workspace .metrics {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .workspace .metric {
+    min-width: 0;
+    padding: 18px;
+  }
+  .workspace .metric strong {
+    font-size: 28px;
+  }
+  .workspace .toolbar {
+    gap: 14px;
+    align-items: stretch;
+  }
+  .workspace .toolbar > .button,
+  .workspace .toolbar > input,
+  .workspace .toolbar > select {
+    width: 100%;
+  }
+  .workspace .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workspace .small-copy {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .workspace td .button {
+    min-height: 44px;
+  }
+  .workspace .summary-row {
+    gap: 12px;
+    font-size: 14px;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .xnav-item {
+    transition:
+      background-color var(--t-fast),
+      border-color var(--t-fast),
+      color var(--t-fast);
+  }
+  .xnav-item:active {
+    transform: none;
+    filter: brightness(0.94);
+  }
+}

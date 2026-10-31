@@ -83,8 +83,9 @@ export function SignaturePad({ value, onChange }: Props) {
     const canvas = canvasRef.current;
     if (!canvas) return '';
     const output = document.createElement('canvas');
-    output.width = canvas.width;
-    output.height = canvas.height;
+    const scale = Math.min(1, 640 / canvas.clientWidth);
+    output.width = Math.round(canvas.clientWidth * scale);
+    output.height = Math.round(HEIGHT * scale);
     const ctx = output.getContext('2d');
     if (!ctx) throw new Error('No se pudo preparar la imagen de la firma.');
     const ratio = output.width / canvas.clientWidth;

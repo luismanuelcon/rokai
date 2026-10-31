@@ -10,11 +10,12 @@ export interface ExpandableNavItem<T extends string> {
 }
 
 /**
- * Barra de navegación horizontal que se pliega. Un solo patrón para los menús
+ * Navegación adaptable: lista vertical en móvil y barra completa en escritorio.
+ * Un solo patrón para los menús
  * secundarios del portal: operación y administración.
  *
  * Se pliega sola en pantallas estrechas y nace abierta en escritorio, donde hay
- * sitio de sobra. La pista se desplaza en horizontal; nunca crece hacia abajo.
+ * sitio de sobra. En móvil todas las opciones se muestran completas y permiten desplazamiento vertical.
  */
 export function ExpandableNav<T extends string>({
   label,
@@ -71,7 +72,7 @@ export function ExpandableNav<T extends string>({
   }, [open]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !window.matchMedia('(min-width: 1024px)').matches) return;
     const current = track.current?.querySelector('[aria-current="page"]');
     if (!(current instanceof HTMLElement)) return;
     const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -84,7 +85,7 @@ export function ExpandableNav<T extends string>({
 
   /** Flechas, Inicio y Fin recorren la barra sin salir de ella. */
   function onTrackKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    const keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
+    const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
     if (!keys.includes(event.key)) return;
     const items = [...(track.current?.querySelectorAll<HTMLElement>('.xnav-item') ?? [])];
     const index = items.indexOf(document.activeElement as HTMLElement);
@@ -95,7 +96,10 @@ export function ExpandableNav<T extends string>({
         ? 0
         : event.key === 'End'
           ? items.length - 1
-          : (index + (event.key === 'ArrowRight' ? 1 : -1) + items.length) % items.length;
+          : (index +
+              (event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : -1) +
+              items.length) %
+            items.length;
     items[next]?.focus();
   }
 
@@ -121,12 +125,17 @@ export function ExpandableNav<T extends string>({
       >
         <Icon name={triggerIcon ?? current?.icon ?? 'grid'} />
         <span className="xnav-trigger-label">{label}</span>
-        <span className="xnav-trigger-value">{current?.label ?? 'Abrir'}</span>
+        <span className="xnav-trigger-value">{current?.label ?? 'Ver secciones'}</span>
         <Icon name="chevron" />
       </button>
 
       {/* `grid-template-rows` de 0fr a 1fr anima el alto real sin fijar píxeles. */}
-      <div className={`xnav-panel${open ? ' is-open' : ''}`} id={panelId} aria-hidden={!open}>
+      <div
+        className={`xnav-panel${open ? ' is-open' : ''}`}
+        id={panelId}
+        aria-hidden={!open}
+        inert={!open}
+      >
         <div className="xnav-panel-inner">
           <nav aria-label={label}>
             <div className="navrail-track" ref={track} onKeyDown={onTrackKeyDown}>

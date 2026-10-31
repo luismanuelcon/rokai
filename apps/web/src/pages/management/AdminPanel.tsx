@@ -132,7 +132,13 @@ export function AdminPanel({
         title="Tu estación, tus ajustes."
         subtitle="Administra el equipo y la información que ven los visitantes."
       />
-      <ExpandableNav label="Sección" items={TABS} active={tab} onSelect={setTab} />
+      <ExpandableNav
+        className="xnav-admin"
+        label="Administración"
+        items={TABS}
+        active={tab}
+        onSelect={setTab}
+      />
 
       {tab === 'rates' && <Rates rates={admin.rates} onReload={onReload} notify={notify} />}
 
