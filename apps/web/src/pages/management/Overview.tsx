@@ -7,12 +7,14 @@ import { RentalTable } from './RentalTable';
 export function Overview({
   dash,
   user,
+  isAdmin,
   onNew,
   onReload,
   notify,
 }: {
   dash: Dashboard;
   user: SessionUser;
+  isAdmin: boolean;
   onNew: () => void;
   onReload: () => Promise<void>;
   notify: (m: string) => void;
@@ -24,15 +26,11 @@ export function Overview({
 
   return (
     <>
+      {/* Sin botón de acción: "Registrar alquiler" vive en la barra y está
+          siempre visible; repetirlo aquí dejaba dos acciones principales. */}
       <PageHeading
         title={`Hola, ${user.name.split(' ')[0] ?? ''}.`}
         subtitle="Todo lo que necesitas para poner la estación en movimiento."
-        action={
-          <button className="button" onClick={onNew}>
-            <Icon name="plus" />
-            Nuevo alquiler
-          </button>
-        }
       />
       <div className="metrics">
         <div className="metric">
@@ -77,6 +75,8 @@ export function Overview({
         title="Ahora en recorrido"
         subtitle="Alquileres que siguen en la calle."
         rentals={active}
+        lateFeePerMinuteCents={dash.lateFeePerMinuteCents}
+        isAdmin={isAdmin}
         onNew={onNew}
         onReload={onReload}
         notify={notify}

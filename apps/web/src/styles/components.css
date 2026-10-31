@@ -569,17 +569,43 @@ table td {
 
 .signature {
   position: relative;
+  isolation: isolate;
   border: 1.5px dashed var(--c-border);
   border-radius: var(--r-input);
   background: var(--c-surface);
   overflow: hidden;
-  transition: border-color var(--t-fast) var(--ease-out);
+  transition:
+    border-color var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out);
+}
+
+.signature::before {
+  position: absolute;
+  inset: 0 0 48px;
+  z-index: -1;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 23px, rgb(36 38 40 / 2%) 24px),
+    linear-gradient(145deg, rgb(255 255 255 / 62%), rgb(255 255 255 / 20%));
+  content: '';
+  pointer-events: none;
+}
+
+.signature::after {
+  position: absolute;
+  right: 12%;
+  bottom: 76px;
+  left: 12%;
+  z-index: 1;
+  border-top: 1px solid rgb(36 38 40 / 14%);
+  content: '';
+  pointer-events: none;
 }
 
 .signature-canvas {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
-  /* Sin esto, arrastrar el dedo para firmar desplaza la página. */
   touch-action: none;
   cursor: crosshair;
 }
@@ -596,6 +622,7 @@ table td {
   font-weight: 600;
   color: var(--c-text-muted);
   pointer-events: none;
+  z-index: 2;
 }
 
 .signature-placeholder .icon {
@@ -604,6 +631,8 @@ table td {
 }
 
 .signature-bar {
+  position: relative;
+  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -636,8 +665,31 @@ table td {
   border-style: solid;
 }
 
+.signature.is-active {
+  border-color: var(--c-lime);
+  box-shadow:
+    0 0 0 1px rgb(177 215 46 / 35%),
+    0 0 18px -8px rgb(177 215 46 / 62%);
+}
+
+.signature.is-starting {
+  animation: signature-start 320ms ease-out;
+}
+
 .signature.is-signed {
   border-color: var(--c-lime);
+}
+
+.signature.is-signed::after {
+  display: none;
+}
+
+@keyframes signature-start {
+  50% {
+    box-shadow:
+      0 0 0 2px rgb(177 215 46 / 40%),
+      0 0 24px -6px rgb(177 215 46 / 50%);
+  }
 }
 
 .needs-attention .signature:not(.is-signed) {

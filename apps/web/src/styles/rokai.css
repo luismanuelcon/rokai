@@ -1,31 +1,9 @@
+/* Inter variable: un solo archivo cubre de 100 a 900. Antes había cinco @font-face
+   apuntando a copias idénticas del mismo woff2 (cinco descargas de lo mismo). */
 @font-face {
   font-family: Inter;
-  src: url('/assets/inter-400.woff2') format('woff2');
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: Inter;
-  src: url('/assets/inter-500.woff2') format('woff2');
-  font-weight: 500;
-  font-display: swap;
-}
-@font-face {
-  font-family: Inter;
-  src: url('/assets/inter-600.woff2') format('woff2');
-  font-weight: 600;
-  font-display: swap;
-}
-@font-face {
-  font-family: Inter;
-  src: url('/assets/inter-700.woff2') format('woff2');
-  font-weight: 700;
-  font-display: swap;
-}
-@font-face {
-  font-family: Inter;
-  src: url('/assets/inter-800.woff2') format('woff2');
-  font-weight: 800;
+  src: url('/assets/inter.woff2') format('woff2');
+  font-weight: 100 900;
   font-display: swap;
 }
 :root {

@@ -1,7 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
-import { consents, notifications, rentalDrafts, rentalEquipment, rentals } from '@rokai/db';
-import { TERMS_VERSION } from '@rokai/contracts';
-import { assertAssignable } from '../domain/rentals.js';
+import { consents, notifications, rentalDrafts, rentalEquipment, rentals, settings, } from '@rokai/db';
+import { TERMS_VERSION, } from '@rokai/contracts';
+import { assertAssignable, lateCharge } from '../domain/rentals.js';
 import { recordAudit } from '../lib/audit.js';
 import { addMinutes } from '../lib/time.js';
 import { badRequest, conflict, notFound } from '../lib/http-error.js';
@@ -76,21 +76,25 @@ export async function createRental(db, actor, input) {
         return { id: rentalId, idempotent: false };
     });
 }
-export async function finishRental(db, actor, rentalId, notes) {
+export async function finishRental(db, actor, rentalId, input) {
     await db.transaction(async (tx) => {
         const rental = await findRental(tx, rentalId);
         if (!rental)
             throw notFound('Alquiler no encontrado.');
         if (rental.endedAt)
             throw conflict('El alquiler ya fue finalizado.');
-        const mergedNotes = [rental.notes, notes].filter(Boolean).join('\n');
+        const endedAt = new Date();
+        const late = lateCharge(rental.dueAt, endedAt, await lateFeePerMinute(tx));
+        const mergedNotes = [rental.notes, input.notes].filter(Boolean).join('\n');
         await tx
             .update(rentals)
             .set({
-            endedAt: new Date(),
+            endedAt,
             endedBy: actor.id,
-            // No se inventan recargos: el negocio aún no definió esa regla.
-            finalPriceCents: rental.priceCents,
+            lateMinutes: late.minutes,
+            lateFeeCents: late.cents,
+            finalPriceCents: rental.priceCents + late.cents,
+            paymentMethod: input.paymentMethod,
             notes: mergedNotes,
         })
             .where(eq(rentals.id, rentalId));
@@ -105,9 +109,28 @@ export async function finishRental(db, actor, rentalId, notes) {
             action: 'finalizar_alquiler',
             entity: 'rental',
             entityId: rentalId,
-            after: { finalPriceCents: rental.priceCents },
+            after: {
+                finalPriceCents: rental.priceCents + late.cents,
+                lateMinutes: late.minutes,
+                lateFeeCents: late.cents,
+                paymentMethod: input.paymentMethod,
+            },
         });
     });
+}
+/**
+ * El recargo se lee al cerrar, no al abrir: es la tarifa vigente en el momento
+ * de la devolución. Un valor corrupto no debe bloquear la operación, así que
+ * cae a cero.
+ */
+async function lateFeePerMinute(exec) {
+    const rows = await exec
+        .select({ value: settings.value })
+        .from(settings)
+        .where(eq(settings.key, 'lateFeePerMinuteCents'))
+        .limit(1);
+    const parsed = Number(rows[0]?.value);
+    return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : 0;
 }
 /** Patrón outbox: los mensajes se escriben en la misma transacción que el hecho. */
 async function enqueueRentalNotifications(tx, args) {

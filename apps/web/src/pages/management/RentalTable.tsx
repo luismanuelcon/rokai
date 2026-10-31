@@ -4,9 +4,16 @@ import { Modal } from '../../components/Modal';
 import { api } from '../../lib/api';
 import { countdown, useTicker } from '../../lib/countdown';
 import { documentShort } from '../../lib/documents';
-import { datetime, money } from '../../lib/format';
+import { datetime, lateCharge, money } from '../../lib/format';
 import type { Rental } from '../../lib/types';
 import { PageHeading } from './Shared';
+
+type PaymentMethod = NonNullable<Rental['paymentMethod']>;
+
+export const PAYMENT_LABEL: Record<PaymentMethod, string> = {
+  cash: 'Efectivo',
+  transfer: 'Transferencia',
+};
 
 function RentalRow({ rental, onSelect }: { rental: Rental; onSelect: () => void }) {
   const active = !rental.endedAt;
@@ -67,28 +74,67 @@ function RentalRow({ rental, onSelect }: { rental: Rental; onSelect: () => void 
   );
 }
 
+const PAYMENT_METHODS: [PaymentMethod, string][] = [
+  ['cash', 'Efectivo'],
+  ['transfer', 'Transferencia'],
+];
+
 function RentalDialog({
   rental,
+  lateFeePerMinuteCents,
+  isAdmin,
   onClose,
   onFinished,
+  onDeleted,
 }: {
   rental: Rental;
+  lateFeePerMinuteCents: number;
+  isAdmin: boolean;
   onClose: () => void;
   onFinished: () => void;
+  onDeleted: () => void;
 }) {
   const [notes, setNotes] = useState('');
+  const [payment, setPayment] = useState<PaymentMethod | ''>('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
+  // Se recalcula con el reloj: el recargo depende del minuto en que se cierre.
+  useTicker(1000, !rental.endedAt);
+  const late = rental.endedAt
+    ? { minutes: rental.lateMinutes ?? 0, cents: rental.lateFeeCents ?? 0 }
+    : lateCharge(rental.dueAt, lateFeePerMinuteCents);
+  const total = rental.finalPriceCents ?? rental.priceCents + late.cents;
+
   async function finish() {
+    if (!payment) {
+      setError('Selecciona el método de pago.');
+      return;
+    }
     setBusy(true);
     setError('');
     try {
-      await api(`/rentals/${rental.id}/finish`, { method: 'POST', json: { notes } });
+      await api(`/rentals/${rental.id}/finish`, {
+        method: 'POST',
+        json: { notes, paymentMethod: payment },
+      });
       onFinished();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo finalizar.');
     } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    setBusy(true);
+    setError('');
+    try {
+      await api(`/admin/rentals/${rental.id}`, { method: 'DELETE' });
+      onDeleted();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo eliminar el registro.');
       setBusy(false);
     }
   }
@@ -124,6 +170,23 @@ function RentalDialog({
         <strong>{money(rental.priceCents)}</strong>
       </div>
 
+      {late.minutes > 0 && (
+        <div className="summary-row">
+          <span>
+            Recargo por retraso
+            <small className="muted"> · {late.minutes} min</small>
+          </span>
+          <strong className={late.cents > 0 ? 'is-surcharge' : undefined}>
+            {late.cents > 0 ? `+ ${money(late.cents)}` : 'Sin cobro'}
+          </strong>
+        </div>
+      )}
+
+      <div className="summary-row is-total">
+        <span>Total a cobrar</span>
+        <strong>{money(total)}</strong>
+      </div>
+
       {rental.endedAt ? (
         <>
           <div className="summary-row">
@@ -131,10 +194,21 @@ function RentalDialog({
             <strong>{datetime(rental.endedAt)}</strong>
           </div>
           <div className="summary-row">
+            <span>Método de pago</span>
+            <strong>
+              {rental.paymentMethod ? PAYMENT_LABEL[rental.paymentMethod] : 'No registrado'}
+            </strong>
+          </div>
+          <div className="summary-row">
             <span>Finalizó</span>
             <strong>{rental.endedByName}</strong>
           </div>
           <p className="small-copy">Novedades: {rental.notes || 'Sin novedades'}</p>
+          {error && (
+            <div className="form-error" role="alert">
+              {error}
+            </div>
+          )}
         </>
       ) : (
         <>
@@ -143,10 +217,29 @@ function RentalDialog({
               {error}
             </div>
           )}
-          <p className="small-copy muted">
-            El total final será {money(rental.priceCents)}. No se aplican recargos automáticos: el
-            negocio aún no ha definido esa regla.
-          </p>
+          <fieldset className="field choice-group">
+            <legend className="field-label">Método de pago</legend>
+            <div className="choice-row">
+              {PAYMENT_METHODS.map(([value, label]) => (
+                <label className="choice" key={value}>
+                  <input
+                    type="radio"
+                    name="payment-method"
+                    value={value}
+                    checked={payment === value}
+                    onChange={() => {
+                      setPayment(value);
+                      setError('');
+                    }}
+                  />
+                  <span>
+                    <Icon name={value === 'cash' ? 'cash' : 'transfer'} />
+                    {label}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <div className="field">
             <label htmlFor="return-notes">Novedades de devolución (opcional)</label>
             <textarea
@@ -162,11 +255,63 @@ function RentalDialog({
             <button className="button outline" onClick={onClose}>
               Cancelar
             </button>
-            <button className="button dark" disabled={busy} onClick={() => void finish()}>
-              {busy ? 'Guardando…' : 'Confirmar devolución'}
+            <button
+              className="button dark"
+              disabled={busy || !payment}
+              onClick={() => void finish()}
+            >
+              {busy ? 'Guardando…' : `Cobrar ${money(total)}`}
             </button>
           </div>
         </>
+      )}
+
+      {/* El borrado existe para limpiar pruebas: separado del flujo normal y
+          detrás de una confirmación explícita. */}
+      {isAdmin && (
+        <div className="danger-zone">
+          {confirmDelete ? (
+            <>
+              <p className="small-copy">
+                Se eliminará el registro <strong>#{String(rental.id).padStart(4, '0')}</strong> y
+                sus notificaciones. El equipo quedará libre y la traza de auditoría se conserva.
+                Esta acción no se puede deshacer.
+              </p>
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="button small outline"
+                  disabled={busy}
+                  onClick={() => {
+                    setConfirmDelete(false);
+                  }}
+                >
+                  Conservar
+                </button>
+                <button
+                  type="button"
+                  className="button small danger"
+                  disabled={busy}
+                  onClick={() => void remove()}
+                >
+                  {busy ? 'Eliminando…' : 'Eliminar definitivamente'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="button small subtle"
+              onClick={() => {
+                setError('');
+                setConfirmDelete(true);
+              }}
+            >
+              <Icon name="trash" />
+              Eliminar registro
+            </button>
+          )}
+        </div>
       )}
     </Modal>
   );
@@ -176,6 +321,8 @@ export function RentalTable({
   title,
   subtitle,
   rentals,
+  lateFeePerMinuteCents,
+  isAdmin,
   onNew,
   onReload,
   notify,
@@ -184,6 +331,8 @@ export function RentalTable({
   title: string;
   subtitle: string;
   rentals: Rental[];
+  lateFeePerMinuteCents: number;
+  isAdmin: boolean;
   onNew: () => void;
   onReload: () => Promise<void>;
   notify: (m: string) => void;
@@ -244,12 +393,12 @@ export function RentalTable({
             <table>
               <thead>
                 <tr>
-                  <th>Alquiler / cliente</th>
-                  <th>Equipos</th>
-                  <th>Inicio / duración</th>
-                  <th>Valor</th>
-                  <th>Estado</th>
-                  <th>Acción</th>
+                  <th scope="col">Alquiler / cliente</th>
+                  <th scope="col">Equipos</th>
+                  <th scope="col">Inicio / duración</th>
+                  <th scope="col">Valor</th>
+                  <th scope="col">Estado</th>
+                  <th scope="col">Acción</th>
                 </tr>
               </thead>
               <tbody>
@@ -271,12 +420,19 @@ export function RentalTable({
       {selected && (
         <RentalDialog
           rental={selected}
+          lateFeePerMinuteCents={lateFeePerMinuteCents}
+          isAdmin={isAdmin}
           onClose={() => {
             setSelected(null);
           }}
           onFinished={() => {
             setSelected(null);
             notify('Devolución registrada.');
+            void onReload();
+          }}
+          onDeleted={() => {
+            setSelected(null);
+            notify('Registro eliminado.');
             void onReload();
           }}
         />

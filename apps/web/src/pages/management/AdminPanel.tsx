@@ -1,36 +1,24 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { ExpandableNav, type ExpandableNavItem } from '../../components/ExpandableNav';
 import { Icon } from '../../components/Icon';
 import { Modal } from '../../components/Modal';
 import { api } from '../../lib/api';
 import { datetime } from '../../lib/format';
 import type { AdminData, AdminUser, Notification } from '../../lib/types';
+import { BusinessSettings } from './BusinessSettings';
+import { FaqManager } from './FaqManager';
 import { Rates } from './Rates';
 import { PageHeading } from './Shared';
 
 type Tab = 'rates' | 'users' | 'faqs' | 'settings' | 'notifications' | 'audit';
 
-const TABS: [Tab, string][] = [
-  ['rates', 'Tarifas'],
-  ['users', 'Usuarios'],
-  ['faqs', 'Preguntas frecuentes'],
-  ['settings', 'Información y legales'],
-  ['notifications', 'Notificaciones'],
-  ['audit', 'Trazabilidad'],
-];
-
-const SETTING_FIELDS: [string, string][] = [
-  ['location', 'Ubicación'],
-  ['mapsUrl', 'Enlace del mapa (Cómo llegar)'],
-  ['hours', 'Horario de atención'],
-  ['whatsapp', 'WhatsApp en formato internacional'],
-  ['instagram', 'Usuario de Instagram'],
-  ['email', 'Correo de contacto'],
-];
-
-const LEGAL_FIELDS: [string, string][] = [
-  ['terms', 'Términos y condiciones'],
-  ['privacy', 'Privacidad y tratamiento de datos'],
-  ['cookies', 'Política de cookies'],
+const TABS: ExpandableNavItem<Tab>[] = [
+  { value: 'rates', label: 'Tarifas', icon: 'chart' },
+  { value: 'users', label: 'Usuarios', icon: 'users' },
+  { value: 'faqs', label: 'Preguntas frecuentes', icon: 'bell' },
+  { value: 'settings', label: 'Negocio y legales', icon: 'settings' },
+  { value: 'notifications', label: 'Notificaciones', icon: 'mail' },
+  { value: 'audit', label: 'Trazabilidad', icon: 'history' },
 ];
 
 export function AdminPanel({
@@ -47,9 +35,7 @@ export function AdminPanel({
   notify: (m: string) => void;
 }) {
   const [tab, setTab] = useState<Tab>('rates');
-  const [settings, setSettings] = useState(admin.settings);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [error, setError] = useState('');
   const [creatingUser, setCreatingUser] = useState(false);
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
@@ -60,10 +46,6 @@ export function AdminPanel({
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [deletingUser, setDeletingUser] = useState<AdminUser | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
-
-  useEffect(() => {
-    setSettings(admin.settings);
-  }, [admin.settings]);
 
   useEffect(() => {
     if (tab !== 'notifications') return;
@@ -144,37 +126,13 @@ export function AdminPanel({
     }
   }
 
-  async function saveSettings(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError('');
-    try {
-      await api('/admin/settings', { method: 'PUT', json: settings });
-      notify('Información pública actualizada.');
-      await onReload();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo guardar.');
-    }
-  }
-
   return (
     <>
       <PageHeading
         title="Tu estación, tus ajustes."
         subtitle="Administra el equipo y la información que ven los visitantes."
       />
-      <div className="admin-tabs">
-        {TABS.map(([value, label]) => (
-          <button
-            key={value}
-            className={`button small subtle${tab === value ? ' active' : ''}`}
-            onClick={() => {
-              setTab(value);
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <ExpandableNav label="Sección" items={TABS} active={tab} onSelect={setTab} />
 
       {tab === 'rates' && <Rates rates={admin.rates} onReload={onReload} notify={notify} />}
 
@@ -394,67 +352,15 @@ export function AdminPanel({
         </Modal>
       )}
 
-      {tab === 'faqs' && (
-        <div className="panel">
-          <h2>Preguntas públicas</h2>
-          {admin.faqs.map((f) => (
-            <div className="summary-row" key={f.id}>
-              <div>
-                <strong>{f.question}</strong>
-                <p className="small-copy">
-                  Orden {f.position} · {f.active ? 'Publicada' : 'Oculta'}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {tab === 'faqs' && <FaqManager faqs={admin.faqs} onReload={onReload} notify={notify} />}
 
       {tab === 'settings' && (
-        <form className="panel" onSubmit={(e) => void saveSettings(e)}>
-          <h2>Información pública</h2>
-          {error && (
-            <div className="form-error" role="alert">
-              {error}
-            </div>
-          )}
-          <div className="form-grid">
-            {SETTING_FIELDS.map(([key, label]) => (
-              <div className="field" key={key}>
-                <label htmlFor={`s-${key}`}>{label}</label>
-                <input
-                  id={`s-${key}`}
-                  value={settings[key] ?? ''}
-                  onChange={(e) => {
-                    setSettings((s) => ({ ...s, [key]: e.target.value }));
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-          <h2>Documentos legales</h2>
-          <p className="notice">
-            Los textos iniciales indican lo pendiente; reemplázalos por los documentos aprobados
-            antes de operar con datos reales.
-          </p>
-          {LEGAL_FIELDS.map(([key, label]) => (
-            <div className="field" key={key}>
-              <label htmlFor={`s-${key}`}>{label}</label>
-              <textarea
-                id={`s-${key}`}
-                rows={6}
-                maxLength={10000}
-                value={settings[key] ?? ''}
-                onChange={(e) => {
-                  setSettings((s) => ({ ...s, [key]: e.target.value }));
-                }}
-              />
-            </div>
-          ))}
-          <button type="submit" className="button dark">
-            Guardar información <Icon name="check" />
-          </button>
-        </form>
+        <BusinessSettings
+          settings={admin.settings}
+          audit={admin.audit}
+          onReload={onReload}
+          notify={notify}
+        />
       )}
 
       {tab === 'notifications' && (

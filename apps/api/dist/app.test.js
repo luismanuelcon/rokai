@@ -189,11 +189,14 @@ test('Ciclo de alquiler: idempotencia, colisión, precio inmutable y auditoría'
     assert.deepEqual((await call('/api/v1/draft', 'GET', undefined, worker)).body, {});
     // Cambiar la tarifa no reescribe la historia.
     await call(`/api/v1/admin/rates/${rate.id}`, 'PATCH', { priceCents: 9_999_900, active: true, validFrom: null, validUntil: null }, admin);
-    const finished = await call(`/api/v1/rentals/${rentalId}/finish`, 'POST', { notes: 'Sin novedades' }, worker);
+    const finished = await call(`/api/v1/rentals/${rentalId}/finish`, 'POST', { notes: 'Sin novedades', paymentMethod: 'cash' }, worker);
     assert.equal(finished.status, 200);
-    assert.equal((await call(`/api/v1/rentals/${rentalId}/finish`, 'POST', {}, worker)).status, 409);
+    assert.equal((await call(`/api/v1/rentals/${rentalId}/finish`, 'POST', { paymentMethod: 'cash' }, worker))
+        .status, 409);
     const final = await call('/api/v1/dashboard', 'GET', undefined, worker);
     assert.equal(final.body.rentals[0].finalPriceCents, rate.priceCents);
+    assert.equal(final.body.rentals[0].paymentMethod, 'cash');
+    assert.equal(final.body.rentals[0].lateFeeCents, 0);
     assert.equal(final.body.rentals[0].endedByName, 'Colaborador');
     assert.equal(final.body.equipment.filter((e) => e.busy).length, 0);
     const adminData = await call('/api/v1/admin/data', 'GET', undefined, admin);
@@ -411,7 +414,7 @@ test('El tipo de documento usa cédula por defecto y distingue el mismo número'
     const created = listed.body.find((r) => r.id === omitted.body.id);
     assert.equal(created.customerDocumentType, 'CC');
     // El mismo número con pasaporte es otra persona, no un conflicto.
-    await call(`/api/v1/rentals/${String(omitted.body.id)}/finish`, 'POST', {}, admin);
+    await call(`/api/v1/rentals/${String(omitted.body.id)}/finish`, 'POST', { paymentMethod: 'transfer' }, admin);
     const passport = await call('/api/v1/rentals', 'POST', {
         requestId: '88888888-8888-4888-8888-888888888888',
         customer: {
@@ -438,5 +441,43 @@ test('El alquiler activo expone el vencimiento para el contador en vivo', async 
         const span = new Date(rental.dueAt).getTime() - new Date(rental.startedAt).getTime();
         assert.equal(span, rental.minutes * 60_000, 'dueAt debe coincidir con la duración contratada');
     }
+});
+test('Solo administración elimina alquileres; el equipo vuelve a quedar libre', async () => {
+    const dash = await call('/api/v1/dashboard', 'GET', undefined, admin);
+    const rate = dash.body.rates.find((r) => r.quantity === 1);
+    const free = dash.body.equipment.filter((e) => !e.busy && e.status === 'available');
+    const scooter = free.find((e) => e.kind === 'scooter');
+    const helmet = free.find((e) => e.kind === 'helmet');
+    const created = await call('/api/v1/rentals', 'POST', {
+        requestId: '99999999-9999-4999-8999-999999999999',
+        customer: { fullName: 'Registro de prueba', document: '5150', phone: null },
+        rateId: rate.id,
+        equipmentIds: [scooter.id, helmet.id],
+        notes: '',
+        ...CLOSING,
+    }, admin);
+    assert.equal(created.status, 201);
+    const id = String(created.body.id);
+    // Sesión propia: las pruebas anteriores revocan la del colaborador compartido.
+    await call('/api/v1/admin/users', 'POST', {
+        name: 'Colaborador borrado',
+        email: 'borrado@test.local',
+        password: PASSWORD,
+        role: 'collaborator',
+    }, admin);
+    const collaborator = await login('borrado@test.local');
+    const denied = await call(`/api/v1/admin/rentals/${id}`, 'DELETE', undefined, collaborator);
+    assert.equal(denied.status, 403, 'un colaborador no puede borrar registros');
+    const removed = await call(`/api/v1/admin/rentals/${id}`, 'DELETE', undefined, admin);
+    assert.equal(removed.status, 200);
+    assert.equal((await call(`/api/v1/admin/rentals/${id}`, 'DELETE', undefined, admin)).status, 404, 'borrar dos veces no debe tener efecto');
+    const after = await call('/api/v1/dashboard', 'GET', undefined, admin);
+    assert.ok(!after.body.rentals.some((r) => String(r.id) === id));
+    // El cascade de rental_equipment libera los equipos sin tocarlos a mano.
+    const released = after.body.equipment.filter((e) => (e.id === scooter.id || e.id === helmet.id) && !e.busy);
+    assert.equal(released.length, 2);
+    const adminData = await call('/api/v1/admin/data', 'GET', undefined, admin);
+    const actions = adminData.body.audit.map((a) => a.action);
+    assert.ok(actions.includes('eliminar_alquiler'), 'el borrado debe quedar en la auditoría');
 });
 //# sourceMappingURL=app.test.js.map

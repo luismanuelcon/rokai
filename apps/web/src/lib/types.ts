@@ -40,6 +40,9 @@ export interface Rental {
   minutes: number;
   priceCents: number;
   finalPriceCents: number | null;
+  lateMinutes: number | null;
+  lateFeeCents: number | null;
+  paymentMethod: 'cash' | 'transfer' | null;
   startedAt: string;
   dueAt: string;
   endedAt: string | null;
@@ -53,6 +56,7 @@ export interface Dashboard {
   rentals: Rental[];
   equipment: Equipment[];
   rates: Rate[];
+  lateFeePerMinuteCents: number;
 }
 
 export interface SessionUser {

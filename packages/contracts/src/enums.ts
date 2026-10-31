@@ -12,6 +12,9 @@ export type EquipmentStatus = z.infer<typeof EquipmentStatus>;
 export const RatePeriod = z.enum(['special', 'weekend']);
 export type RatePeriod = z.infer<typeof RatePeriod>;
 
+export const PaymentMethod = z.enum(['cash', 'transfer']);
+export type PaymentMethod = z.infer<typeof PaymentMethod>;
+
 /** Documentos admitidos en Colombia, incluidos los de visitantes extranjeros. */
 export const DocumentType = z.enum(['CC', 'CE', 'TI', 'PA', 'PEP', 'PPT']);
 export type DocumentType = z.infer<typeof DocumentType>;

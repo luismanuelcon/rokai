@@ -13,6 +13,7 @@
     "test": "npm run build && node --test --test-concurrency=1 --env-file-if-exists=../../.env dist/**/*.test.js"
   },
   "dependencies": {
+    "@fastify/compress": "^9.3.0",
     "@fastify/cookie": "^11.0.2",
     "@fastify/rate-limit": "^10.3.0",
     "@fastify/static": "^10.1.7",

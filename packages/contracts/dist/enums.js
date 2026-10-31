@@ -3,6 +3,7 @@ export const UserRole = z.enum(['admin', 'collaborator']);
 export const EquipmentKind = z.enum(['scooter', 'helmet']);
 export const EquipmentStatus = z.enum(['available', 'maintenance', 'inactive']);
 export const RatePeriod = z.enum(['special', 'weekend']);
+export const PaymentMethod = z.enum(['cash', 'transfer']);
 /** Documentos admitidos en Colombia, incluidos los de visitantes extranjeros. */
 export const DocumentType = z.enum(['CC', 'CE', 'TI', 'PA', 'PEP', 'PPT']);
 export const ConsentKind = z.enum(['operational', 'marketing']);

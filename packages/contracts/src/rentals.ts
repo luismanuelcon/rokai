@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { Cents, Id, PhoneE164, RequestId } from './common.js';
-import { DocumentType, EquipmentKind } from './enums.js';
+import { DocumentType, EquipmentKind, PaymentMethod } from './enums.js';
 
 /**
  * El teléfono es opcional mientras el negocio decide si pasa a obligatorio.
@@ -47,6 +47,7 @@ export type CreateRentalRequest = z.infer<typeof CreateRentalRequest>;
 
 export const FinishRentalRequest = z.object({
   notes: z.string().trim().max(2000).default(''),
+  paymentMethod: PaymentMethod,
 });
 export type FinishRentalRequest = z.infer<typeof FinishRentalRequest>;
 
@@ -64,6 +65,9 @@ export const Rental = z.object({
   minutes: z.number().int(),
   priceCents: Cents,
   finalPriceCents: Cents.nullable(),
+  lateMinutes: z.number().int().nullable(),
+  lateFeeCents: Cents.nullable(),
+  paymentMethod: PaymentMethod.nullable(),
   startedAt: z.iso.datetime(),
   dueAt: z.iso.datetime(),
   endedAt: z.iso.datetime().nullable(),

@@ -5,6 +5,7 @@ export const userRole = pgEnum('user_role', ['admin', 'worker', 'operator']);
 export const equipmentKind = pgEnum('equipment_kind', ['scooter', 'helmet']);
 export const equipmentStatus = pgEnum('equipment_status', ['available', 'maintenance', 'inactive']);
 export const ratePeriod = pgEnum('rate_period', ['special', 'weekend']);
+export const paymentMethod = pgEnum('payment_method', ['cash', 'transfer']);
 export const documentType = pgEnum('document_type', ['CC', 'CE', 'TI', 'PA', 'PEP', 'PPT']);
 export const consentKind = pgEnum('consent_kind', ['operational', 'marketing']);
 export const notifChannel = pgEnum('notif_channel', [
@@ -121,6 +122,11 @@ export const rentals = pgTable('rentals', {
     minutes: integer().notNull(),
     priceCents: integer().notNull(),
     finalPriceCents: integer(),
+    /** Minutos de retraso y recargo liquidados al cerrar. Snapshot, igual que el precio. */
+    lateMinutes: integer(),
+    lateFeeCents: integer(),
+    /** Cómo pagó el cliente. Se registra en la devolución, no al abrir. */
+    paymentMethod: paymentMethod(),
     startedAt: timestamp({ withTimezone: true }).notNull().default(now),
     /** Persistido para que el programador de vencimientos use un índice. */
     dueAt: timestamp({ withTimezone: true }).notNull(),
@@ -148,6 +154,8 @@ export const rentals = pgTable('rentals', {
     index('rentals_started_at_idx').on(t.startedAt.desc()),
     check('rentals_price_chk', sql `${t.priceCents} >= 0`),
     check('rentals_final_price_chk', sql `${t.finalPriceCents} IS NULL OR ${t.finalPriceCents} >= 0`),
+    check('rentals_late_fee_chk', sql `${t.lateFeeCents} IS NULL OR ${t.lateFeeCents} >= 0`),
+    check('rentals_late_minutes_chk', sql `${t.lateMinutes} IS NULL OR ${t.lateMinutes} >= 0`),
     check('rentals_ended_chk', sql `${t.endedAt} IS NULL OR ${t.endedAt} >= ${t.startedAt}`),
 ]);
 export const rentalEquipment = pgTable('rental_equipment', {

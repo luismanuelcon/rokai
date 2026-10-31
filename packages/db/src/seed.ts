@@ -54,6 +54,8 @@ const SETTINGS = {
   whatsapp: '+573106817317',
   instagram: 'roaki_patinetas',
   email: 'rokai.pat@gmail.com',
+  /** Recargo por minuto de retraso, en centavos. 0 desactiva el cobro. */
+  lateFeePerMinuteCents: '0',
   terms:
     'Las condiciones definitivas del servicio están pendientes de aprobación por ROKAI. Antes de contratar, consulta con el personal las reglas de uso, edad permitida, devolución, daños y tiempo adicional.',
   privacy:

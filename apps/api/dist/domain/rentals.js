@@ -22,6 +22,18 @@ export function assertAssignable(selected, requestedIds, quantity) {
         throw badRequest('Asigna una patineta y un casco por persona.');
     }
 }
+/**
+ * Recargo por devolución tardía. Se cobra por minuto empezado: devolver a los
+ * 61 segundos de vencido cuesta dos minutos, no uno. Regla pura y sin IO.
+ * Los minutos de retraso se registran aunque el recargo configurado sea cero.
+ */
+export function lateCharge(dueAt, endedAt, perMinuteCents) {
+    const overdueMs = endedAt.getTime() - dueAt.getTime();
+    if (overdueMs <= 0)
+        return { minutes: 0, cents: 0 };
+    const minutes = Math.ceil(overdueMs / 60_000);
+    return { minutes, cents: perMinuteCents > 0 ? minutes * perMinuteCents : 0 };
+}
 /** Una tarifa está vigente si está activa y la fecha civil cae dentro del rango. */
 export function isRateCurrent(rate, today) {
     if (!rate.active)

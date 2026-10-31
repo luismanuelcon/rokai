@@ -6,18 +6,27 @@ import type { Db } from '../db.js';
 import { badRequest } from '../lib/http-error.js';
 import { activeRates, equipmentWithBusy } from '../repositories/catalog.js';
 import { listRentals } from '../repositories/rentals.js';
+import { readSettings } from './public.js';
 import { createRental, finishRental } from '../services/rentals.js';
 
 export function registerRentalRoutes(app: FastifyInstance, db: Db): void {
   const guarded = { onRequest: [app.requireAuth] };
 
   app.get('/api/v1/dashboard', guarded, async () => {
-    const [rentals, equipment, rates] = await Promise.all([
+    const [rentals, equipment, rates, config] = await Promise.all([
       listRentals(db),
       equipmentWithBusy(db),
       activeRates(db),
+      readSettings(db),
     ]);
-    return { rentals, equipment, rates };
+    // El colaborador necesita el recargo vigente para anticipar el total en la
+    // devolución; el resto de ajustes no sale de aquí.
+    return {
+      rentals,
+      equipment,
+      rates,
+      lateFeePerMinuteCents: Number(config['lateFeePerMinuteCents'] ?? 0) || 0,
+    };
   });
 
   app.get('/api/v1/rentals', guarded, async (req) => {
@@ -35,7 +44,7 @@ export function registerRentalRoutes(app: FastifyInstance, db: Db): void {
     const id = Number((req.params as { id: string }).id);
     if (!Number.isInteger(id) || id <= 0) throw badRequest('Identificador no válido.');
     const body = FinishRentalRequest.parse(req.body ?? {});
-    await finishRental(db, req.session!.user, id, body.notes);
+    await finishRental(db, req.session!.user, id, body);
     return { ok: true };
   });
 

@@ -35,6 +35,14 @@ export const PublicSettings = z.object({
     .regex(/^[A-Za-z0-9._]{1,30}$/, 'Instagram: escribe el usuario sin @ ni enlace.')
     .or(z.literal('')),
   email: Email.or(z.literal('')),
+  /**
+   * Recargo por cada minuto de retraso, en centavos. Se guarda como texto
+   * porque los ajustes son una tabla clave/valor; `0` desactiva el cobro.
+   */
+  lateFeePerMinuteCents: z
+    .string()
+    .trim()
+    .regex(/^\d{1,7}$/, 'Recargo por minuto: escribe un número entero.'),
   terms: z.string().max(10_000),
   privacy: z.string().max(10_000),
   cookies: z.string().max(10_000),

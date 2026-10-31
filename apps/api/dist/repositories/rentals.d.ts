@@ -8,6 +8,9 @@ export interface RentalRow {
     minutes: number;
     priceCents: number;
     finalPriceCents: number | null;
+    lateMinutes: number | null;
+    lateFeeCents: number | null;
+    paymentMethod: 'cash' | 'transfer' | null;
     startedAt: Date;
     dueAt: Date;
     endedAt: Date | null;
@@ -33,6 +36,9 @@ export declare function findRental(exec: Executor, id: number): Promise<{
     minutes: number;
     priceCents: number;
     finalPriceCents: number | null;
+    lateMinutes: number | null;
+    lateFeeCents: number | null;
+    paymentMethod: "cash" | "transfer" | null;
     startedAt: Date;
     dueAt: Date;
     endedAt: Date | null;

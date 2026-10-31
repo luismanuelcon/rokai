@@ -12,6 +12,9 @@ export interface RentalRow {
   minutes: number;
   priceCents: number;
   finalPriceCents: number | null;
+  lateMinutes: number | null;
+  lateFeeCents: number | null;
+  paymentMethod: 'cash' | 'transfer' | null;
   startedAt: Date;
   dueAt: Date;
   endedAt: Date | null;
@@ -40,6 +43,9 @@ export async function listRentals(
       minutes: rentals.minutes,
       priceCents: rentals.priceCents,
       finalPriceCents: rentals.finalPriceCents,
+      lateMinutes: rentals.lateMinutes,
+      lateFeeCents: rentals.lateFeeCents,
+      paymentMethod: rentals.paymentMethod,
       startedAt: rentals.startedAt,
       dueAt: rentals.dueAt,
       endedAt: rentals.endedAt,
