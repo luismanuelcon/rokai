@@ -421,7 +421,14 @@ export function AdminPanel({
                   <tr key={a.id}>
                     <td>{datetime(a.createdAt)}</td>
                     <td>{a.name ?? 'Sistema'}</td>
-                    <td>{a.action.replaceAll('_', ' ')}</td>
+                    <td>
+                      {a.action.replaceAll('_', ' ')}
+                      {a.reason && (
+                        <small style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>
+                          Justificación: {a.reason}
+                        </small>
+                      )}
+                    </td>
                     <td>
                       {a.entity} {a.entityId}
                     </td>

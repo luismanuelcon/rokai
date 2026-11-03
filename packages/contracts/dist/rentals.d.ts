@@ -127,4 +127,7 @@ export declare const RentalDraft: z.ZodObject<{
     equipmentIds: z.ZodDefault<z.ZodArray<z.ZodNumber>>;
 }, z.core.$strip>;
 export type RentalDraft = z.infer<typeof RentalDraft>;
+export declare const DeleteRentalRequest: z.ZodObject<{
+    reason: z.ZodString;
+}, z.core.$strip>;
 //# sourceMappingURL=rentals.d.ts.map

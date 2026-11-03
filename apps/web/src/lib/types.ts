@@ -71,6 +71,7 @@ export interface AdminUser extends SessionUser {
 }
 
 export interface AuditEntry {
+  reason?: string | null;
   id: number;
   action: string;
   entity: string;

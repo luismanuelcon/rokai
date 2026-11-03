@@ -174,6 +174,7 @@ function RentalDialog({
   const [notes, setNotes] = useState('');
   const [payment, setPayment] = useState<PaymentMethod | ''>('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -205,10 +206,18 @@ function RentalDialog({
   }
 
   async function remove() {
+    if (busy) return;
+    if (deleteReason.trim().length < 10 || deleteReason.trim().length > 1000) {
+      setError('Explica el motivo de la eliminación con entre 10 y 1000 caracteres.');
+      return;
+    }
     setBusy(true);
     setError('');
     try {
-      await api(`/admin/rentals/${rental.id}`, { method: 'DELETE' });
+      await api(`/admin/rentals/${rental.id}`, {
+        method: 'DELETE',
+        json: { reason: deleteReason.trim() },
+      });
       onDeleted();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo eliminar el registro.');
@@ -352,9 +361,27 @@ function RentalDialog({
             <>
               <p className="small-copy">
                 Se eliminará el registro <strong>#{String(rental.id).padStart(4, '0')}</strong> y
-                sus notificaciones. El equipo quedará libre y la traza de auditoría se conserva.
-                Esta acción no se puede deshacer.
+                sus notificaciones. Se retirará de los reportes de alquileres y su enlace de
+                seguimiento dejará de funcionar. Los cierres de caja guardados no se modificarán. La
+                justificación quedará en Trazabilidad. Esta acción no se puede deshacer.
               </p>
+              <div className="field">
+                <label htmlFor="delete-rental-reason">Justificación de la eliminación</label>
+                <textarea
+                  id="delete-rental-reason"
+                  rows={3}
+                  required
+                  minLength={10}
+                  maxLength={1000}
+                  disabled={busy}
+                  value={deleteReason}
+                  aria-describedby="delete-reason-hint"
+                  onChange={(event) => setDeleteReason(event.target.value)}
+                />
+                <small id="delete-reason-hint">
+                  Entre 10 y 1000 caracteres. Indica por qué debe eliminarse este registro.
+                </small>
+              </div>
               <div className="modal-actions">
                 <button
                   type="button"
@@ -369,7 +396,7 @@ function RentalDialog({
                 <button
                   type="button"
                   className="button small danger"
-                  disabled={busy}
+                  disabled={busy || deleteReason.trim().length < 10}
                   onClick={() => void remove()}
                 >
                   {busy ? 'Eliminando…' : 'Eliminar definitivamente'}

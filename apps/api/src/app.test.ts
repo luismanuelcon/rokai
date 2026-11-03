@@ -769,10 +769,19 @@ test('Solo administración elimina alquileres; el equipo vuelve a quedar libre',
   const denied = await call(`/api/v1/admin/rentals/${id}`, 'DELETE', undefined, collaborator);
   assert.equal(denied.status, 403, 'un colaborador no puede borrar registros');
 
-  const removed = await call(`/api/v1/admin/rentals/${id}`, 'DELETE', undefined, admin);
+  for (const body of [
+    undefined,
+    { reason: '   ' },
+    { reason: 'corto' },
+    { reason: 'x'.repeat(1001) },
+  ]) {
+    assert.equal((await call(`/api/v1/admin/rentals/${id}`, 'DELETE', body, admin)).status, 400);
+  }
+  const reason = 'Registro duplicado durante una prueba';
+  const removed = await call(`/api/v1/admin/rentals/${id}`, 'DELETE', { reason }, admin);
   assert.equal(removed.status, 200);
   assert.equal(
-    (await call(`/api/v1/admin/rentals/${id}`, 'DELETE', undefined, admin)).status,
+    (await call(`/api/v1/admin/rentals/${id}`, 'DELETE', { reason }, admin)).status,
     404,
     'borrar dos veces no debe tener efecto',
   );
@@ -787,6 +796,13 @@ test('Solo administración elimina alquileres; el equipo vuelve a quedar libre',
 
   const adminData = await call('/api/v1/admin/data', 'GET', undefined, admin);
   const actions = adminData.body.audit.map((a: { action: string }) => a.action);
+  assert.equal(
+    adminData.body.audit.find(
+      (entry: { action: string; entityId: string }) =>
+        entry.action === 'eliminar_alquiler' && entry.entityId === id,
+    )?.reason,
+    reason,
+  );
   assert.ok(actions.includes('eliminar_alquiler'), 'el borrado debe quedar en la auditoría');
 });
 

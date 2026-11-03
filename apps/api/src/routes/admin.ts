@@ -12,6 +12,7 @@ import {
   users,
 } from '@rokai/db';
 import {
+  DeleteRentalRequest,
   CreateEquipmentRequest,
   CreateRateRequest,
   CreateUserRequest,
@@ -61,6 +62,7 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db): void {
           entityId: auditLog.entityId,
           createdAt: auditLog.createdAt,
           name: users.name,
+          reason: sql<string | null>`${auditLog.after}->>'reason'`,
         })
         .from(auditLog)
         .leftJoin(users, eq(users.id, auditLog.userId))
@@ -414,6 +416,7 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db): void {
    */
   app.delete('/api/v1/admin/rentals/:id', admin, async (req) => {
     const id = idParam(req);
+    const { reason } = DeleteRentalRequest.parse(req.body);
     await db.transaction(async (tx) => {
       const rows = await tx.select().from(rentals).where(eq(rentals.id, id)).for('update').limit(1);
       const before = rows[0];
@@ -425,6 +428,7 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db): void {
       await recordAudit(tx, {
         userId: req.session!.user.id,
         action: 'eliminar_alquiler',
+        after: { reason },
         entity: 'rental',
         entityId: id,
         before: {

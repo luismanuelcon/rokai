@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, or, sql } from 'drizzle-orm';
 import { auditLog, equipment, faqs, notifications, rates, rentals, sessions, settings, users, } from '@rokai/db';
-import { CreateEquipmentRequest, CreateRateRequest, CreateUserRequest, PublicSettings, UpdateEquipmentRequest, UpdateRateRequest, UpdateUserRequest, UpsertFaqRequest, } from '@rokai/contracts';
+import { DeleteRentalRequest, CreateEquipmentRequest, CreateRateRequest, CreateUserRequest, PublicSettings, UpdateEquipmentRequest, UpdateRateRequest, UpdateUserRequest, UpsertFaqRequest, } from '@rokai/contracts';
 import { hashPassword } from '../lib/crypto.js';
 import { recordAudit } from '../lib/audit.js';
 import { badRequest, conflict, notFound } from '../lib/http-error.js';
@@ -38,6 +38,7 @@ export function registerAdminRoutes(app, db) {
                 entityId: auditLog.entityId,
                 createdAt: auditLog.createdAt,
                 name: users.name,
+                reason: sql `${auditLog.after}->>'reason'`,
             })
                 .from(auditLog)
                 .leftJoin(users, eq(users.id, auditLog.userId))
@@ -362,6 +363,7 @@ export function registerAdminRoutes(app, db) {
      */
     app.delete('/api/v1/admin/rentals/:id', admin, async (req) => {
         const id = idParam(req);
+        const { reason } = DeleteRentalRequest.parse(req.body);
         await db.transaction(async (tx) => {
             const rows = await tx.select().from(rentals).where(eq(rentals.id, id)).for('update').limit(1);
             const before = rows[0];
@@ -373,6 +375,7 @@ export function registerAdminRoutes(app, db) {
             await recordAudit(tx, {
                 userId: req.session.user.id,
                 action: 'eliminar_alquiler',
+                after: { reason },
                 entity: 'rental',
                 entityId: id,
                 before: {

@@ -95,3 +95,11 @@ export const RentalDraft = z.object({
   equipmentIds: z.array(Id).max(4).default([]),
 });
 export type RentalDraft = z.infer<typeof RentalDraft>;
+
+export const DeleteRentalRequest = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(10, 'Explica el motivo con al menos 10 caracteres.')
+    .max(1000, 'La justificación admite hasta 1000 caracteres.'),
+});
