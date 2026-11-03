@@ -57,18 +57,26 @@ jobs:
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
     steps:
       - name: Comprobar configuración
+        id: config
         shell: bash
         run: |
           missing=0
           for key in APP_NAME RESOURCE_GROUP AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID; do
             if [ -z "${!key}" ]; then
-              echo "::error::Falta configurar $key. Consulta docs/DESPLIEGUE-CONTAINER-APPS.md."
+              echo "::notice::Falta configurar $key. Consulta docs/DESPLIEGUE-CONTAINER-APPS.md."
               missing=1
             fi
           done
-          exit "$missing"
+          if [ "$missing" = "1" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "### Despliegue omitido: configuración de Azure pendiente" >> "$GITHUB_STEP_SUMMARY"
+            echo "La imagen se publicó en GHCR, pero el sitio NO se actualizó. Configura los valores indicados y vuelve a ejecutar el workflow." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Autenticar en Azure con OIDC
+        if: steps.config.outputs.ready == 'true'
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -76,6 +84,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Desplegar imagen del commit
+        if: steps.config.outputs.ready == 'true'
         id: revision
         shell: bash
         run: |
@@ -98,6 +107,7 @@ jobs:
           echo "name=$revision" >> "$GITHUB_OUTPUT"
 
       - name: Esperar revisión saludable
+        if: steps.config.outputs.ready == 'true'
         env:
           REVISION: ${{ steps.revision.outputs.name }}
         shell: bash
@@ -114,6 +124,7 @@ jobs:
           exit 1
 
       - name: Enviar tráfico a la nueva revisión
+        if: steps.config.outputs.ready == 'true'
         env:
           REVISION: ${{ steps.revision.outputs.name }}
         shell: bash
