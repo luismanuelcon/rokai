@@ -1198,3 +1198,214 @@ dialog:has(.closing-form) {
     opacity: 0;
   }
 }
+
+.closing-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  margin: 24px 0 16px;
+}
+.closing-filters .field {
+  flex: 1 1 180px;
+  margin: 0;
+}
+.closing-filters > .button {
+  min-height: 46px;
+}
+.closing-report-totals {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0 24px;
+}
+.closing-report-totals > div {
+  padding: 16px;
+  background: var(--c-canvas);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+}
+.closing-report-totals dt {
+  color: var(--c-text-muted);
+  font-size: 12px;
+}
+.closing-report-totals dd {
+  margin: 8px 0 0;
+  font-size: clamp(17px, 1.8vw, 24px);
+  font-weight: 750;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.closing-report-totals > div:last-child {
+  background: var(--c-graphite);
+  color: var(--c-on-dark);
+}
+.closing-report-totals > div:last-child dt {
+  color: var(--c-on-dark);
+}
+.closing-charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.closing-chart {
+  min-width: 0;
+  margin: 0;
+  padding: 20px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+}
+.closing-chart h3 {
+  margin: 0;
+  font-size: 17px;
+}
+.closing-chart figcaption p {
+  font-size: 12px;
+  color: var(--c-text-muted);
+  line-height: 1.6;
+  margin: 6px 0 18px;
+}
+.closing-chart-months {
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 4px;
+  scrollbar-width: thin;
+}
+.closing-chart-month + .closing-chart-month {
+  border-top: 1px solid var(--c-border);
+  margin-top: 16px;
+  padding-top: 16px;
+}
+.closing-chart-month > strong {
+  font-size: 13px;
+  text-transform: capitalize;
+}
+.closing-chart-bar-row {
+  display: grid;
+  grid-template-columns: 55px minmax(20px, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 11px;
+}
+.closing-chart-bar-row b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.closing-chart-bar {
+  height: 12px;
+  background: var(--c-canvas);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.closing-chart-bar i {
+  display: block;
+  height: 100%;
+  background: var(--c-lime-ink);
+}
+.closing-chart-bar-row.expenses .closing-chart-bar i {
+  background: var(--c-graphite);
+}
+.closing-payment-bar {
+  display: flex;
+  height: 28px;
+  overflow: hidden;
+  border-radius: var(--r-base);
+}
+.closing-payment-bar span:first-child {
+  background: var(--c-lime-ink);
+}
+.closing-payment-bar span:last-child {
+  background: var(--c-graphite);
+}
+.closing-payment-values {
+  margin: 20px 0 0;
+  display: grid;
+  gap: 18px;
+}
+.closing-payment-values dt {
+  font-size: 13px;
+  color: var(--c-text-muted);
+}
+.closing-payment-values dd {
+  margin: 5px 0 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+.closing-report-table table {
+  min-width: 940px;
+  width: 100%;
+}
+.workspace .closing-report-table tbody th {
+  text-transform: none;
+  letter-spacing: 0;
+  background: var(--c-surface);
+  font-weight: 600;
+  font-size: 13px;
+}
+.closing-report-table td {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.closing-next-day-label {
+  display: block;
+  font-size: 11px;
+  color: var(--c-text-muted);
+}
+.closing-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+.closing-pagination p {
+  font-size: 13px;
+  color: var(--c-text-muted);
+}
+.closing-pagination > div {
+  display: flex;
+  gap: 8px;
+}
+@media (max-width: 1000px) {
+  .closing-report-totals {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .closing-charts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 520px) {
+  .closing-filters {
+    gap: 12px;
+  }
+  .closing-filters > .button {
+    width: 100%;
+  }
+  .closing-report-totals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .closing-report-totals > div {
+    padding: 14px;
+  }
+  .closing-report-totals > div:last-child {
+    grid-column: 1 / -1;
+  }
+  .closing-chart {
+    padding: 14px;
+  }
+  .closing-chart-bar-row {
+    grid-template-columns: 48px minmax(16px, 1fr) auto;
+    gap: 5px;
+    font-size: 10px;
+  }
+  .closing-pagination > div {
+    width: 100%;
+  }
+  .closing-pagination .button {
+    flex: 1;
+  }
+}

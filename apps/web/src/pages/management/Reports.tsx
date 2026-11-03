@@ -10,42 +10,46 @@ export function Reports({ dash, admin }: { dash: Dashboard; admin: AdminData }) 
 
   return (
     <>
-      <PageHeading
-        title="Reportes"
-        subtitle="Valores de alquileres finalizados. No representa confirmación de pagos."
-      />
+      <PageHeading title="Reportes" />
       <DailyClosings />
-      <div className="metrics">
-        <div className="metric">
-          <div>
-            <p>Valor finalizado acumulado</p>
-            <strong>{money(total)}</strong>
+      <section aria-labelledby="rental-history-summary">
+        <h2 id="rental-history-summary">Resumen histórico de alquileres</h2>
+        <p className="small-copy muted">
+          Todos los alquileres registrados, independiente del filtro de cierres. Los valores
+          contratados no sustituyen los ingresos declarados.
+        </p>
+        <div className="metrics">
+          <div className="metric">
+            <div>
+              <p>Valor finalizado acumulado</p>
+              <strong>{money(total)}</strong>
+            </div>
+          </div>
+          <div className="metric">
+            <div>
+              <p>Alquileres finalizados</p>
+              <strong>{finished.length}</strong>
+            </div>
+          </div>
+          <div className="metric">
+            <div>
+              <p>Duración contratada</p>
+              <strong>{minutes} min</strong>
+            </div>
           </div>
         </div>
-        <div className="metric">
-          <div>
-            <p>Alquileres finalizados</p>
-            <strong>{finished.length}</strong>
-          </div>
+        <div className="panel">
+          <h2>Alquileres por responsable</h2>
+          {admin.users.map((u) => (
+            <div className="summary-row" key={u.id}>
+              <span>{u.name}</span>
+              <strong>
+                {dash.rentals.filter((r) => r.createdByName === u.name).length} alquileres
+              </strong>
+            </div>
+          ))}
         </div>
-        <div className="metric">
-          <div>
-            <p>Duración contratada</p>
-            <strong>{minutes} min</strong>
-          </div>
-        </div>
-      </div>
-      <div className="panel">
-        <h2>Alquileres por responsable</h2>
-        {admin.users.map((u) => (
-          <div className="summary-row" key={u.id}>
-            <span>{u.name}</span>
-            <strong>
-              {dash.rentals.filter((r) => r.createdByName === u.name).length} alquileres
-            </strong>
-          </div>
-        ))}
-      </div>
+      </section>
     </>
   );
 }

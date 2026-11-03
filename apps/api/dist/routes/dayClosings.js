@@ -1,11 +1,24 @@
-import { and, desc, eq } from 'drizzle-orm';
-import { dayClosings } from '@rokai/db';
+import { and, desc, eq, sql } from 'drizzle-orm';
+import { dayClosings, rentals } from '@rokai/db';
 import { ClosingDate, CreateDayClosingRequest, UpdateDayClosingRequest } from '@rokai/contracts';
 import { recordAudit } from '../lib/audit.js';
 import { badRequest, conflict, notFound } from '../lib/http-error.js';
 export function registerDayClosingRoutes(app, db) {
     const admin = { onRequest: [app.requireAdmin] };
     app.get('/api/v1/admin/day-closings', admin, async () => db.select().from(dayClosings).orderBy(desc(dayClosings.date)));
+    app.get('/api/v1/admin/day-closings/preview/:date', admin, async (req) => {
+        const date = ClosingDate.parse(req.params.date);
+        const [totals] = await db
+            .select({
+            cashCents: sql `coalesce(sum(${rentals.finalPriceCents}) filter (where ${rentals.paymentMethod} = 'cash'), 0)`.mapWith(Number),
+            transferCents: sql `coalesce(sum(${rentals.finalPriceCents}) filter (where ${rentals.paymentMethod} = 'transfer'), 0)`.mapWith(Number),
+            count: sql `count(*)`.mapWith(Number),
+            unclassified: sql `count(*) filter (where ${rentals.paymentMethod} is null or ${rentals.finalPriceCents} is null)`.mapWith(Number),
+        })
+            .from(rentals)
+            .where(sql `${rentals.endedAt} >= (${date}::date::timestamp at time zone 'America/Bogota') and ${rentals.endedAt} < ((${date}::date + 1)::timestamp at time zone 'America/Bogota')`);
+        return { date, ...totals };
+    });
     app.post('/api/v1/admin/day-closings', admin, async (req, reply) => {
         const body = CreateDayClosingRequest.parse(req.body);
         const userId = req.session.user.id;

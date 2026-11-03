@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Modal } from '../../components/Modal';
 import { api, ApiError } from '../../lib/api';
+import { copCents as cents, formatCopInput, centsToInput } from '../../lib/copInput';
 import { money } from '../../lib/format';
 
 type Closing = {
@@ -29,16 +30,41 @@ const dateLabel = (date: string) =>
   new Intl.DateTimeFormat('es-CO', { dateStyle: 'long', timeZone: 'America/Bogota' }).format(
     new Date(`${date}T12:00:00-05:00`),
   );
-// Conversión decimal exacta: nunca redondea silenciosamente un importe ingresado.
-function cents(value: string) {
-  if (!/^\d+(?:[.,]\d{1,2})?$/.test(value.trim())) return null;
-  const [whole = '0', fraction = ''] = value.trim().replace(',', '.').split('.');
-  const result = Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
-  return Number.isSafeInteger(result) && result <= 1_000_000_000 ? result : null;
-}
-
 export function DailyClosings() {
   const [rows, setRows] = useState<Closing[]>([]);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [page, setPage] = useState(1);
+  const invalidRange = Boolean(fromDate && toDate && fromDate > toDate);
+  const filtered = rows
+    .filter(
+      (row) =>
+        !invalidRange && (!fromDate || row.date >= fromDate) && (!toDate || row.date <= toDate),
+    )
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / 25));
+  const currentPage = Math.min(page, totalPages);
+  const pageRows = filtered.slice((currentPage - 1) * 25, currentPage * 25);
+  const totals = filtered.reduce(
+    (sum, row) => ({
+      cash: sum.cash + row.cashCents,
+      transfer: sum.transfer + row.transferCents,
+      expenses: sum.expenses + row.expenses.reduce((cost, item) => cost + item.amountCents, 0),
+    }),
+    { cash: 0, transfer: 0, expenses: 0 },
+  );
+  const totalIncome = totals.cash + totals.transfer;
+  const months = new Map<string, { income: number; expenses: number }>();
+  filtered.forEach((row) => {
+    const month = row.date.slice(0, 7);
+    const entry = months.get(month) ?? { income: 0, expenses: 0 };
+    entry.income += row.cashCents + row.transferCents;
+    entry.expenses += row.expenses.reduce((cost, item) => cost + item.amountCents, 0);
+    months.set(month, entry);
+  });
+  const monthly = [...months.entries()].sort(([a], [b]) => a.localeCompare(b));
+  const chartMax = Math.max(1, ...monthly.flatMap(([, item]) => [item.income, item.expenses]));
+
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [message, setMessage] = useState('');
@@ -55,6 +81,40 @@ export function DailyClosings() {
   const [error, setError] = useState('');
   const [conflict, setConflict] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewInfo, setPreviewInfo] = useState('');
+  const [previewError, setPreviewError] = useState('');
+  const [previewRetry, setPreviewRetry] = useState(0);
+  useEffect(() => {
+    if (!opened || editing || !date) return;
+    let cancelled = false;
+    setPreviewLoading(true);
+    setPreviewError('');
+    setPreviewInfo('');
+    void api<{ cashCents: number; transferCents: number; count: number; unclassified: number }>(
+      `/admin/day-closings/preview/${date}`,
+    )
+      .then((data) => {
+        if (cancelled) return;
+        setCash(centsToInput(data.cashCents));
+        setTransfer(centsToInput(data.transferCents));
+        setPreviewInfo(
+          `${data.count} alquileres finalizados en esta fecha (hora de Colombia).${data.unclassified ? ` ${data.unclassified} sin método de pago o valor final: revisa el historial.` : ''} Puedes ajustar los valores antes de guardar.`,
+        );
+      })
+      .catch(() => {
+        if (!cancelled)
+          setPreviewError(
+            'No pudimos consultar el historial. Reintenta para precargar los ingresos.',
+          );
+      })
+      .finally(() => {
+        if (!cancelled) setPreviewLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [opened, editing, date, previewRetry]);
   const errorRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (error) errorRef.current?.focus();
@@ -78,18 +138,21 @@ export function DailyClosings() {
   }, []);
 
   function open(row?: Closing) {
+    setPreviewInfo('');
+    setPreviewError('');
+    setPreviewLoading(false);
     setEditing(row ?? null);
     setDate(row?.date ?? today());
     setOpensAt(row?.opensAt ?? '');
     setClosesAt(row?.closesAt ?? '');
     setClosesNextDay(row?.closesNextDay ?? false);
-    setCash(String((row?.cashCents ?? 0) / 100));
-    setTransfer(String((row?.transferCents ?? 0) / 100));
+    setCash(centsToInput(row?.cashCents ?? 0));
+    setTransfer(centsToInput(row?.transferCents ?? 0));
     setExpenses(
       row?.expenses.map((item, key) => ({
         key,
         description: item.description,
-        amount: String(item.amountCents / 100),
+        amount: centsToInput(item.amountCents),
       })) ?? [],
     );
     setNotes(row?.notes ?? '');
@@ -103,13 +166,13 @@ export function DailyClosings() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy) return;
+    if (busy || (!editing && (previewLoading || previewError))) return;
     setError('');
     const cashCents = cents(cash);
     const transferCents = cents(transfer);
     if (cashCents === null || transferCents === null) {
       setError(
-        'Ingresa efectivo y transferencias en pesos, sin separadores de miles y con máximo dos decimales y hasta 10.000.000 COP por importe.',
+        'Ingresa efectivo y transferencias en pesos, con puntos de miles y coma para máximo dos decimales y hasta 10.000.000 COP por importe.',
       );
       return;
     }
@@ -165,7 +228,8 @@ export function DailyClosings() {
         <div>
           <h2 id="daily-closings-title">Cierre de día</h2>
           <p className="small-copy muted">
-            Registra lo recibido y los gastos del día. Estos valores son declarados manualmente.
+            Los ingresos se precargan del historial de pagos; confirma los importes y registra los
+            gastos.
           </p>
         </div>
         <button className="button" disabled={busy} onClick={() => open()}>
@@ -192,49 +256,244 @@ export function DailyClosings() {
           <p>Puedes registrar cualquier fecha y editarla cuando sea necesario.</p>
         </div>
       )}
-      <div className="closing-history">
-        {[...rows]
-          .sort((a, b) => b.date.localeCompare(a.date))
-          .map((row) => {
-            const total = row.cashCents + row.transferCents;
-            const costs = row.expenses.reduce((sum, item) => sum + item.amountCents, 0);
-            return (
-              <article className="closing-record" key={row.date}>
-                <header>
-                  <div>
-                    <h3>{dateLabel(row.date)}</h3>
-                    <p>
-                      {row.opensAt}–{row.closesAt}
-                      {row.closesNextDay ? ' · cierre al día siguiente' : ''}
-                    </p>
-                  </div>
+      <div className="closing-filters">
+        <div className="field">
+          <label htmlFor="closing-from">Desde</label>
+          <input
+            id="closing-from"
+            type="date"
+            value={fromDate}
+            onChange={(event) => {
+              setFromDate(event.target.value);
+              setPage(1);
+            }}
+            aria-invalid={invalidRange}
+            aria-describedby={invalidRange ? 'closing-range-error' : undefined}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="closing-to">Hasta</label>
+          <input
+            id="closing-to"
+            type="date"
+            value={toDate}
+            onChange={(event) => {
+              setToDate(event.target.value);
+              setPage(1);
+            }}
+            aria-invalid={invalidRange}
+            aria-describedby={invalidRange ? 'closing-range-error' : undefined}
+          />
+        </div>
+        <button
+          className="button outline"
+          onClick={() => {
+            setFromDate('');
+            setToDate('');
+            setPage(1);
+          }}
+          disabled={!fromDate && !toDate}
+        >
+          Limpiar filtros
+        </button>
+      </div>
+      {invalidRange && (
+        <p className="form-error" role="alert" id="closing-range-error">
+          La fecha inicial debe ser anterior o igual a la fecha final.
+        </p>
+      )}
+      {!loading && !loadError && !invalidRange && (
+        <>
+          <p className="small-copy muted" role="status">
+            {filtered.length} cierres en el período. Totales y gráficas incluyen todos los
+            resultados del filtro, no solo esta página.
+          </p>
+          {filtered.length > 0 ? (
+            <>
+              <p className="small-copy muted closing-table-hint" id="closing-table-hint">
+                Desliza la tabla horizontalmente para consultar todas las columnas.
+              </p>
+              <div
+                className="table-wrap closing-report-table"
+                role="region"
+                aria-label="Histórico de cierres"
+                aria-describedby="closing-table-hint"
+                tabIndex={0}
+              >
+                <table>
+                  <caption className="sr-only">
+                    Cierres de día, importes en pesos colombianos
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Fecha</th>
+                      <th scope="col">Horario</th>
+                      <th scope="col">Efectivo</th>
+                      <th scope="col">Transferencias</th>
+                      <th scope="col">Ingresos</th>
+                      <th scope="col">Gastos</th>
+                      <th scope="col">Neto</th>
+                      <th scope="col">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageRows.map((row) => {
+                      const income = row.cashCents + row.transferCents;
+                      const costs = row.expenses.reduce((sum, item) => sum + item.amountCents, 0);
+                      return (
+                        <tr key={row.date}>
+                          <th scope="row">{dateLabel(row.date)}</th>
+                          <td>
+                            {row.opensAt}–{row.closesAt}
+                            {row.closesNextDay && (
+                              <small className="closing-next-day-label">Día siguiente</small>
+                            )}
+                          </td>
+                          <td>{money(row.cashCents)}</td>
+                          <td>{money(row.transferCents)}</td>
+                          <td>{money(income)}</td>
+                          <td>{money(costs)}</td>
+                          <td>
+                            <strong>{money(income - costs)}</strong>
+                          </td>
+                          <td>
+                            <button
+                              className="button small outline"
+                              disabled={busy}
+                              aria-label={`Editar cierre del ${dateLabel(row.date)}`}
+                              onClick={() => open(row)}
+                            >
+                              Editar
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <nav className="closing-pagination" aria-label="Páginas del histórico">
+                <p role="status">
+                  {(currentPage - 1) * 25 + 1}–{Math.min(currentPage * 25, filtered.length)} de{' '}
+                  {filtered.length} · Página {currentPage} de {totalPages}
+                </p>
+                <div>
                   <button
                     className="button small outline"
-                    disabled={busy}
-                    aria-label={`Editar cierre del ${dateLabel(row.date)}`}
-                    onClick={() => open(row)}
+                    disabled={currentPage === 1}
+                    onClick={() => setPage(currentPage - 1)}
                   >
-                    Editar
+                    Anterior
                   </button>
-                </header>
-                <dl className="closing-totals">
-                  <div>
-                    <dt>Ingresos</dt>
-                    <dd>{money(total)}</dd>
+                  <button
+                    className="button small outline"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setPage(currentPage + 1)}
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </nav>
+              <dl className="closing-report-totals">
+                <div>
+                  <dt>Efectivo</dt>
+                  <dd>{money(totals.cash)}</dd>
+                </div>
+                <div>
+                  <dt>Transferencias</dt>
+                  <dd>{money(totals.transfer)}</dd>
+                </div>
+                <div>
+                  <dt>Ingresos totales</dt>
+                  <dd>{money(totalIncome)}</dd>
+                </div>
+                <div>
+                  <dt>Gastos</dt>
+                  <dd>{money(totals.expenses)}</dd>
+                </div>
+                <div>
+                  <dt>Neto</dt>
+                  <dd>{money(totalIncome - totals.expenses)}</dd>
+                </div>
+              </dl>
+              <div className="closing-charts">
+                <figure className="closing-chart">
+                  <figcaption>
+                    <h3>Ingresos y gastos por mes</h3>
+                    <p>Valores declarados en COP. Solo fechas incluidas en el filtro.</p>
+                  </figcaption>
+                  <div
+                    className="closing-chart-months"
+                    tabIndex={0}
+                    aria-label="Comparación mensual de ingresos y gastos"
+                  >
+                    {monthly.map(([month, values]) => (
+                      <div className="closing-chart-month" key={month}>
+                        <strong>
+                          {new Intl.DateTimeFormat('es-CO', {
+                            month: 'short',
+                            year: 'numeric',
+                            timeZone: 'America/Bogota',
+                          }).format(new Date(`${month}-01T12:00:00-05:00`))}
+                        </strong>
+                        <div className="closing-chart-bar-row">
+                          <span>Ingresos</span>
+                          <span className="closing-chart-bar" aria-hidden="true">
+                            <i style={{ width: `${(values.income / chartMax) * 100}%` }} />
+                          </span>
+                          <b>{money(values.income)}</b>
+                        </div>
+                        <div className="closing-chart-bar-row expenses">
+                          <span>Gastos</span>
+                          <span className="closing-chart-bar" aria-hidden="true">
+                            <i style={{ width: `${(values.expenses / chartMax) * 100}%` }} />
+                          </span>
+                          <b>{money(values.expenses)}</b>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div>
-                    <dt>Gastos</dt>
-                    <dd>{money(costs)}</dd>
-                  </div>
-                  <div>
-                    <dt>Neto</dt>
-                    <dd>{money(total - costs)}</dd>
-                  </div>
-                </dl>
-              </article>
-            );
-          })}
-      </div>
+                </figure>
+                <figure className="closing-chart">
+                  <figcaption>
+                    <h3>Medios de pago</h3>
+                    <p>Distribución de ingresos declarados.</p>
+                  </figcaption>
+                  {totalIncome > 0 ? (
+                    <>
+                      <div className="closing-payment-bar" aria-hidden="true">
+                        <span style={{ width: `${(totals.cash / totalIncome) * 100}%` }} />
+                        <span style={{ width: `${(totals.transfer / totalIncome) * 100}%` }} />
+                      </div>
+                      <dl className="closing-payment-values">
+                        <div>
+                          <dt>Efectivo · {((totals.cash / totalIncome) * 100).toFixed(1)}%</dt>
+                          <dd>{money(totals.cash)}</dd>
+                        </div>
+                        <div>
+                          <dt>
+                            Transferencias · {((totals.transfer / totalIncome) * 100).toFixed(1)}%
+                          </dt>
+                          <dd>{money(totals.transfer)}</dd>
+                        </div>
+                      </dl>
+                    </>
+                  ) : (
+                    <p className="small-copy muted">No hay ingresos declarados en este período.</p>
+                  )}
+                </figure>
+              </div>
+            </>
+          ) : (
+            rows.length > 0 && (
+              <div className="empty">
+                <h3>No hay cierres en estas fechas</h3>
+                <p>Amplía el período o limpia los filtros para ver otros cierres.</p>
+              </div>
+            )
+          )}
+        </>
+      )}
       {opened && (
         <Modal
           title={editing ? 'Editar cierre de día' : 'Registrar cierre de día'}
@@ -244,8 +503,8 @@ export function DailyClosings() {
         >
           <form className="closing-form" onSubmit={(event) => void submit(event)} aria-busy={busy}>
             <p className="small-copy muted">
-              Valores en pesos colombianos (COP), sin separadores de miles. El neto es ingresos
-              menos gastos; no representa saldo de caja.
+              Valores en pesos colombianos (COP), ejemplo: 234.000. Usa coma para decimales. El neto
+              es ingresos menos gastos; no representa saldo de caja.
             </p>
             {error && (
               <div className="form-error" role="alert" ref={errorRef} tabIndex={-1}>
@@ -255,6 +514,24 @@ export function DailyClosings() {
                     Los cierres se actualizaron en la lista. Cierra este formulario y abre el
                     registro vigente antes de volver a editar; tus cambios no se han sobrescrito.
                   </p>
+                )}
+              </div>
+            )}
+            {!editing && (
+              <div aria-live="polite">
+                {previewLoading && <p>Cargando ingresos del historial…</p>}
+                {previewInfo && <p className="small-copy">{previewInfo}</p>}
+                {previewError && (
+                  <div className="form-error" role="alert">
+                    {previewError}{' '}
+                    <button
+                      type="button"
+                      className="button small outline"
+                      onClick={() => setPreviewRetry((v) => v + 1)}
+                    >
+                      Reintentar
+                    </button>
+                  </div>
                 )}
               </div>
             )}
@@ -308,7 +585,8 @@ export function DailyClosings() {
                     id="closing-cash"
                     inputMode="decimal"
                     value={cash}
-                    onChange={(e) => setCash(e.target.value)}
+                    disabled={previewLoading}
+                    onChange={(e) => setCash(formatCopInput(e.target.value))}
                     required
                   />
                 </div>
@@ -318,7 +596,8 @@ export function DailyClosings() {
                     id="closing-transfer"
                     inputMode="decimal"
                     value={transfer}
-                    onChange={(e) => setTransfer(e.target.value)}
+                    disabled={previewLoading}
+                    onChange={(e) => setTransfer(formatCopInput(e.target.value))}
                     required
                   />
                 </div>
@@ -364,7 +643,9 @@ export function DailyClosings() {
                       id={`expense-amount-${item.key}`}
                       inputMode="decimal"
                       value={item.amount}
-                      onChange={(e) => updateExpense(item.key, { amount: e.target.value })}
+                      onChange={(e) =>
+                        updateExpense(item.key, { amount: formatCopInput(e.target.value) })
+                      }
                       required
                     />
                   </div>
@@ -414,7 +695,10 @@ export function DailyClosings() {
               >
                 Cancelar
               </button>
-              <button className="button" disabled={busy || conflict}>
+              <button
+                className="button"
+                disabled={busy || conflict || (!editing && (previewLoading || !!previewError))}
+              >
                 {busy ? 'Guardando…' : 'Guardar cierre'}
               </button>
             </div>
