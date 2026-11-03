@@ -1116,3 +1116,85 @@ dialog:has(.closing-form) {
     padding: 14px;
   }
 }
+
+/* Reflejo sobre la marca pública y la marca del equipo. */
+.topbar .brand,
+.appbar-brand {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 8px;
+}
+.topbar .brand::after,
+.appbar-brand::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    110deg,
+    transparent 30%,
+    rgb(202 242 72 / 12%) 42%,
+    rgb(255 255 255 / 65%) 50%,
+    rgb(202 242 72 / 18%) 58%,
+    transparent 70%
+  );
+  transform: translateX(-130%);
+  opacity: 0;
+}
+.topbar .brand:focus-visible,
+.appbar-brand:focus-visible {
+  outline: 2px solid var(--c-lime-ink);
+  outline-offset: 4px;
+}
+.appbar-brand:focus-visible {
+  outline-color: var(--c-lime-bright);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .topbar .brand img,
+  .appbar-brand img {
+    transition:
+      transform 220ms var(--ease-out),
+      filter 220ms ease;
+  }
+  .topbar .brand:focus-visible::after,
+  .appbar-brand:focus-visible::after {
+    animation: brand-reflection 750ms ease-out;
+  }
+  .topbar .brand:active img,
+  .appbar-brand:active img {
+    transform: scale(0.96);
+    filter: drop-shadow(0 0 5px rgb(186 255 50 / 55%));
+  }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .topbar .brand:hover::after,
+  .appbar-brand:hover::after {
+    animation: brand-reflection 750ms ease-out;
+  }
+  .topbar .brand:hover img,
+  .appbar-brand:hover img {
+    transform: translateY(-1px) scale(1.025);
+    filter: drop-shadow(0 2px 5px rgb(177 215 46 / 35%));
+  }
+  .topbar .brand:active img,
+  .appbar-brand:active img {
+    transform: scale(0.96);
+  }
+}
+@keyframes brand-reflection {
+  0% {
+    transform: translateX(-130%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  75% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateX(130%);
+    opacity: 0;
+  }
+}
