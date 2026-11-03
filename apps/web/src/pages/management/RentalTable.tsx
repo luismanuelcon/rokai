@@ -1,3 +1,4 @@
+import { TrackingActions } from '../../components/TrackingActions';
 import { useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Modal } from '../../components/Modal';
@@ -69,6 +70,7 @@ function RentalRow({ rental, onSelect }: { rental: Rental; onSelect: () => void 
         <button className="button small outline" onClick={onSelect}>
           {rental.endedAt ? 'Ver detalle' : 'Devolución'}
         </button>
+        <TrackingActions rentalId={rental.id} />
       </td>
     </tr>
   );
@@ -144,6 +146,7 @@ function RentalCard({ rental, onSelect }: { rental: Rental; onSelect: () => void
         {rental.endedAt ? 'Ver detalle' : 'Registrar devolución'}
         <Icon name="arrow" />
       </button>
+      <TrackingActions rentalId={rental.id} />
     </article>
   );
 }
@@ -218,6 +221,7 @@ function RentalDialog({
       title={rental.endedAt ? 'Detalle del alquiler' : 'Registrar devolución'}
       onClose={onClose}
     >
+      <TrackingActions rentalId={rental.id} />
       <div className="notice">
         #{String(rental.id).padStart(4, '0')} · {rental.customerName}
       </div>

@@ -6,7 +6,7 @@ import { activeRates } from '../repositories/catalog.js';
 
 export async function readSettings(db: Db): Promise<Record<string, string>> {
   const rows = await db.select().from(settings);
-  return Object.fromEntries(rows.map((r) => [r.key, r.value]));
+  return { preparationMinutes: '1', ...Object.fromEntries(rows.map((r) => [r.key, r.value])) };
 }
 
 export function registerPublicRoutes(app: FastifyInstance, db: Db): void {

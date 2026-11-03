@@ -38,6 +38,10 @@ export const PublicSettings = z.object({
         .string()
         .trim()
         .regex(/^\d{1,7}$/, 'Recargo por minuto: escribe un número entero.'),
+    preparationMinutes: z
+        .string()
+        .regex(/^(?:[0-9]|[12][0-9]|30)$/, 'Preparación: escribe entre 0 y 30 minutos enteros.')
+        .default('1'),
     terms: z.string().max(10_000),
     privacy: z.string().max(10_000),
     cookies: z.string().max(10_000),

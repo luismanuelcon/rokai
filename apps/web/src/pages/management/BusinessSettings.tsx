@@ -153,6 +153,26 @@ export function BusinessSettings({
           </div>
         ))}
         <div className="field">
+          <label htmlFor="s-preparation">Minutos de preparación</label>
+          <input
+            id="s-preparation"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={30}
+            step={1}
+            required
+            readOnly={!editing}
+            aria-describedby="s-preparation-hint"
+            value={draft['preparationMinutes'] ?? '1'}
+            onChange={(e) => set('preparationMinutes', e.target.value)}
+          />
+          <small id="s-preparation-hint">
+            Tiempo de gracia antes de iniciar el tiempo contratado. De 0 a 30 minutos; 0 lo
+            desactiva. Solo aplica a nuevos alquileres.
+          </small>
+        </div>
+        <div className="field">
           <label htmlFor="s-lateFee">Recargo por minuto de retraso</label>
           <input
             id="s-lateFee"

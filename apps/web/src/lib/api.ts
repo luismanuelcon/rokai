@@ -18,9 +18,9 @@ export async function api<T>(path: string, options: RequestInit & { json?: unkno
   const { json, body, ...rest } = options;
   const headers = new Headers(rest.headers);
   if (json !== undefined) headers.set('Content-Type', 'application/json');
-  if (csrfToken) headers.set('X-CSRF-Token', csrfToken);
+  if (csrfToken && rest.credentials !== 'omit') headers.set('X-CSRF-Token', csrfToken);
 
-  const init: RequestInit = { ...rest, headers, credentials: 'same-origin' };
+  const init: RequestInit = { ...rest, headers, credentials: rest.credentials ?? 'same-origin' };
   if (json !== undefined) init.body = JSON.stringify(json);
   else if (body !== undefined && body !== null) init.body = body;
 

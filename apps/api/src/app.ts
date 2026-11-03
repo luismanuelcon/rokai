@@ -1,3 +1,6 @@
+import rateLimit from '@fastify/rate-limit';
+import { registerTrackingRoutes } from './routes/tracking.js';
+import { redactTrackingUrl } from './domain/tracking.js';
 import Fastify, { type FastifyInstance } from 'fastify';
 import compress from '@fastify/compress';
 import cookie from '@fastify/cookie';
@@ -16,7 +19,19 @@ import { registerWeb } from './web.js';
 
 export async function buildApp(env: Env, db: Db): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: { level: env.LOG_LEVEL },
+    logger: {
+      level: env.LOG_LEVEL,
+      serializers: {
+        req(req) {
+          return {
+            method: req.method,
+            url: redactTrackingUrl(req.url ?? ''),
+            hostname: req.hostname,
+            remoteAddress: req.ip,
+          };
+        },
+      },
+    },
     // Solo se confía en la cabecera de proxy cuando hay un proxy real delante.
     trustProxy: env.NODE_ENV === 'production',
     bodyLimit: 32 * 1024,
@@ -33,6 +48,7 @@ export async function buildApp(env: Env, db: Db): Promise<FastifyInstance> {
     zlibOptions: { level: 6 },
   });
   await app.register(cookie);
+  await app.register(rateLimit, { global: false });
   await app.register(errorsPlugin);
   await app.register(securityPlugin, { env });
   await app.register(authPlugin, { db });
@@ -41,6 +57,7 @@ export async function buildApp(env: Env, db: Db): Promise<FastifyInstance> {
   registerAuthRoutes(app, db, env);
   registerRentalRoutes(app, db);
   registerAdminRoutes(app, db);
+  registerTrackingRoutes(app, db);
   registerDayClosingRoutes(app, db);
 
   await registerWeb(app, env.WEB_ROOT);

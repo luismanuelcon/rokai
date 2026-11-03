@@ -38,7 +38,13 @@ const EMPTY: DraftState = {
   equipmentIds: [],
 };
 
-export function NewRental({ dash, onDone }: { dash: Dashboard; onDone: () => Promise<void> }) {
+export function NewRental({
+  dash,
+  onDone,
+}: {
+  dash: Dashboard;
+  onDone: (result: { id: number; trackingPath: string | null }) => Promise<void>;
+}) {
   const [draft, setDraft] = useState<DraftState>(EMPTY);
   // La firma y la aceptación se quedan en esta pantalla: son un acto presencial
   // del cliente, no un dato de trabajo que deba sobrevivir en un borrador.
@@ -186,14 +192,17 @@ export function NewRental({ dash, onDone }: { dash: Dashboard; onDone: () => Pro
         throw new Error(
           'El registro supera el tamaño permitido. Reduce las observaciones o vuelve a capturar la firma. Tus datos se conservan.',
         );
-      await api('/rentals', { method: 'POST', json: parsed.data });
+      const created = await api<{ id: number; trackingPath: string | null }>('/rentals', {
+        method: 'POST',
+        json: parsed.data,
+      });
       setDraft({ ...EMPTY, requestId: crypto.randomUUID() });
       setDial(DEFAULT_DIAL);
       setNational('');
       setSignature('');
       setTermsAccepted(false);
       try {
-        await onDone();
+        await onDone(created);
       } catch {
         setError(
           'El alquiler sí se guardó, pero no pudimos actualizar la lista. Consulta Alquileres activos antes de crear otro registro.',

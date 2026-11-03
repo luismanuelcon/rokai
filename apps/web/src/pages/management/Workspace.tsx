@@ -1,3 +1,4 @@
+import { TrackingActions } from '../../components/TrackingActions';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { Icon } from '../../components/Icon';
@@ -35,6 +36,10 @@ export function Workspace() {
   const [dash, setDash] = useState<Dashboard | null>(null);
   const [admin, setAdmin] = useState<AdminData | null>(null);
   const [toast, setToast] = useState('');
+  const [createdTracking, setCreatedTracking] = useState<{
+    id: number;
+    trackingPath: string | null;
+  } | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
 
   const isAdmin = user?.role === 'admin';
@@ -106,6 +111,18 @@ export function Workspace() {
 
       <div className="management">
         <main id="main" className="workspace">
+          {createdTracking && (
+            <section className="panel tracking-confirmation">
+              <h2>Alquiler iniciado</h2>
+              <TrackingActions
+                rentalId={createdTracking.id}
+                initialPath={createdTracking.trackingPath}
+              />
+              <button className="button small outline" onClick={() => setCreatedTracking(null)}>
+                Cerrar confirmación
+              </button>
+            </section>
+          )}
           {view === 'overview' && (
             <Overview
               dash={dash}
@@ -121,7 +138,8 @@ export function Workspace() {
           {view === 'new' && (
             <NewRental
               dash={dash}
-              onDone={async () => {
+              onDone={async (created) => {
+                setCreatedTracking(created);
                 await reload();
                 setView('active');
                 notify('Alquiler iniciado. ¡A rodar!');

@@ -31,7 +31,9 @@ export function registerRentalRoutes(app, db) {
     app.post('/api/v1/rentals', guarded, async (req, reply) => {
         const input = CreateRentalRequest.parse(req.body);
         const result = await createRental(db, req.session.user, input);
-        return reply.status(result.idempotent ? 200 : 201).send({ id: result.id });
+        return reply
+            .status(result.idempotent ? 200 : 201)
+            .send({ id: result.id, trackingPath: result.trackingPath });
     });
     app.post('/api/v1/rentals/:id/finish', guarded, async (req) => {
         const id = Number(req.params.id);

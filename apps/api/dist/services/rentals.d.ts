@@ -7,6 +7,7 @@ export interface Actor {
 export declare function createRental(db: Db, actor: Actor, input: CreateRentalRequest): Promise<{
     id: number;
     idempotent: boolean;
+    trackingPath: string | null;
 }>;
 export declare function finishRental(db: Db, actor: Actor, rentalId: number, input: FinishRentalRequest): Promise<void>;
 //# sourceMappingURL=rentals.d.ts.map

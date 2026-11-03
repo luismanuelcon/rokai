@@ -17,11 +17,11 @@ declare const EnvSchema: z.ZodObject<{
     SESSION_HOURS: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
     LOG_LEVEL: z.ZodDefault<z.ZodEnum<{
         error: "error";
+        trace: "trace";
         fatal: "fatal";
         warn: "warn";
         info: "info";
         debug: "debug";
-        trace: "trace";
     }>>;
 }, z.core.$strip>;
 export type Env = z.infer<typeof EnvSchema>;

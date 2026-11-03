@@ -8,6 +8,9 @@
  * Icono nuevo = una entrada aquí. Ningún SVG suelto en una pantalla.
  */
 const PATHS: Record<string, string> = {
+  copy: 'M9 9h12v12H9z M15 9V3H3v12h6',
+  whatsapp:
+    'M21 11.5a9 9 0 0 1-13.4 7.8L3 21l1.7-4.6A9 9 0 1 1 21 11.5 M8 7c0 4 3 7 7 7l1-2-3-1-1 1-2-2 1-1-1-3Z',
   mail: 'M3 6h18v12H3z M3 7l9 6 9-6',
   instagram:
     'M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4 M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M17 7h.01',

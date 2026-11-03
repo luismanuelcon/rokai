@@ -190,6 +190,7 @@ export const rentals = pgTable(
     lateFeeCents: integer(),
     /** Cómo pagó el cliente. Se registra en la devolución, no al abrir. */
     paymentMethod: paymentMethod(),
+    preparationMinutes: integer().notNull().default(0),
     startedAt: timestamp({ withTimezone: true }).notNull().default(now),
     /** Persistido para que el programador de vencimientos use un índice. */
     dueAt: timestamp({ withTimezone: true }).notNull(),
@@ -363,4 +364,17 @@ export const dayClosings = pgTable(
     uniqueIndex('day_closings_date_unique').on(t.date),
     check('day_closings_amounts_nonnegative', sql`${t.cashCents} >= 0 AND ${t.transferCents} >= 0`),
   ],
+);
+
+export const rentalTracking = pgTable(
+  'rental_tracking',
+  {
+    rentalId: bigint({ mode: 'number' })
+      .primaryKey()
+      .references(() => rentals.id, { onDelete: 'cascade' }),
+    token: text().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().default(now),
+    revokedAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [uniqueIndex('rental_tracking_token_unique').on(t.token)],
 );

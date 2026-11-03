@@ -1,3 +1,5 @@
+import { ensureTracking } from './tracking.js';
+import { trackingPath } from '../domain/tracking.js';
 import { eq, sql } from 'drizzle-orm';
 import { consents, notifications, rentalDrafts, rentalEquipment, rentals, settings, } from '@rokai/db';
 import { TERMS_VERSION, } from '@rokai/contracts';
@@ -9,12 +11,18 @@ import { activeRates } from '../repositories/catalog.js';
 import { findByRequestId, findRental, lockEquipmentForUpdate, upsertCustomer, } from '../repositories/rentals.js';
 export async function createRental(db, actor, input) {
     return db.transaction(async (tx) => {
+        await tx.execute(sql `select pg_advisory_xact_lock(hashtextextended(${input.requestId}, 0))`);
         const existing = await findByRequestId(tx, input.requestId);
         if (existing) {
             // Reintento del mismo usuario: se devuelve el alquiler ya creado.
             if (existing.createdBy !== actor.id)
                 throw conflict('Identificador ya utilizado.');
-            return { id: existing.id, idempotent: true };
+            const link = await ensureTracking(tx, existing.id);
+            return {
+                id: existing.id,
+                idempotent: true,
+                trackingPath: link.revokedAt ? null : trackingPath(link.token),
+            };
         }
         const rate = (await activeRates(tx)).find((r) => r.id === input.rateId);
         if (!rate)
@@ -35,6 +43,13 @@ export async function createRental(db, actor, input) {
             channel: 'presencial',
             policyVersion: TERMS_VERSION,
         });
+        const [preparation] = await tx
+            .select({ value: settings.value })
+            .from(settings)
+            .where(eq(settings.key, 'preparationMinutes'));
+        const grace = preparation?.value === undefined ? 1 : Number(preparation.value);
+        const preparationMinutes = Number.isInteger(grace) && grace >= 0 && grace <= 30 ? grace : 1;
+        // Conservar el momento de entrega; la preparación queda fijada por alquiler.
         const startedAt = new Date();
         const inserted = await tx
             .insert(rentals)
@@ -44,7 +59,8 @@ export async function createRental(db, actor, input) {
             minutes: rate.minutes,
             priceCents: rate.priceCents,
             startedAt,
-            dueAt: addMinutes(startedAt, rate.minutes),
+            preparationMinutes,
+            dueAt: addMinutes(startedAt, rate.minutes + preparationMinutes),
             createdBy: actor.id,
             notes: input.notes,
             signature: input.signature,
@@ -63,7 +79,7 @@ export async function createRental(db, actor, input) {
             customerId,
             phone: input.customer.phone,
             startedAt,
-            minutes: rate.minutes,
+            minutes: rate.minutes + preparationMinutes,
         });
         await recordAudit(tx, {
             userId: actor.id,
@@ -73,7 +89,8 @@ export async function createRental(db, actor, input) {
             after: { customer: input.customer.document, rateId: rate.id, priceCents: rate.priceCents },
         });
         await tx.delete(rentalDrafts).where(eq(rentalDrafts.userId, actor.id));
-        return { id: rentalId, idempotent: false };
+        const link = await ensureTracking(tx, rentalId);
+        return { id: rentalId, idempotent: false, trackingPath: trackingPath(link.token) };
     });
 }
 export async function finishRental(db, actor, rentalId, input) {

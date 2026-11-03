@@ -514,4 +514,68 @@ test('cierres: solo administradores, fecha única, edición auditada y conflicto
         'day_closing.update',
     ]);
 });
+test('seguimiento: idempotente, público mínimo, actualización y revocación', async () => {
+    const schema = await import('@rokai/db');
+    const { eq } = await import('drizzle-orm');
+    const [rate] = await handle.db
+        .insert(schema.rates)
+        .values({ period: 'special', minutes: 30, quantity: 1, priceCents: 10000 })
+        .returning();
+    const gear = await handle.db
+        .insert(schema.equipment)
+        .values([
+        { code: 'TRACK-TEST-S', kind: 'scooter' },
+        { code: 'TRACK-TEST-H', kind: 'helmet' },
+    ])
+        .returning();
+    const payload = {
+        requestId: crypto.randomUUID(),
+        customer: { fullName: 'Privado', documentType: 'CC', document: 'tracking-test', phone: null },
+        rateId: rate.id,
+        equipmentIds: gear.map((e) => e.id),
+        notes: 'Privado',
+        ...CLOSING,
+    };
+    const [first, retry] = await Promise.all([
+        call('/api/v1/rentals', 'POST', payload, admin),
+        call('/api/v1/rentals', 'POST', payload, admin),
+    ]);
+    assert.ok([200, 201].includes(first.status));
+    assert.ok([200, 201].includes(retry.status));
+    assert.equal(first.body.trackingPath, retry.body.trackingPath);
+    const rentalId = first.body.id;
+    const token = first.body.trackingPath.split('/').pop();
+    assert.match(token, /^[A-Za-z0-9_-]{43}$/);
+    const path = `/api/v1/tracking/${token}`;
+    const result = await call(path);
+    assert.equal(result.status, 200);
+    assert.deepEqual(Object.keys(result.body).sort(), [
+        'status',
+        'remainingSeconds',
+        'serverNow',
+        'preparationEndsAt',
+        'startedAt',
+        'dueAt',
+        'minutes',
+        'scooterCount',
+        'whatsapp',
+    ].sort());
+    assert.equal(result.body.scooterCount, 1);
+    assert.equal(Date.parse(result.body.dueAt) - Date.parse(result.body.preparationEndsAt), result.body.minutes * 60_000);
+    assert.ok(Date.parse(result.body.preparationEndsAt) >= Date.parse(result.body.startedAt));
+    await handle.db
+        .update(schema.rentals)
+        .set({ dueAt: new Date(Date.now() + 3600000), minutes: 60 })
+        .where(eq(schema.rentals.id, rentalId));
+    assert.ok((await call(path)).body.remainingSeconds > 3500);
+    assert.equal((await call(`/api/v1/rentals/${rentalId}/tracking`, 'GET', undefined, worker)).body.path, first.body.trackingPath);
+    assert.equal((await call(`/api/v1/rentals/${rentalId}/finish`, 'POST', { notes: '', paymentMethod: 'cash' }, admin)).status, 200);
+    const closed = await call(path);
+    assert.equal(closed.body.status, 'closed');
+    assert.equal(closed.body.remainingSeconds, 0);
+    assert.equal((await call(`/api/v1/admin/rentals/${rentalId}/tracking/revoke`, 'POST', {}, worker)).status, 403);
+    assert.equal((await call(`/api/v1/admin/rentals/${rentalId}/tracking/revoke`, 'POST', {}, admin)).status, 200);
+    assert.equal((await call(path)).status, 404);
+    assert.equal((await call('/api/v1/tracking/invalid')).status, 404);
+});
 //# sourceMappingURL=app.test.js.map

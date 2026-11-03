@@ -39,6 +39,7 @@ export declare function findRental(exec: Executor, id: number): Promise<{
     lateMinutes: number | null;
     lateFeeCents: number | null;
     paymentMethod: "cash" | "transfer" | null;
+    preparationMinutes: number;
     startedAt: Date;
     dueAt: Date;
     endedAt: Date | null;

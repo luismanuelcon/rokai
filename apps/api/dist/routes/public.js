@@ -3,7 +3,7 @@ import { faqs, settings } from '@rokai/db';
 import { activeRates } from '../repositories/catalog.js';
 export async function readSettings(db) {
     const rows = await db.select().from(settings);
-    return Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    return { preparationMinutes: '1', ...Object.fromEntries(rows.map((r) => [r.key, r.value])) };
 }
 export function registerPublicRoutes(app, db) {
     app.get('/api/v1/health', () => ({ status: 'ok' }));

@@ -22,6 +22,7 @@ export declare const PublicSettings: z.ZodObject<{
     instagram: z.ZodUnion<[z.ZodString, z.ZodLiteral<"">]>;
     email: z.ZodUnion<[z.ZodEmail, z.ZodLiteral<"">]>;
     lateFeePerMinuteCents: z.ZodString;
+    preparationMinutes: z.ZodDefault<z.ZodString>;
     terms: z.ZodString;
     privacy: z.ZodString;
     cookies: z.ZodString;
@@ -56,6 +57,7 @@ export declare const PublicData: z.ZodObject<{
         instagram: z.ZodUnion<[z.ZodString, z.ZodLiteral<"">]>;
         email: z.ZodUnion<[z.ZodEmail, z.ZodLiteral<"">]>;
         lateFeePerMinuteCents: z.ZodString;
+        preparationMinutes: z.ZodDefault<z.ZodString>;
         terms: z.ZodString;
         privacy: z.ZodString;
         cookies: z.ZodString;

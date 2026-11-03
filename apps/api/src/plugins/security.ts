@@ -18,7 +18,14 @@ const CSP = [
 export const securityPlugin = fp(function securityPlugin(app: FastifyInstance, opts: { env: Env }) {
   app.addHook('onSend', async (_req, reply, payload) => {
     reply.header('X-Content-Type-Options', 'nosniff');
-    reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    reply.header(
+      'Referrer-Policy',
+      _req.url.includes('/tracking/') || _req.url.includes('/alquiler/seguimiento/')
+        ? 'no-referrer'
+        : 'strict-origin-when-cross-origin',
+    );
+    if (_req.url.includes('/alquiler/seguimiento/'))
+      reply.header('X-Robots-Tag', 'noindex, nofollow');
     reply.header('X-Frame-Options', 'DENY');
     reply.header('Content-Security-Policy', CSP);
     reply.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');

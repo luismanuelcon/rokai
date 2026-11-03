@@ -1409,3 +1409,124 @@ dialog:has(.closing-form) {
     flex: 1;
   }
 }
+
+.tracking-actions {
+  margin: 14px 0;
+  min-width: 0;
+  white-space: normal;
+}
+.tracking-url {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.tracking-url input {
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-base);
+  font-size: 13px;
+}
+.tracking-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.tracking-action-buttons .button {
+  min-height: 44px;
+}
+.tracking-confirmation {
+  margin-bottom: 24px;
+  border-left: 4px solid var(--c-lime-ink) !important;
+}
+.tracking-page {
+  width: min(100% - 32px, 600px);
+  margin: 32px auto;
+}
+.tracking-page > .brand {
+  display: block;
+  width: fit-content;
+  margin: 0 auto 24px;
+}
+.tracking-public-card {
+  padding: clamp(24px, 5vw, 40px);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-xl);
+  background: var(--c-surface);
+  box-shadow: var(--elev-2);
+  text-align: center;
+}
+.tracking-public-card h1 {
+  font-size: clamp(23px, 4vw, 32px);
+  line-height: 1.2;
+  margin: 14px 0 24px;
+  text-wrap: balance;
+}
+.tracking-public-card p {
+  line-height: 1.6;
+}
+.tracking-clock {
+  display: grid;
+  gap: 8px;
+  padding: 26px 12px;
+  border-radius: var(--r-lg);
+  background: var(--c-graphite);
+  color: var(--c-lime-bright);
+  margin: 20px 0;
+}
+.tracking-clock strong {
+  font-size: clamp(56px, 15vw, 92px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.tracking-clock span {
+  color: var(--c-on-dark);
+  font-size: 12px;
+}
+.tracking-public-card.is-warning .tracking-clock {
+  border: 3px solid var(--c-warning);
+}
+.tracking-public-card.is-urgent .tracking-clock,
+.tracking-public-card.is-expired .tracking-clock {
+  background: var(--c-alert-ink);
+  color: var(--c-on-dark);
+}
+.tracking-public-card.is-closed .tracking-clock {
+  background: var(--c-canvas);
+  color: var(--c-text-muted);
+}
+.tracking-public-card.is-closed .tracking-clock span {
+  color: var(--c-text-muted);
+}
+.tracking-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px 16px;
+  text-align: left;
+  margin: 28px 0 16px;
+}
+.tracking-facts dt {
+  font-size: 12px;
+  color: var(--c-text-muted);
+}
+.tracking-facts dd {
+  font-size: 15px;
+  font-weight: 650;
+  margin: 6px 0 0;
+}
+.tracking-public-card > .button {
+  margin-top: 18px;
+  width: 100%;
+}
+@media (max-width: 520px) {
+  .tracking-action-buttons .button {
+    flex: 1 1 auto;
+  }
+  .tracking-url input {
+    font-size: 16px;
+  }
+}

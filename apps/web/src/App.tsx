@@ -11,6 +11,10 @@ const Workspace = lazy(() =>
   import('./pages/management/Workspace').then((m) => ({ default: m.Workspace })),
 );
 
+const TrackingPage = lazy(() =>
+  import('./pages/TrackingPage').then((m) => ({ default: m.TrackingPage })),
+);
+
 function ManagementRoute() {
   const { user, loading } = useSession();
   if (loading) return <main className="loading">Verificando sesión…</main>;
@@ -30,6 +34,7 @@ export function App() {
         <Suspense fallback={<main className="loading">Cargando…</main>}>
           <Routes>
             <Route path="/" element={<PublicPage />} />
+            <Route path="/alquiler/seguimiento/:token" element={<TrackingPage />} />
             <Route path="/terminos" element={<LegalPage />} />
             <Route path="/privacidad" element={<LegalPage />} />
             <Route path="/cookies" element={<LegalPage />} />

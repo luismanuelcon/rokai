@@ -1,0 +1,1 @@
+ALTER TABLE "rentals" ADD COLUMN "preparation_minutes" integer DEFAULT 0 NOT NULL;
