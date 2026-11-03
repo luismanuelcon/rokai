@@ -245,4 +245,24 @@ export const auditLog = pgTable('audit_log', {
     index('audit_log_user_idx').on(t.userId),
     index('audit_log_entity_idx').on(t.entity, t.entityId),
 ]);
+/** Cierre declarado por un administrador. No modifica cobros ni alquileres. */
+export const dayClosings = pgTable('day_closings', {
+    id: bigserial({ mode: 'number' }).primaryKey(),
+    date: date().notNull(),
+    opensAt: text().notNull(),
+    closesAt: text().notNull(),
+    closesNextDay: boolean().notNull().default(false),
+    cashCents: integer().notNull(),
+    transferCents: integer().notNull(),
+    expenses: jsonb().$type().notNull(),
+    notes: text().notNull().default(''),
+    version: integer().notNull().default(1),
+    createdBy: bigint({ mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+    updatedBy: bigint({ mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp({ withTimezone: true }).notNull().default(now),
+    updatedAt: timestamp({ withTimezone: true }).notNull().default(now),
+}, (t) => [
+    uniqueIndex('day_closings_date_unique').on(t.date),
+    check('day_closings_amounts_nonnegative', sql `${t.cashCents} >= 0 AND ${t.transferCents} >= 0`),
+]);
 //# sourceMappingURL=schema.js.map

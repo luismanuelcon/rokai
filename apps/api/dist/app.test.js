@@ -480,4 +480,38 @@ test('Solo administración elimina alquileres; el equipo vuelve a quedar libre',
     const actions = adminData.body.audit.map((a) => a.action);
     assert.ok(actions.includes('eliminar_alquiler'), 'el borrado debe quedar en la auditoría');
 });
+test('cierres: solo administradores, fecha única, edición auditada y conflicto de versión', async () => {
+    const body = {
+        date: '2020-02-29',
+        opensAt: '08:00',
+        closesAt: '22:00',
+        closesNextDay: false,
+        cashCents: 10000,
+        transferCents: 5000,
+        expenses: [{ description: 'Transporte', amountCents: 2000 }],
+        notes: '',
+    };
+    const path = '/api/v1/admin/day-closings';
+    assert.equal((await call(path)).status, 401);
+    assert.equal((await call(path, 'GET', undefined, worker)).status, 403);
+    assert.equal((await call(path, 'POST', body, worker)).status, 403);
+    assert.equal((await call(`${path}/${body.date}`, 'PUT', { ...body, version: 1 }, worker)).status, 403);
+    const created = await call(path, 'POST', body, admin);
+    assert.equal(created.status, 201);
+    assert.equal(created.body.version, 1);
+    assert.equal((await call(path, 'POST', body, admin)).status, 409);
+    const changed = await call(`${path}/${body.date}`, 'PUT', { ...body, version: 1, cashCents: 20000 }, admin);
+    assert.equal(changed.status, 200);
+    assert.equal(changed.body.version, 2);
+    assert.equal((await call(`${path}/${body.date}`, 'PUT', { ...body, version: 1 }, admin)).status, 409);
+    assert.equal((await call(`${path}/${body.date}`, 'PUT', { ...body, version: 2, date: '2020-03-01' }, admin))
+        .status, 400);
+    const list = await call(path, 'GET', undefined, admin);
+    assert.equal(list.body.filter((row) => row.date === body.date).length, 1);
+    const audit = await handle.db.execute(sql `select action from audit_log where entity = 'day_closing'`);
+    assert.deepEqual(audit.rows.map((row) => row.action).sort(), [
+        'day_closing.create',
+        'day_closing.update',
+    ]);
+});
 //# sourceMappingURL=app.test.js.map

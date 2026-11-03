@@ -981,3 +981,138 @@ button[aria-busy='true'],
 body:has(.whatsapp-float) .footer {
   padding-bottom: calc(100px + env(safe-area-inset-bottom));
 }
+
+.daily-closings {
+  margin-bottom: 28px;
+}
+.closing-history {
+  display: grid;
+  gap: 16px;
+}
+.closing-record {
+  padding: 18px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+}
+.closing-record header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.closing-record h3 {
+  font-size: 16px;
+  line-height: 1.4;
+  margin: 0;
+}
+.closing-record header p {
+  font-size: 13px;
+  color: var(--c-text-muted);
+  margin-top: 5px;
+}
+.closing-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0 0;
+}
+.closing-totals dt {
+  font-size: 12px;
+  color: var(--c-text-muted);
+}
+.closing-totals dd {
+  margin: 5px 0 0;
+  font-size: 17px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+dialog:has(.closing-form) {
+  width: min(680px, calc(100vw - 24px));
+}
+.closing-form fieldset {
+  border: 0;
+  margin: 20px 0 0;
+  padding: 0;
+  min-width: 0;
+}
+.closing-form .field {
+  margin-bottom: 16px;
+}
+.closing-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.closing-next-day {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+.closing-next-day input {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.closing-expenses-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0 16px;
+}
+.closing-expenses-heading h3 {
+  font-size: 17px;
+}
+.closing-expense {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 16px;
+  padding: 14px;
+  background: var(--c-canvas);
+  border-radius: var(--r-md);
+}
+.closing-expense .field {
+  margin: 0;
+}
+.closing-preview {
+  padding: 18px;
+  background: var(--c-canvas);
+  border-radius: var(--r-md);
+}
+@media (max-width: 520px) {
+  .closing-record {
+    padding: 14px;
+  }
+  .closing-record header {
+    flex-wrap: wrap;
+  }
+  .closing-totals {
+    gap: 8px;
+  }
+  .closing-totals dd {
+    font-size: 15px;
+  }
+  .closing-form input,
+  .closing-form textarea {
+    font-size: 16px;
+    min-width: 0;
+  }
+  .closing-fields {
+    gap: 10px;
+  }
+  .closing-expense {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .closing-expense .button {
+    justify-self: start;
+  }
+  .closing-preview {
+    padding: 14px;
+  }
+}

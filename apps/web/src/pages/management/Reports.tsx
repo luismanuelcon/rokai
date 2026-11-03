@@ -1,6 +1,7 @@
 import { money } from '../../lib/format';
 import type { AdminData, Dashboard } from '../../lib/types';
 import { PageHeading } from './Shared';
+import { DailyClosings } from './DailyClosings';
 
 export function Reports({ dash, admin }: { dash: Dashboard; admin: AdminData }) {
   const finished = dash.rentals.filter((r) => r.endedAt);
@@ -13,6 +14,7 @@ export function Reports({ dash, admin }: { dash: Dashboard; admin: AdminData }) 
         title="Reportes"
         subtitle="Valores de alquileres finalizados. No representa confirmación de pagos."
       />
+      <DailyClosings />
       <div className="metrics">
         <div className="metric">
           <div>

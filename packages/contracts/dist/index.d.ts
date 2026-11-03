@@ -5,4 +5,5 @@ export * from './catalog.js';
 export * from './rentals.js';
 export * from './public.js';
 export * from './notifications.js';
+export * from './dayClosings.js';
 //# sourceMappingURL=index.d.ts.map
