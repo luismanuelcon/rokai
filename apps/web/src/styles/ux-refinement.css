@@ -1579,3 +1579,98 @@ dialog:has(.closing-form) {
     transition: none;
   }
 }
+
+/* Menú del equipo: una línea base para todas las acciones. */
+@media (min-width: 1024px) {
+  .appbar .appbar-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px 24px;
+    padding-block: 12px 16px;
+  }
+  .appbar .appbar-brand {
+    min-height: 44px;
+    justify-self: start;
+  }
+  .appbar .appbar-user {
+    margin: 0;
+    justify-self: end;
+  }
+  .appbar .navrail {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+  }
+  .appbar .xnav-team .xnav-panel nav,
+  .appbar .xnav-team .navrail-track {
+    padding: 0;
+  }
+  .appbar .xnav-team .navrail-track {
+    display: grid;
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 6px;
+  }
+  .appbar .navrail-cta,
+  .appbar .xnav-team .xnav-item {
+    height: 56px;
+    min-height: 56px;
+    margin: 0;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.25;
+    text-align: center;
+  }
+  .appbar .navrail-cta {
+    padding-inline: 20px;
+  }
+  .appbar :is(.navrail-cta, .xnav-item) .icon {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+  }
+}
+.appbar :is(.navrail-cta, .xnav-item, .xnav-trigger) {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+.appbar .xnav-item[aria-current='page'] {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 35%),
+    0 0 16px rgb(190 232 43 / 14%);
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .appbar :is(.navrail-cta, .xnav-item, .xnav-trigger):hover:not(:disabled) {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 20%),
+      0 0 18px rgb(190 232 43 / 18%);
+    border-color: #bce52c;
+    transform: translateY(-1px);
+  }
+}
+.appbar :is(.navrail-cta, .xnav-item, .xnav-trigger):active:not(:disabled) {
+  transform: scale(0.98);
+}
+@media (prefers-reduced-motion: reduce) {
+  .appbar :is(.navrail-cta, .xnav-item, .xnav-trigger) {
+    transition: none;
+  }
+  .appbar :is(.navrail-cta, .xnav-item, .xnav-trigger):active:not(:disabled) {
+    transform: none;
+  }
+}
