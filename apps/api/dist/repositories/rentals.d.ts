@@ -62,7 +62,7 @@ export declare function lockEquipmentForUpdate(exec: Executor, ids: readonly num
     busy: boolean;
     id: number;
     kind: "scooter" | "helmet";
-    status: "available" | "maintenance" | "inactive";
+    status: "maintenance" | "available" | "inactive";
 }[]>;
 export declare function upsertCustomer(exec: Executor, input: {
     fullName: string;

@@ -495,11 +495,6 @@ export function RentalTable({
           <div className="empty">
             <Icon name="scooter" />
             <h3>{search ? 'Sin resultados' : 'Sin alquileres'}</h3>
-            <p>
-              {search
-                ? 'No encontramos coincidencias. Prueba otro nombre o código.'
-                : 'No hay alquileres en esta vista.'}
-            </p>
           </div>
         ) : (
           <>

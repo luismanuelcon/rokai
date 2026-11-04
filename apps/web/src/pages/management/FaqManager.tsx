@@ -91,9 +91,6 @@ export function FaqManager({
       <div className="toolbar">
         <div>
           <h2>Preguntas públicas</h2>
-          <p className="small-copy muted">
-            Se muestran en la portada, ordenadas de menor a mayor número de orden.
-          </p>
         </div>
         <button
           className="button small"
@@ -109,7 +106,6 @@ export function FaqManager({
         <div className="empty">
           <Icon name="bell" />
           <h3>Todavía no hay preguntas.</h3>
-          <p>Añade las dudas que más repiten los visitantes.</p>
         </div>
       ) : (
         <div className="table-wrap">

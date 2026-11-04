@@ -144,10 +144,6 @@ export function AdminPanel({
           <div className="toolbar">
             <div>
               <h2>Personas autorizadas</h2>
-              <p className="small-copy muted">
-                Administradores gestionan la estación. Colaboradores registran y atienden
-                alquileres.
-              </p>
             </div>
             <button
               className="button small"
@@ -369,9 +365,7 @@ export function AdminPanel({
       {tab === 'notifications' && (
         <div className="panel">
           <h2>Bandeja de salida</h2>
-          <p className="small-copy muted">
-            Los mensajes se encolan en la misma transacción del alquiler. Nada falla en silencio.
-          </p>
+
           <div className="table-wrap">
             <table>
               <thead>

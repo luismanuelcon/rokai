@@ -378,3 +378,37 @@ export const rentalTracking = pgTable(
   },
   (t) => [uniqueIndex('rental_tracking_token_unique').on(t.token)],
 );
+
+export const businessExpenses = pgTable(
+  'business_expenses',
+  {
+    id: bigserial({ mode: 'number' }).primaryKey(),
+    requestId: text().notNull(),
+    date: date().notNull(),
+    category: text().notNull(),
+    description: text().notNull(),
+    amountCents: integer().notNull(),
+    paymentMethod: paymentMethod().notNull(),
+    beneficiary: text().notNull().default(''),
+    receiptUrl: text().notNull().default(''),
+    version: integer().notNull().default(1),
+    voidedAt: timestamp({ withTimezone: true }),
+    voidReason: text(),
+    createdBy: bigint({ mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+    updatedBy: bigint({ mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp({ withTimezone: true }).notNull().default(now),
+    updatedAt: timestamp({ withTimezone: true }).notNull().default(now),
+  },
+  (t) => [
+    uniqueIndex('business_expenses_request_unique').on(t.requestId),
+    index('business_expenses_date_idx').on(t.date),
+    check(
+      'business_expenses_amount_check',
+      sql`${t.amountCents} > 0 AND ${t.amountCents} <= 1000000000 AND ${t.amountCents} % 100 = 0`,
+    ),
+    check(
+      'business_expenses_category_check',
+      sql`${t.category} IN ('salary','advertising','parts','maintenance','transport','services','other')`,
+    ),
+  ],
+);

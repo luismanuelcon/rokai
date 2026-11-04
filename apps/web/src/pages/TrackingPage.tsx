@@ -164,7 +164,7 @@ export function TrackingPage() {
             </div>
             <p>
               {state === 'closed'
-                ? 'Gracias por rodar con ROKAI. ¡Te esperamos de nuevo!'
+                ? 'Equipo devuelto.'
                 : seconds === 0
                   ? 'Acércate a la estación para devolver el equipo.'
                   : 'Regresa antes de que finalice el tiempo de tu alquiler.'}

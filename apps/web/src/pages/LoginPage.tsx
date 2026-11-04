@@ -58,7 +58,7 @@ export function LoginPage() {
               </span>
             </div>
             <h1>Hola de nuevo.</h1>
-            <p>Inicia sesión para registrar alquileres y gestionar los equipos de la estación.</p>
+
             <form onSubmit={(e) => void onSubmit(e)}>
               {error && (
                 <div className="form-error" role="alert">
@@ -106,11 +106,7 @@ export function LoginPage() {
                 {busy ? 'Entrando…' : 'Iniciar sesión'} <Icon name="arrow" />
               </button>
             </form>
-            <p className="auth-footer">
-              Acceso exclusivo para personal autorizado.
-              <br />
-              Solicita tu cuenta al administrador de ROKAI.
-            </p>
+            <p className="auth-footer">¿Necesitas acceso? Contacta al administrador.</p>
           </div>
         </div>
       </main>

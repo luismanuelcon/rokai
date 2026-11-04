@@ -185,10 +185,6 @@ export function Rates({
       <div className="toolbar">
         <div>
           <h2>Tarifas y vigencia</h2>
-          <p className="small-copy muted">
-            El portal público solo muestra las tarifas vigentes hoy. Los alquileres ya registrados
-            conservan el precio con el que se firmaron.
-          </p>
         </div>
         <button
           className="button small"
@@ -204,7 +200,7 @@ export function Rates({
         <div className="empty">
           <Icon name="chart" />
           <h3>Todavía no hay tarifas</h3>
-          <p>Crea la primera para que el portal público pueda mostrar precios.</p>
+
           <button
             className="button"
             onClick={() => {

@@ -588,4 +588,75 @@ test('seguimiento: idempotente, público mínimo, actualización y revocación',
     assert.equal((await call(path)).status, 404);
     assert.equal((await call('/api/v1/tracking/invalid')).status, 404);
 });
+test('gastos del negocio: permisos, cierre sin duplicados, idempotencia, edición y anulación', async () => {
+    const path = '/api/v1/admin/business-expenses';
+    const expense = {
+        requestId: crypto.randomUUID(),
+        date: '2019-01-15',
+        category: 'salary',
+        description: 'Pago del personal',
+        amountCents: 3000,
+        paymentMethod: 'cash',
+        beneficiary: 'Equipo',
+        receiptUrl: '',
+    };
+    assert.equal((await call(path)).status, 401);
+    await call('/api/v1/admin/users', 'POST', {
+        name: 'Gastos colaborador',
+        email: 'expenses@test.local',
+        password: PASSWORD,
+        role: 'collaborator',
+    }, admin);
+    const collaborator = await login('expenses@test.local');
+    for (const [route, method, body] of [
+        [path, 'GET', undefined],
+        [path, 'POST', expense],
+        [path + '/1', 'PUT', { ...expense, version: 1 }],
+        [path + '/1/void', 'POST', { version: 1, reason: 'Registro duplicado' }],
+    ])
+        assert.equal((await call(route, method, body, collaborator)).status, 403);
+    const closing = {
+        date: expense.date,
+        opensAt: '08:00',
+        closesAt: '20:00',
+        cashCents: 10000,
+        transferCents: 5000,
+        expenses: [{ description: 'Transporte', amountCents: 2000 }],
+        notes: '',
+    };
+    assert.equal((await call('/api/v1/admin/day-closings', 'POST', closing, admin)).status, 201);
+    const concurrent = await Promise.all([
+        call(path, 'POST', expense, admin),
+        call(path, 'POST', expense, admin),
+    ]);
+    assert.deepEqual(concurrent.map((r) => r.status).sort(), [200, 201]);
+    const id = concurrent[0].body.id;
+    const query = `${path}?from=${expense.date}&to=${expense.date}`;
+    let result = await call(query, 'GET', undefined, admin);
+    assert.equal(result.status, 200);
+    assert.equal(result.body.total, 2);
+    assert.deepEqual(result.body.summary, {
+        cashCents: 10000,
+        transferCents: 5000,
+        closingExpensesCents: 2000,
+        additionalExpensesCents: 3000,
+        netCents: 10000,
+    });
+    assert.equal(result.body.monthly[0].expensesCents, 5000);
+    assert.equal((await call(query + '&category=salary', 'GET', undefined, admin)).body.total, 1);
+    assert.equal((await call(path, 'POST', { ...expense, amountCents: 0 }, admin)).status, 400);
+    assert.equal((await call(path, 'POST', { ...expense, amountCents: 1 }, admin)).status, 400);
+    assert.equal((await call(path + '/' + id, 'PUT', { ...expense, version: 1, amountCents: 4000 }, admin))
+        .status, 200);
+    assert.equal((await call(path + '/' + id, 'PUT', { ...expense, version: 1 }, admin)).status, 409);
+    assert.equal((await call(path + '/' + id + '/void', 'POST', { version: 2, reason: ' ' }, admin)).status, 400);
+    assert.equal((await call(path + '/' + id + '/void', 'POST', { version: 2, reason: 'Pago registrado dos veces' }, admin)).status, 200);
+    assert.equal((await call(path + '/' + id, 'PUT', { ...expense, version: 3 }, admin)).status, 409);
+    result = await call(query, 'GET', undefined, admin);
+    assert.equal(result.body.total, 1);
+    assert.equal(result.body.summary.netCents, 13000);
+    assert.equal((await call(query + '&status=voided', 'GET', undefined, admin)).body.total, 1);
+    const audit = await call('/api/v1/admin/data', 'GET', undefined, admin);
+    assert.equal(audit.body.audit.find((a) => a.action === 'business_expense.void' && a.entityId === String(id)).reason, 'Pago registrado dos veces');
+});
 //# sourceMappingURL=app.test.js.map

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Icon } from '../../components/Icon';
 import { Modal } from '../../components/Modal';
 import { api, ApiError } from '../../lib/api';
 import { copCents as cents, formatCopInput, centsToInput } from '../../lib/copInput';
@@ -30,8 +31,9 @@ const dateLabel = (date: string) =>
   new Intl.DateTimeFormat('es-CO', { dateStyle: 'long', timeZone: 'America/Bogota' }).format(
     new Date(`${date}T12:00:00-05:00`),
   );
-export function DailyClosings() {
+export function DailyClosings({ onChanged }: { onChanged?: () => void }) {
   const [rows, setRows] = useState<Closing[]>([]);
+  const [history, setHistory] = useState(false);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [page, setPage] = useState(1);
@@ -44,7 +46,9 @@ export function DailyClosings() {
     .sort((a, b) => b.date.localeCompare(a.date));
   const totalPages = Math.max(1, Math.ceil(filtered.length / 25));
   const currentPage = Math.min(page, totalPages);
-  const pageRows = filtered.slice((currentPage - 1) * 25, currentPage * 25);
+  const pageRows = history
+    ? filtered.slice((currentPage - 1) * 25, currentPage * 25)
+    : filtered.slice(0, 5);
   const totals = filtered.reduce(
     (sum, row) => ({
       cash: sum.cash + row.cashCents,
@@ -211,6 +215,7 @@ export function DailyClosings() {
       setRows((items) => [saved, ...items.filter((item) => item.date !== saved.date)]);
       setOpened(false);
       setMessage(editing ? 'Cierre actualizado.' : 'Cierre guardado.');
+      onChanged?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar el cierre.');
       if (e instanceof ApiError && e.status === 409) {
@@ -226,16 +231,13 @@ export function DailyClosings() {
     <section className="panel daily-closings" aria-labelledby="daily-closings-title">
       <div className="toolbar">
         <div>
-          <h2 id="daily-closings-title">Cierre de día</h2>
-          <p className="small-copy muted">
-            Los ingresos se precargan del historial de pagos; confirma los importes y registra los
-            gastos.
-          </p>
+          <h2 id="daily-closings-title">{history ? 'Historial de cierres' : 'Cierre de día'}</h2>
         </div>
         <button className="button" disabled={busy} onClick={() => open()}>
           Registrar cierre
         </button>
       </div>
+
       {message && (
         <p role="status" className="notice">
           {message}
@@ -253,71 +255,85 @@ export function DailyClosings() {
       {!loading && !loadError && rows.length === 0 && (
         <div className="empty">
           <h3>Aún no hay cierres registrados</h3>
-          <p>Puedes registrar cualquier fecha y editarla cuando sea necesario.</p>
         </div>
       )}
-      <div className="closing-filters">
-        <div className="field">
-          <label htmlFor="closing-from">Desde</label>
-          <input
-            id="closing-from"
-            type="date"
-            value={fromDate}
-            onChange={(event) => {
-              setFromDate(event.target.value);
+      {history && (
+        <div className="closing-filters">
+          <div className="field">
+            <label htmlFor="closing-from">Desde</label>
+            <input
+              id="closing-from"
+              type="date"
+              value={fromDate}
+              onChange={(event) => {
+                setFromDate(event.target.value);
+                setPage(1);
+              }}
+              aria-invalid={invalidRange}
+              aria-describedby={invalidRange ? 'closing-range-error' : undefined}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="closing-to">Hasta</label>
+            <input
+              id="closing-to"
+              type="date"
+              value={toDate}
+              onChange={(event) => {
+                setToDate(event.target.value);
+                setPage(1);
+              }}
+              aria-invalid={invalidRange}
+              aria-describedby={invalidRange ? 'closing-range-error' : undefined}
+            />
+          </div>
+          <button
+            className="button outline"
+            onClick={() => {
+              setFromDate('');
+              setToDate('');
               setPage(1);
             }}
-            aria-invalid={invalidRange}
-            aria-describedby={invalidRange ? 'closing-range-error' : undefined}
-          />
+            disabled={!fromDate && !toDate}
+          >
+            Limpiar filtros
+          </button>
         </div>
-        <div className="field">
-          <label htmlFor="closing-to">Hasta</label>
-          <input
-            id="closing-to"
-            type="date"
-            value={toDate}
-            onChange={(event) => {
-              setToDate(event.target.value);
-              setPage(1);
-            }}
-            aria-invalid={invalidRange}
-            aria-describedby={invalidRange ? 'closing-range-error' : undefined}
-          />
-        </div>
-        <button
-          className="button outline"
-          onClick={() => {
-            setFromDate('');
-            setToDate('');
-            setPage(1);
-          }}
-          disabled={!fromDate && !toDate}
-        >
-          Limpiar filtros
-        </button>
-      </div>
+      )}
       {invalidRange && (
         <p className="form-error" role="alert" id="closing-range-error">
           La fecha inicial debe ser anterior o igual a la fecha final.
         </p>
       )}
+      <div className="report-history-access">
+        <button
+          type="button"
+          className="button small outline report-history-toggle"
+          aria-expanded={history}
+          onClick={() => {
+            setHistory(!history);
+            setFromDate('');
+            setToDate('');
+            setPage(1);
+          }}
+        >
+          <Icon name={history ? 'arrow' : 'eye'} />
+          {history ? 'Volver a los últimos 5 cierres' : 'Ver historial de cierres'}
+        </button>
+      </div>
       {!loading && !loadError && !invalidRange && (
         <>
           <p className="small-copy muted" role="status">
-            {filtered.length} cierres en el período. Totales y gráficas incluyen todos los
-            resultados del filtro, no solo esta página.
+            {history
+              ? `${filtered.length} cierres`
+              : `Últimos ${Math.min(5, filtered.length)} de ${filtered.length} cierres`}
           </p>
           {filtered.length > 0 ? (
             <>
-              <p className="small-copy muted closing-table-hint" id="closing-table-hint">
-                Desliza la tabla horizontalmente para consultar todas las columnas.
-              </p>
               <div
                 className="table-wrap closing-report-table"
                 role="region"
                 aria-label="Histórico de cierres"
-                aria-describedby="closing-table-hint"
                 tabIndex={0}
               >
                 <table>
@@ -372,28 +388,30 @@ export function DailyClosings() {
                   </tbody>
                 </table>
               </div>
-              <nav className="closing-pagination" aria-label="Páginas del histórico">
-                <p role="status">
-                  {(currentPage - 1) * 25 + 1}–{Math.min(currentPage * 25, filtered.length)} de{' '}
-                  {filtered.length} · Página {currentPage} de {totalPages}
-                </p>
-                <div>
-                  <button
-                    className="button small outline"
-                    disabled={currentPage === 1}
-                    onClick={() => setPage(currentPage - 1)}
-                  >
-                    Anterior
-                  </button>
-                  <button
-                    className="button small outline"
-                    disabled={currentPage === totalPages}
-                    onClick={() => setPage(currentPage + 1)}
-                  >
-                    Siguiente
-                  </button>
-                </div>
-              </nav>
+              {history && (
+                <nav className="closing-pagination" aria-label="Páginas del histórico">
+                  <p role="status">
+                    {(currentPage - 1) * 25 + 1}–{Math.min(currentPage * 25, filtered.length)} de{' '}
+                    {filtered.length} · Página {currentPage} de {totalPages}
+                  </p>
+                  <div>
+                    <button
+                      className="button small outline"
+                      disabled={currentPage === 1}
+                      onClick={() => setPage(currentPage - 1)}
+                    >
+                      Anterior
+                    </button>
+                    <button
+                      className="button small outline"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setPage(currentPage + 1)}
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                </nav>
+              )}
               <dl className="closing-report-totals">
                 <div>
                   <dt>Efectivo</dt>
@@ -416,79 +434,80 @@ export function DailyClosings() {
                   <dd>{money(totalIncome - totals.expenses)}</dd>
                 </div>
               </dl>
-              <div className="closing-charts">
-                <figure className="closing-chart">
-                  <figcaption>
-                    <h3>Ingresos y gastos por mes</h3>
-                    <p>Valores declarados en COP. Solo fechas incluidas en el filtro.</p>
-                  </figcaption>
-                  <div
-                    className="closing-chart-months"
-                    tabIndex={0}
-                    aria-label="Comparación mensual de ingresos y gastos"
-                  >
-                    {monthly.map(([month, values]) => (
-                      <div className="closing-chart-month" key={month}>
-                        <strong>
-                          {new Intl.DateTimeFormat('es-CO', {
-                            month: 'short',
-                            year: 'numeric',
-                            timeZone: 'America/Bogota',
-                          }).format(new Date(`${month}-01T12:00:00-05:00`))}
-                        </strong>
-                        <div className="closing-chart-bar-row">
-                          <span>Ingresos</span>
-                          <span className="closing-chart-bar" aria-hidden="true">
-                            <i style={{ width: `${(values.income / chartMax) * 100}%` }} />
-                          </span>
-                          <b>{money(values.income)}</b>
+              {history && (
+                <div className="closing-charts">
+                  <figure className="closing-chart">
+                    <figcaption>
+                      <h3>Ingresos y gastos por mes</h3>
+                    </figcaption>
+                    <div
+                      className="closing-chart-months"
+                      tabIndex={0}
+                      aria-label="Comparación mensual de ingresos y gastos"
+                    >
+                      {monthly.map(([month, values]) => (
+                        <div className="closing-chart-month" key={month}>
+                          <strong>
+                            {new Intl.DateTimeFormat('es-CO', {
+                              month: 'short',
+                              year: 'numeric',
+                              timeZone: 'America/Bogota',
+                            }).format(new Date(`${month}-01T12:00:00-05:00`))}
+                          </strong>
+                          <div className="closing-chart-bar-row">
+                            <span>Ingresos</span>
+                            <span className="closing-chart-bar" aria-hidden="true">
+                              <i style={{ width: `${(values.income / chartMax) * 100}%` }} />
+                            </span>
+                            <b>{money(values.income)}</b>
+                          </div>
+                          <div className="closing-chart-bar-row expenses">
+                            <span>Gastos</span>
+                            <span className="closing-chart-bar" aria-hidden="true">
+                              <i style={{ width: `${(values.expenses / chartMax) * 100}%` }} />
+                            </span>
+                            <b>{money(values.expenses)}</b>
+                          </div>
                         </div>
-                        <div className="closing-chart-bar-row expenses">
-                          <span>Gastos</span>
-                          <span className="closing-chart-bar" aria-hidden="true">
-                            <i style={{ width: `${(values.expenses / chartMax) * 100}%` }} />
-                          </span>
-                          <b>{money(values.expenses)}</b>
+                      ))}
+                    </div>
+                  </figure>
+                  <figure className="closing-chart">
+                    <figcaption>
+                      <h3>Medios de pago</h3>
+                    </figcaption>
+                    {totalIncome > 0 ? (
+                      <>
+                        <div className="closing-payment-bar" aria-hidden="true">
+                          <span style={{ width: `${(totals.cash / totalIncome) * 100}%` }} />
+                          <span style={{ width: `${(totals.transfer / totalIncome) * 100}%` }} />
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </figure>
-                <figure className="closing-chart">
-                  <figcaption>
-                    <h3>Medios de pago</h3>
-                    <p>Distribución de ingresos declarados.</p>
-                  </figcaption>
-                  {totalIncome > 0 ? (
-                    <>
-                      <div className="closing-payment-bar" aria-hidden="true">
-                        <span style={{ width: `${(totals.cash / totalIncome) * 100}%` }} />
-                        <span style={{ width: `${(totals.transfer / totalIncome) * 100}%` }} />
-                      </div>
-                      <dl className="closing-payment-values">
-                        <div>
-                          <dt>Efectivo · {((totals.cash / totalIncome) * 100).toFixed(1)}%</dt>
-                          <dd>{money(totals.cash)}</dd>
-                        </div>
-                        <div>
-                          <dt>
-                            Transferencias · {((totals.transfer / totalIncome) * 100).toFixed(1)}%
-                          </dt>
-                          <dd>{money(totals.transfer)}</dd>
-                        </div>
-                      </dl>
-                    </>
-                  ) : (
-                    <p className="small-copy muted">No hay ingresos declarados en este período.</p>
-                  )}
-                </figure>
-              </div>
+                        <dl className="closing-payment-values">
+                          <div>
+                            <dt>Efectivo · {((totals.cash / totalIncome) * 100).toFixed(1)}%</dt>
+                            <dd>{money(totals.cash)}</dd>
+                          </div>
+                          <div>
+                            <dt>
+                              Transferencias · {((totals.transfer / totalIncome) * 100).toFixed(1)}%
+                            </dt>
+                            <dd>{money(totals.transfer)}</dd>
+                          </div>
+                        </dl>
+                      </>
+                    ) : (
+                      <p className="small-copy muted">
+                        No hay ingresos declarados en este período.
+                      </p>
+                    )}
+                  </figure>
+                </div>
+              )}
             </>
           ) : (
             rows.length > 0 && (
               <div className="empty">
                 <h3>No hay cierres en estas fechas</h3>
-                <p>Amplía el período o limpia los filtros para ver otros cierres.</p>
               </div>
             )
           )}
@@ -502,10 +521,6 @@ export function DailyClosings() {
           }}
         >
           <form className="closing-form" onSubmit={(event) => void submit(event)} aria-busy={busy}>
-            <p className="small-copy muted">
-              Valores en pesos colombianos (COP), ejemplo: 234.000. Usa coma para decimales. El neto
-              es ingresos menos gastos; no representa saldo de caja.
-            </p>
             {error && (
               <div className="form-error" role="alert" ref={errorRef} tabIndex={-1}>
                 {error}

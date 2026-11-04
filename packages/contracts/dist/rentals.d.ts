@@ -103,8 +103,8 @@ export type Rental = z.infer<typeof Rental>;
 export declare const RentalFilter: z.ZodObject<{
     status: z.ZodDefault<z.ZodEnum<{
         active: "active";
-        finished: "finished";
         all: "all";
+        finished: "finished";
     }>>;
     search: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;

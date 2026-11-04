@@ -1,23 +1,24 @@
+import { useState } from 'react';
+import { BusinessExpenses } from './BusinessExpenses';
 import { money } from '../../lib/format';
 import type { AdminData, Dashboard } from '../../lib/types';
 import { PageHeading } from './Shared';
 import { DailyClosings } from './DailyClosings';
 
 export function Reports({ dash, admin }: { dash: Dashboard; admin: AdminData }) {
+  const [expensesRevision, setExpensesRevision] = useState(0);
   const finished = dash.rentals.filter((r) => r.endedAt);
   const total = finished.reduce((sum, r) => sum + (r.finalPriceCents ?? 0), 0);
   const minutes = finished.reduce((sum, r) => sum + r.minutes, 0);
 
   return (
-    <>
+    <div className="reports-layout">
       <PageHeading title="Reportes" />
-      <DailyClosings />
+      <BusinessExpenses revision={expensesRevision} />
+      <DailyClosings onChanged={() => setExpensesRevision((value) => value + 1)} />
       <section aria-labelledby="rental-history-summary">
         <h2 id="rental-history-summary">Resumen histórico de alquileres</h2>
-        <p className="small-copy muted">
-          Todos los alquileres registrados, independiente del filtro de cierres. Los valores
-          contratados no sustituyen los ingresos declarados.
-        </p>
+
         <div className="metrics">
           <div className="metric">
             <div>
@@ -50,6 +51,6 @@ export function Reports({ dash, admin }: { dash: Dashboard; admin: AdminData }) 
           ))}
         </div>
       </section>
-    </>
+    </div>
   );
 }

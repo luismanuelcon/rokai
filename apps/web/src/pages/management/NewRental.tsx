@@ -404,10 +404,6 @@ export function NewRental({
               <h2 className="step-title">
                 <span className="step-badge">04</span>Aceptación y firma
               </h2>
-              <p className="closing-intro">
-                Lee las condiciones con el cliente y pide que firme en pantalla. Sin estos dos pasos
-                no se puede entregar el equipo.
-              </p>
 
               <label className="consent-check">
                 <input

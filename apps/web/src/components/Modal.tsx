@@ -11,10 +11,12 @@ export function Modal({
   title,
   onClose,
   children,
+  dismissible = true,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  dismissible?: boolean;
 }) {
   const titleId = useId();
   const ref = useRef<HTMLDialogElement>(null);
@@ -43,12 +45,17 @@ export function Modal({
     };
   }, []);
 
-  const requestClose = () => ref.current?.close();
+  const requestClose = () => {
+    if (dismissible) ref.current?.close();
+  };
 
   return (
     <dialog
       ref={ref}
       aria-labelledby={titleId}
+      onCancel={(event) => {
+        if (!dismissible) event.preventDefault();
+      }}
       onClick={(event) => {
         // El clic en el backdrop tiene como target el propio dialog.
         if (event.target === ref.current) requestClose();
@@ -61,6 +68,7 @@ export function Modal({
           className="iconbutton"
           aria-label="Cerrar"
           title="Cerrar"
+          disabled={!dismissible}
           onClick={requestClose}
         >
           <Icon name="close" />

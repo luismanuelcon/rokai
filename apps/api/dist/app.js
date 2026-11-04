@@ -1,3 +1,4 @@
+import { registerBusinessExpenseRoutes } from './routes/businessExpenses.js';
 import rateLimit from '@fastify/rate-limit';
 import { registerTrackingRoutes } from './routes/tracking.js';
 import { redactTrackingUrl } from './domain/tracking.js';
@@ -54,6 +55,7 @@ export async function buildApp(env, db) {
     registerAdminRoutes(app, db);
     registerTrackingRoutes(app, db);
     registerDayClosingRoutes(app, db);
+    registerBusinessExpenseRoutes(app, db);
     await registerWeb(app, env.WEB_ROOT);
     return app;
 }

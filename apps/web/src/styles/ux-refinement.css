@@ -1530,3 +1530,52 @@ dialog:has(.closing-form) {
     font-size: 16px;
   }
 }
+
+/* Respuesta visual de formularios, sin mover los campos durante la escritura. */
+:where(.workspace, dialog, .auth-card) .field :is(input, select, textarea) {
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+:where(.workspace, dialog, .auth-card) .field :is(input, select, textarea):focus-visible {
+  border-color: #718e14;
+  outline: 2px solid #718e14;
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 5px rgb(190 232 43 / 13%),
+    0 5px 20px rgb(30 40 10 / 7%);
+}
+:where(.workspace, dialog, .auth-card) .field:focus-within > label {
+  color: #526b08;
+}
+:where(.workspace, dialog, .auth-card) .field :is(input, select, textarea)[aria-invalid='true'] {
+  border-color: #b42318;
+  outline-color: #b42318;
+  box-shadow: 0 0 0 4px rgb(180 35 24 / 10%);
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  :where(.workspace, dialog, .auth-card)
+    .field
+    :is(input, select, textarea):not(:disabled):not(:focus):hover {
+    border-color: #91a45d;
+    box-shadow: 0 3px 14px rgb(68 84 25 / 9%);
+  }
+  .reports-layout :is(.expense-table, .closing-report-table table) tbody tr {
+    transition: background-color 180ms ease;
+  }
+  .reports-layout :is(.expense-table, .closing-report-table table) tbody tr:hover {
+    background-color: rgb(190 232 43 / 7%);
+  }
+  .report-history-toggle:hover svg {
+    transform: scale(1.08);
+  }
+  .report-history-toggle svg {
+    transition: transform 180ms ease;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :where(.workspace, dialog, .auth-card) .field :is(input, select, textarea) {
+    transition: none;
+  }
+}
