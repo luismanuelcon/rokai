@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 const ACTION =
   'button, a[href], summary, [role="button"], input[type="checkbox"], input[type="radio"]';
 const EXCLUDED = ':disabled, [aria-disabled="true"], [inert], [data-no-ripple]';
-const DURATION = 620;
+const DURATION = 580;
 
 /** Delegación única: no modifica controles ni intercepta su comportamiento. */
 export function ClickRipple() {
@@ -47,8 +47,8 @@ export function ClickRipple() {
       }
       // SVG constante, sin datos del usuario ni contenido de la página.
       effect.innerHTML =
-        '<svg viewBox="0 0 80 80" focusable="false" aria-hidden="true"><circle class="click-wheel-halo" cx="40" cy="40" r="29"/><g class="click-wheel-spokes"><path d="M40 13v18m0 18v18M13 40h18m18 0h18M21 21l13 13m12 12 13 13M21 59l13-13m12-12 13-13"/><circle cx="40" cy="40" r="7"/></g><circle class="click-wheel-rim" cx="40" cy="40" r="28"/></svg>';
-      if (effects.size >= 8) {
+        '<svg viewBox="0 0 96 96" focusable="false" aria-hidden="true"><circle class="click-wheel-halo" cx="48" cy="48" r="29"/><circle class="click-wheel-echo" cx="48" cy="48" r="34"/><circle class="click-wheel-rim" cx="48" cy="48" r="29"/><g class="click-wheel-orbit"><circle class="click-wheel-arc" cx="48" cy="48" r="29"/><circle class="click-wheel-core" cx="48" cy="48" r="29"/></g><g class="click-wheel-trail"><path d="M7 70C18 69 25 66 30 62"/><path d="M13 77C26 74 34 71 39 68"/></g></svg>';
+      if (effects.size >= 4) {
         const oldest = effects.keys().next().value;
         if (oldest) remove(oldest);
       }

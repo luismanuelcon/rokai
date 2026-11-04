@@ -1,15 +1,15 @@
-/* Destello de rueda: verde neón limitado al feedback de activación. */
+/* Aro de luz inspirado en la llanta: centro libre y estela de una sola activación. */
 .click-wheel {
-  --wheel-neon: #baff32;
+  --wheel-neon: #8dff32;
   position: fixed;
   z-index: 2147483647;
-  width: 80px;
-  height: 80px;
-  margin: -40px 0 0 -40px;
+  width: 88px;
+  height: 88px;
+  margin: -44px 0 0 -44px;
   pointer-events: none !important;
   user-select: none;
   contain: layout style;
-  animation: click-wheel-expand 620ms cubic-bezier(0.16, 0.7, 0.2, 1) both;
+  animation: click-wheel-flash 580ms cubic-bezier(0.16, 0.7, 0.2, 1) both;
 }
 .click-wheel svg {
   display: block;
@@ -21,40 +21,83 @@
   pointer-events: none;
 }
 .click-wheel-rim {
-  stroke-width: 2;
+  stroke-width: 1.7;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 3px #68ff16);
 }
 .click-wheel-halo {
-  stroke-width: 9;
-  opacity: 0.2;
+  stroke-width: 7;
+  opacity: 0.38;
+  filter: blur(3px);
 }
-.click-wheel-spokes {
+.click-wheel-echo {
+  stroke-width: 0.8;
+  opacity: 0.32;
+  stroke-dasharray: 140 74;
+  transform-origin: 48px 48px;
+  transform: rotate(12deg);
+}
+.click-wheel-orbit {
+  transform-origin: 48px 48px;
+  animation: click-wheel-orbit 580ms cubic-bezier(0.16, 0.7, 0.2, 1) both;
+}
+.click-wheel-arc {
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 52 131;
+  opacity: 0.8;
+  filter: blur(1.4px);
+}
+.click-wheel-core {
+  stroke: #efffc8;
   stroke-width: 1.5;
   stroke-linecap: round;
-  transform-origin: 40px 40px;
-  animation: click-wheel-turn 620ms ease-out both;
+  stroke-dasharray: 24 159;
+  stroke-dashoffset: -8;
 }
-@keyframes click-wheel-expand {
+.click-wheel-trail {
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px #68ff16);
+  animation: click-wheel-trail 580ms ease-out both;
+}
+@keyframes click-wheel-flash {
   0% {
-    transform: scale(0.18);
+    transform: scale(0.42);
     opacity: 0;
   }
-  15% {
-    opacity: 0.95;
+  12% {
+    opacity: 0.94;
   }
-  65% {
-    opacity: 0.55;
+  40% {
+    opacity: 0.8;
   }
   100% {
-    transform: scale(1.2);
+    transform: scale(1.14);
     opacity: 0;
   }
 }
-@keyframes click-wheel-turn {
+@keyframes click-wheel-orbit {
   from {
-    transform: rotate(-35deg);
+    transform: rotate(-110deg);
   }
   to {
-    transform: rotate(65deg);
+    transform: rotate(80deg);
+  }
+}
+@keyframes click-wheel-trail {
+  0%,
+  10% {
+    opacity: 0;
+    transform: translate(5px, -3px);
+  }
+  25% {
+    opacity: 0.65;
+  }
+  75%,
+  100% {
+    opacity: 0;
+    transform: translate(-8px, 3px);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -62,7 +105,8 @@
     display: none;
     animation: none;
   }
-  .click-wheel-spokes {
+  .click-wheel-orbit,
+  .click-wheel-trail {
     animation: none;
   }
 }
