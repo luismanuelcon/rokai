@@ -18,16 +18,16 @@ const PATHS: Record<string, string> = {
   pin: 'M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z M15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
   clock: 'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0 M12 6v6l4 2',
   shield: 'M12 3 3 7v5c0 5 9 9 9 9s9-4 9-9V7L12 3 M8 12l3 3 5-6',
-  /* Patineta: cubierta, mástil, manillar y dos ruedas. La versión anterior
-     colocaba la rueda trasera en x=-1 y el navegador la recortaba. */
+  /* Diseño ROKAI: patineta urbana de perfil, plataforma baja y manillar alto. */
   scooter:
-    'M8 18a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0 M21 18a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0 M8 18h7 M15 18 18.5 5 M16.5 5h4.5',
+    'M7.5 18.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0 M21.5 18.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0 M7.5 18.5h5.9a2 2 0 0 0 1.8-1.1l2.2-4.3 M19 18.5 16.5 4H20 M14.5 4h2',
   users:
     'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M17 4a4 4 0 0 1 0 8 M22 21v-2a4 4 0 0 0-3-4',
   lock: 'M5 10h14v11H5z M8 10V6a4 4 0 0 1 8 0v4',
   waves: 'M2 7q3-4 7 0t7 0 6 0 M2 12q3-4 7 0t7 0 6 0 M2 17q3-4 7 0t7 0 6 0',
-  /* Casco: casquete, borde y visera. */
-  helmet: 'M3 14a9 9 0 0 1 18 0 M2 14h20 M8 14a4 4 0 0 1 8 0',
+  /* Casco deportivo de perfil: carcasa ventilada, visera corta y correa. */
+  helmet:
+    'M3 13a8.5 8.5 0 0 1 17-1l1 1-5 1-2 2H6a3 3 0 0 1-3-3Z M7 8l2-1 M12 6.5l2.5.5 M6.5 16l3 4h3l3-5 M9.5 20v-4',
   check: 'm5 12 4 4L19 6',
   menu: 'M3 6h18 M3 12h18 M3 18h18',
   close: 'm6 6 12 12 M18 6 6 18',

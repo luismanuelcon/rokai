@@ -246,7 +246,6 @@ button[aria-busy='true'],
   text-decoration-thickness: 2px;
 }
 @media (hover: hover) {
-  .navlinks a:hover,
   .footer-links a:hover {
     text-decoration: underline;
   }

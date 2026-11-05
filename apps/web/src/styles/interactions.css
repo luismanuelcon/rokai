@@ -189,26 +189,57 @@
 
 /* ─── Enlaces del portal público ─────────────────────────────────────────── */
 
-.navlinks a {
+/* El fondo luminoso sustituye el subrayado, sin alterar el ancho del enlace. */
+.topbar .navlinks a {
   position: relative;
-  transition: color var(--t-fast) var(--ease-out);
+  isolation: isolate;
+  text-decoration: none;
+  transition:
+    color 180ms ease,
+    transform 180ms ease;
 }
 
-.navlinks a::after {
+.topbar .navlinks a::after {
   content: '';
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -5px;
-  height: 2px;
-  background: var(--c-lime);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform var(--t-base) var(--ease-out);
+  inset: 3px -10px;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgb(190 232 43 / 20%), rgb(190 232 43 / 7%));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 70%),
+    0 3px 12px rgb(109 142 17 / 10%);
+  opacity: 0;
+  transition: opacity 180ms ease;
 }
 
-.navlinks a:hover::after {
-  transform: scaleX(1);
+.topbar .navlinks a:focus-visible::after,
+.topbar .navlinks a:active::after {
+  opacity: 1;
+}
+.topbar .navlinks a:focus-visible {
+  outline: 2px solid var(--c-lime-ink);
+  outline-offset: 5px;
+  border-radius: 8px;
+}
+@media (hover: hover) {
+  .topbar .navlinks a:hover {
+    color: var(--c-lime-ink);
+    transform: translateY(-1px);
+  }
+  .topbar .navlinks a:hover::after {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .topbar .navlinks a,
+  .topbar .navlinks a::after {
+    transition: none;
+  }
+  .topbar .navlinks a:hover {
+    transform: none;
+  }
 }
 
 .footer-links a,
