@@ -216,6 +216,21 @@ export function ReservationPage() {
   const [done, setDone] = useState<PublicReservation | null>(null);
   const requestId = useRef(crypto.randomUUID());
   const errorRef = useRef<HTMLDivElement>(null);
+  const summaryRef = useRef<HTMLElement>(null);
+  const [summaryVisible, setSummaryVisible] = useState(true);
+
+  // La barra fija solo acompaña mientras el resumen completo no está en pantalla.
+  useEffect(() => {
+    const target = summaryRef.current;
+    if (!target || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(([entry]) => {
+      setSummaryVisible(entry?.isIntersecting ?? true);
+    });
+    observer.observe(target);
+    return () => {
+      observer.disconnect();
+    };
+  }, [done, options.error]);
 
   const today = options.data?.today ?? '';
   useEffect(() => {
@@ -383,9 +398,9 @@ export function ReservationPage() {
                       <legend>
                         <span className="step-badge">02</span>¿Cuántas patinetas?
                       </legend>
-                      <div className="choice-row reserve-quantity">
+                      <div className="reserve-plans reserve-quantity">
                         {([1, 2] as const).map((n) => (
-                          <label className="choice" key={n}>
+                          <label className="reserve-plan" key={n}>
                             <input
                               type="radio"
                               name="quantity"
@@ -396,7 +411,7 @@ export function ReservationPage() {
                             />
                             <span>
                               <Icon name={n === 1 ? 'scooter' : 'users'} />
-                              {n === 1 ? '1 patineta' : '2 patinetas'}
+                              <strong>{n === 1 ? '1 patineta' : '2 patinetas'}</strong>
                             </span>
                           </label>
                         ))}
@@ -535,7 +550,11 @@ export function ReservationPage() {
                     </section>
                   </div>
 
-                  <aside className="reserve-summary" aria-labelledby="reserve-summary-title">
+                  <aside
+                    className="reserve-summary"
+                    aria-labelledby="reserve-summary-title"
+                    ref={summaryRef}
+                  >
                     <h2 id="reserve-summary-title">Tu reserva</h2>
                     <dl className="reserve-summary-list">
                       <div>
@@ -580,6 +599,34 @@ export function ReservationPage() {
                       {missing ?? 'Pagas en la estación. Confirmar no realiza ningún cobro.'}
                     </p>
                   </aside>
+
+                  {!summaryVisible && (
+                    <div className="reserve-mobilebar">
+                      <div>
+                        <span>
+                          {plan
+                            ? `${durationLabel(plan.minutes)} · ${String(quantity)} patineta${quantity > 1 ? 's' : ''}`
+                            : 'Valor total'}
+                        </span>
+                        <strong>{plan ? money(plan.priceCents) : '—'}</strong>
+                      </div>
+                      {missing ? (
+                        <button
+                          type="button"
+                          className="button"
+                          onClick={() => {
+                            summaryRef.current?.scrollIntoView({ block: 'start' });
+                          }}
+                        >
+                          Ver resumen
+                        </button>
+                      ) : (
+                        <button className="button" type="submit" disabled={busy}>
+                          {busy ? 'Guardando…' : 'Confirmar'}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </form>
               )}
             </>

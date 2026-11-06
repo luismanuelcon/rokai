@@ -111,6 +111,32 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.reserve-quantity .reserve-plan > span {
+  flex-direction: row;
+  gap: 8px;
+  height: 100%;
+  padding-inline: 8px;
+}
+
+.reserve-quantity .reserve-plan strong {
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+/* Safari iOS da al campo de fecha un ancho mínimo propio y lo centra. */
+.reserve-page input[type='date'] {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: left;
+}
+
+.reserve-page input[type='date']::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 .reserve-empty {
   margin: 0;
   padding: 14px 16px;
@@ -504,6 +530,74 @@
 
   .reserve-done {
     padding: 26px 18px;
+  }
+
+  /* Menos de 16 px hace que Safari iOS amplíe la página al tocar el campo. */
+  .reserve-page .field input,
+  .reserve-page .country-search {
+    font-size: 16px;
+  }
+}
+
+/* Barra fija de confirmación: solo en celular y tableta, sin el resumen a la vista. */
+.reserve-mobilebar {
+  display: none;
+}
+
+@media (max-width: 959px) {
+  .reserve-mobilebar {
+    position: fixed;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    left: 12px;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 10px 10px 18px;
+    border: 1px solid var(--g-edge-dark);
+    border-radius: var(--r-pill);
+    background: var(--g-dark-strong);
+    box-shadow: var(--g-elev-float);
+    color: var(--c-on-dark);
+    -webkit-backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
+    backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
+  }
+
+  .reserve-mobilebar > div {
+    display: grid;
+    min-width: 0;
+  }
+
+  .reserve-mobilebar span {
+    overflow: hidden;
+    color: rgb(255 255 255 / 72%);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .reserve-mobilebar strong {
+    color: var(--c-lime-bright);
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .reserve-mobilebar .button {
+    flex: none;
+    min-height: 48px;
+  }
+
+  /* El pie no debe quedar escondido bajo la barra. */
+  .reserve-page {
+    padding-bottom: 110px;
+  }
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .reserve-mobilebar {
+    background: var(--c-graphite);
   }
 }
 
