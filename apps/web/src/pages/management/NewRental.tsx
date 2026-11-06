@@ -1,5 +1,10 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { CreateRentalRequest, type DocumentType } from '@rokai/contracts';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import {
+  CreateRentalRequest,
+  formatReservationDate,
+  formatReservationTime,
+  type DocumentType,
+} from '@rokai/contracts';
 import { CountrySelect } from '../../components/CountrySelect';
 import { Icon } from '../../components/Icon';
 import { SignaturePad } from '../../components/SignaturePad';
@@ -12,8 +17,8 @@ import {
 } from '../../lib/rentalSubmission';
 import { DEFAULT_DOCUMENT_TYPE, DOCUMENT_TYPES } from '../../lib/documents';
 import { money } from '../../lib/format';
-import { DEFAULT_DIAL, digitsOnly, phoneHint, splitE164, toE164 } from '../../lib/phone';
-import type { Dashboard, Equipment } from '../../lib/types';
+import { COUNTRIES, DEFAULT_DIAL, digitsOnly, phoneHint, splitE164, toE164 } from '../../lib/phone';
+import type { Dashboard, Equipment, ReservationItem } from '../../lib/types';
 import { PageHeading } from './Shared';
 
 interface DraftState {
@@ -40,22 +45,62 @@ const EMPTY: DraftState = {
 
 export function NewRental({
   dash,
+  reservation = null,
   onDone,
 }: {
   dash: Dashboard;
+  reservation?: ReservationItem | null;
   onDone: (result: { id: number; trackingPath: string | null }) => Promise<void>;
 }) {
-  const [draft, setDraft] = useState<DraftState>(EMPTY);
+  // Desde una reserva solo valen planes de su misma duración y cantidad.
+  const rates = useMemo(() => {
+    if (!reservation) return dash.rates;
+    const compatible = dash.rates.filter(
+      (r) => r.minutes === reservation.durationMinutes && r.quantity === reservation.quantity,
+    );
+    const reserved = reservation.rateId;
+    if (reserved === null || compatible.some((r) => r.id === reserved)) return compatible;
+    return [
+      {
+        id: reserved,
+        period: reservation.ratePeriod,
+        minutes: reservation.durationMinutes,
+        quantity: reservation.quantity,
+        priceCents: reservation.priceCents,
+        active: true,
+        validFrom: null,
+        validUntil: null,
+      },
+      ...compatible,
+    ];
+  }, [dash.rates, reservation]);
+  const [draft, setDraft] = useState<DraftState>(() =>
+    reservation
+      ? {
+          ...EMPTY,
+          requestId: crypto.randomUUID(),
+          fullName: reservation.customerName,
+          phone: reservation.phone,
+          notes: `Reserva ${reservation.code}`,
+          rateId: rates.find((r) => r.id === reservation.rateId)?.id ?? rates[0]?.id ?? null,
+        }
+      : EMPTY,
+  );
+  const prefilledPhone = reservation ? splitE164(reservation.phone) : null;
   // La firma y la aceptación se quedan en esta pantalla: son un acto presencial
   // del cliente, no un dato de trabajo que deba sobrevivir en un borrador.
   const [signature, setSignature] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   // El teléfono se edita en dos partes y se guarda siempre como E.164.
-  const [dial, setDial] = useState(DEFAULT_DIAL);
-  const [iso, setIso] = useState('CO');
-  const [national, setNational] = useState('');
+  const [dial, setDial] = useState(prefilledPhone?.dial ?? DEFAULT_DIAL);
+  const [iso, setIso] = useState(
+    COUNTRIES.find((c) => c.dial === prefilledPhone?.dial)?.iso ?? 'CO',
+  );
+  const [national, setNational] = useState(prefilledPhone?.national ?? '');
   const [status, setStatus] = useState(
-    'El borrador se guarda en el servidor, solo para tu usuario.',
+    reservation
+      ? 'Datos precargados desde la reserva. Este registro no se guarda como borrador.'
+      : 'El borrador se guarda en el servidor, solo para tu usuario.',
   );
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -69,6 +114,8 @@ export function NewRental({
 
   // El borrador vive en el servidor: nunca se guardan datos del cliente en el navegador.
   useEffect(() => {
+    // Una reserva no pisa el borrador privado del operario.
+    if (reservation) return;
     void api<Partial<DraftState>>('/draft')
       .then((saved) => {
         setDraft((d) => ({ ...d, ...saved, requestId: saved.requestId ?? d.requestId }));
@@ -86,7 +133,7 @@ export function NewRental({
           'No pudimos recuperar el borrador. Conserva esta página abierta; los nuevos datos aún no se guardan automáticamente.',
         );
       });
-  }, []);
+  }, [reservation]);
 
   useEffect(() => {
     if (!loaded.current) return;
@@ -106,7 +153,8 @@ export function NewRental({
     };
   }, [draft]);
 
-  const rate = dash.rates.find((r) => r.id === draft.rateId);
+  const rate = rates.find((r) => r.id === draft.rateId);
+  const priceCents = reservation ? reservation.priceCents : rate?.priceCents;
   const hint = phoneHint(dial, national);
   const needed = rate ? rate.quantity * 2 : 0;
   const equipmentReady =
@@ -183,6 +231,7 @@ export function NewRental({
         notes: draft.notes,
         signature: preparedSignature,
         termsAccepted,
+        ...(reservation ? { reservationId: reservation.id } : {}),
       });
       if (!parsed.success)
         throw new Error(
@@ -219,6 +268,18 @@ export function NewRental({
   return (
     <>
       <PageHeading title="Registrar alquiler" />
+      {reservation && (
+        <p className="notice reservation-origin" role="status">
+          <Icon name="calendar" />
+          <span>
+            Desde la reserva <strong>{reservation.code}</strong> ·{' '}
+            {formatReservationDate(reservation.date)},{' '}
+            {formatReservationTime(reservation.date, reservation.startTime)}
+            <br />
+            Se respeta el valor reservado. Falta el documento, los equipos y la firma.
+          </span>
+        </p>
+      )}
       <form onSubmit={(e) => void submit(e)}>
         <div className="rental-layout">
           <div>
@@ -327,7 +388,7 @@ export function NewRental({
                   }}
                 >
                   <option value="">Selecciona un plan</option>
-                  {dash.rates.map((r) => (
+                  {rates.map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.period === 'special' ? 'Mar–Jue' : 'Vie–Dom / festivos'} · {r.minutes} min
                       · {r.quantity} patineta{r.quantity > 1 ? 's' : ''} · {money(r.priceCents)}
@@ -476,9 +537,9 @@ export function NewRental({
             )}
 
             <div className={`summary-price${rate ? ' has-value' : ''}`} key={rate?.id ?? 'empty'}>
-              {rate ? money(rate.priceCents) : '—'}
+              {priceCents !== undefined ? money(priceCents) : '—'}
             </div>
-            <p>Total contratado · COP</p>
+            <p>{reservation ? 'Valor reservado · COP' : 'Total contratado · COP'}</p>
             <button
               className="button dark"
               type="submit"

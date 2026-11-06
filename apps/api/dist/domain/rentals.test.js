@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { lateCharge } from './rentals.js';
+import { lateCharge, lateChargeAtTime } from './rentals.js';
 const due = new Date('2026-10-30T12:00:00Z');
 const at = (minutes, seconds = 0) => new Date(due.getTime() + minutes * 60_000 + seconds * 1000);
 test('Sin retraso no hay recargo', () => {
@@ -14,5 +14,15 @@ test('El minuto empezado se cobra completo', () => {
 });
 test('Con recargo en cero se registra el retraso pero no se cobra', () => {
     assert.deepEqual(lateCharge(due, at(17), 0), { minutes: 17, cents: 0 });
+});
+test('El recargo por hora compara solo hora y minuto de Bogotá', () => {
+    const dueAtBogotaTen = new Date('2026-10-30T15:00:00Z');
+    assert.deepEqual(lateChargeAtTime(dueAtBogotaTen, '09:59', 20_000), { minutes: 0, cents: 0 });
+    assert.deepEqual(lateChargeAtTime(dueAtBogotaTen, '10:00', 20_000), { minutes: 0, cents: 0 });
+    assert.deepEqual(lateChargeAtTime(dueAtBogotaTen, '10:01', 20_000), {
+        minutes: 1,
+        cents: 20_000,
+    });
+    assert.deepEqual(lateChargeAtTime(dueAtBogotaTen, '10:17', 0), { minutes: 17, cents: 0 });
 });
 //# sourceMappingURL=rentals.test.js.map

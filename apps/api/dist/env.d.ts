@@ -15,6 +15,7 @@ declare const EnvSchema: z.ZodObject<{
         1: "1";
     }>>, z.ZodTransform<boolean, "0" | "1">>;
     SESSION_HOURS: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
+    RESERVATION_RATE_LIMIT: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
     LOG_LEVEL: z.ZodDefault<z.ZodEnum<{
         error: "error";
         trace: "trace";

@@ -10,6 +10,7 @@ import { buildApp } from './app.js';
 import { connect, type DbHandle } from './db.js';
 import { loadEnv } from './env.js';
 import { hashPassword } from './lib/crypto.js';
+import { addDays, bogotaDate, ratePeriodForDate } from '@rokai/contracts';
 
 const ORIGIN = 'http://127.0.0.1:3000';
 const PASSWORD = 'Test-password-only-123';
@@ -18,6 +19,15 @@ const SIGNATURE =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 /** Campos de cierre que ahora exige todo alquiler. */
 const CLOSING = { signature: SIGNATURE, termsAccepted: true };
+
+function timeInBogota(date: Date): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/Bogota',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(date);
+}
 
 let app: FastifyInstance;
 let handle: DbHandle;
@@ -121,6 +131,7 @@ before(async () => {
       // TEST_LOG_LEVEL permite ver los errores del servidor al depurar.
       LOG_LEVEL: process.env['TEST_LOG_LEVEL'] ?? 'fatal',
       APP_ORIGIN: ORIGIN,
+      RESERVATION_RATE_LIMIT: '1000',
     }),
     handle.db,
   );
@@ -210,6 +221,17 @@ test('Los borradores son privados por usuario y no se filtran al público', asyn
 });
 
 test('Ciclo de alquiler: idempotencia, colisión, precio inmutable y auditoría', async () => {
+  if (!worker) {
+    const created = await call(
+      '/api/v1/admin/users',
+      'POST',
+      { name: 'Colaborador', email: 'worker@test.local', password: PASSWORD, role: 'collaborator' },
+      admin,
+    );
+    assert.equal(created.status, 201);
+    worker = await login('worker@test.local');
+  }
+
   const dash = await call('/api/v1/dashboard', 'GET', undefined, worker);
   const rate = dash.body.rates.find((r: { quantity: number }) => r.quantity === 1);
   const ids = dash.body.equipment
@@ -259,25 +281,65 @@ test('Ciclo de alquiler: idempotencia, colisión, precio inmutable y auditoría'
     admin,
   );
 
+  const endedAt = new Date();
+  endedAt.setSeconds(0, 0);
+  const returnTime = timeInBogota(endedAt);
+  const dueAt = new Date(endedAt.getTime() - 2 * 60_000);
+  const startedAt = new Date(dueAt.getTime() - 60 * 60_000);
+  await handle.db.execute(sql`
+    UPDATE rentals SET started_at = ${startedAt}, due_at = ${dueAt} WHERE id = ${rentalId}
+  `);
+  await handle.db.execute(sql`
+    UPDATE settings SET value = '10000' WHERE key = 'lateFeePerMinuteCents'
+  `);
+
+  const beforeStart = timeInBogota(new Date(startedAt.getTime() - 60_000));
+  const invalidPast = await call(
+    `/api/v1/rentals/${rentalId}/finish`,
+    'POST',
+    { paymentMethod: 'cash', returnTime: beforeStart },
+    worker,
+  );
+  assert.equal(invalidPast.status, 400);
+  const invalidFuture = await call(
+    `/api/v1/rentals/${rentalId}/finish`,
+    'POST',
+    { paymentMethod: 'cash', returnTime: timeInBogota(new Date(Date.now() + 10 * 60_000)) },
+    worker,
+  );
+  assert.equal(invalidFuture.status, 400);
+
   const finished = await call(
     `/api/v1/rentals/${rentalId}/finish`,
     'POST',
-    { notes: 'Sin novedades', paymentMethod: 'cash' },
+    { notes: 'Sin novedades', paymentMethod: 'cash', returnTime },
     worker,
   );
   assert.equal(finished.status, 200);
   assert.equal(
-    (await call(`/api/v1/rentals/${rentalId}/finish`, 'POST', { paymentMethod: 'cash' }, worker))
-      .status,
+    (
+      await call(
+        `/api/v1/rentals/${rentalId}/finish`,
+        'POST',
+        { paymentMethod: 'cash', returnTime },
+        worker,
+      )
+    ).status,
     409,
   );
 
   const final = await call('/api/v1/dashboard', 'GET', undefined, worker);
-  assert.equal(final.body.rentals[0].finalPriceCents, rate.priceCents);
+  assert.equal(timeInBogota(new Date(final.body.rentals[0].endedAt)), returnTime);
+  assert.equal(final.body.rentals[0].lateMinutes, 2);
+  assert.equal(final.body.rentals[0].lateFeeCents, 20_000);
+  assert.equal(final.body.rentals[0].finalPriceCents, rate.priceCents + 20_000);
   assert.equal(final.body.rentals[0].paymentMethod, 'cash');
-  assert.equal(final.body.rentals[0].lateFeeCents, 0);
   assert.equal(final.body.rentals[0].endedByName, 'Colaborador');
   assert.equal(final.body.equipment.filter((e: { busy: boolean }) => e.busy).length, 0);
+
+  await handle.db.execute(sql`
+    UPDATE settings SET value = '0' WHERE key = 'lateFeePerMinuteCents'
+  `);
 
   const adminData = await call('/api/v1/admin/data', 'GET', undefined, admin);
   const actions = adminData.body.audit.map((a: { action: string }) => a.action);
@@ -690,7 +752,7 @@ test('El tipo de documento usa cédula por defecto y distingue el mismo número'
   await call(
     `/api/v1/rentals/${String(omitted.body.id)}/finish`,
     'POST',
-    { paymentMethod: 'transfer' },
+    { paymentMethod: 'transfer', returnTime: timeInBogota(new Date(Date.now() + 60_000)) },
     admin,
   );
   const passport = await call(
@@ -926,7 +988,11 @@ test('seguimiento: idempotente, público mínimo, actualización y revocación',
       await call(
         `/api/v1/rentals/${rentalId}/finish`,
         'POST',
-        { notes: '', paymentMethod: 'cash' },
+        {
+          notes: '',
+          paymentMethod: 'cash',
+          returnTime: timeInBogota(new Date(Date.now() + 60_000)),
+        },
         admin,
       )
     ).status,
@@ -1043,5 +1109,250 @@ test('gastos del negocio: permisos, cierre sin duplicados, idempotencia, edició
         a.action === 'business_expense.void' && a.entityId === String(id),
     ).reason,
     'Pago registrado dos veces',
+  );
+});
+
+test('reservas: horario, catálogo, idempotencia, cupo concurrente, gestión y alquiler', async () => {
+  const today = bogotaDate(new Date());
+  let date = addDays(today, 3);
+  while (!ratePeriodForDate(date)) date = addDays(date, 1);
+  let closed = addDays(today, 1);
+  while (ratePeriodForDate(closed)) closed = addDays(closed, 1);
+  const publicPath = '/api/v1/public/reservations';
+
+  const options = await call(`${publicPath}/options`);
+  assert.equal(options.status, 200);
+  assert.equal(options.body.whatsapp, '+573103700290');
+  assert.equal(options.body.rules.slotMinutes, 15);
+
+  const avail = await call(`${publicPath}/availability?date=${date}&quantity=1`);
+  assert.equal(avail.status, 200);
+  assert.equal(avail.body.period, ratePeriodForDate(date));
+  // Mismo catálogo que la sección de tarifas: sin precios propios de reservas.
+  const catalog = (await call('/api/v1/public')).body.rates as {
+    id: number;
+    period: string;
+    minutes: number;
+    quantity: number;
+    priceCents: number;
+  }[];
+  for (const plan of avail.body.plans) {
+    const rate = catalog.find((r) => r.id === plan.rateId)!;
+    assert.equal(rate.period, avail.body.period);
+    assert.equal(rate.quantity, 1);
+    assert.equal(rate.priceCents, plan.priceCents);
+  }
+  const half = avail.body.plans.find((p: { minutes: number }) => p.minutes === 30);
+  const hour = avail.body.plans.find((p: { minutes: number }) => p.minutes === 60);
+  assert.equal(half.slots[0].start, '16:00');
+  assert.equal(half.slots.at(-1).start, '21:00');
+  assert.equal(hour.slots.at(-1).end, '22:00');
+  const pairs = (await call(`${publicPath}/availability?date=${date}&quantity=2`)).body;
+  assert.ok(pairs.plans.every((p: { quantity: number }) => p.quantity === 2));
+  assert.ok((await call(`${publicPath}/availability?date=${closed}&quantity=1`)).body.closedReason);
+  assert.equal((await call(publicPath)).status, 404);
+
+  const body = (overrides: Record<string, unknown> = {}) => ({
+    requestId: crypto.randomUUID(),
+    customerName: 'Cliente Reserva',
+    phone: '+573001234567',
+    date,
+    startTime: '16:00',
+    quantity: 1,
+    rateId: half.rateId,
+    ...overrides,
+  });
+
+  // Reglas de horario, también en el servidor.
+  for (const invalid of [
+    { startTime: '15:45' },
+    { startTime: '21:15' },
+    { startTime: '21:15', rateId: hour.rateId },
+    { date: addDays(today, -1) },
+    { date: closed },
+    { quantity: 2 },
+  ]) {
+    assert.equal(
+      (await call(publicPath, 'POST', body(invalid))).status,
+      400,
+      JSON.stringify(invalid),
+    );
+  }
+
+  // El precio enviado por el navegador se ignora; manda el catálogo.
+  const request = body({ priceCents: 1 });
+  const created = await call(publicPath, 'POST', request);
+  assert.equal(created.status, 201);
+  assert.equal(created.body.priceCents, half.priceCents);
+  assert.match(created.body.code, /^RK-[2-9A-Z]{6}$/);
+  assert.equal(created.body.endTime, '16:30');
+  assert.equal(created.body.status, 'pending');
+  const text = new URL(created.body.whatsappUrl).searchParams.get('text') ?? '';
+  assert.ok(created.body.whatsappUrl.startsWith('https://wa.me/573103700290?text='));
+  assert.match(text, new RegExp(`Código: ${created.body.code as string}`));
+
+  // Doble clic o reintento: la misma reserva, nunca dos.
+  const retry = await call(publicPath, 'POST', request);
+  assert.equal(retry.status, 200);
+  assert.equal(retry.body.code, created.body.code);
+  assert.equal((await call(publicPath, 'POST', { ...request, startTime: '17:00' })).status, 409);
+
+  // Capacidad: N confirmaciones simultáneas nunca superan la flota habilitada.
+  const dash = await call('/api/v1/dashboard', 'GET', undefined, admin);
+  const ready = (kind: string) =>
+    dash.body.equipment.filter(
+      (e: { kind: string; status: string }) => e.kind === kind && e.status === 'available',
+    ).length;
+  const capacity = Math.min(ready('scooter'), ready('helmet'));
+  assert.ok(capacity >= 2);
+  const burst = await Promise.all(
+    Array.from({ length: capacity + 3 }, (_, i) =>
+      call(publicPath, 'POST', body({ startTime: '18:00', phone: `+5730012300${String(10 + i)}` })),
+    ),
+  );
+  const accepted = burst.filter((r) => r.status === 201);
+  assert.equal(accepted.length, capacity);
+  assert.ok(burst.filter((r) => r.status !== 201).every((r) => r.status === 409));
+  const full = (await call(`${publicPath}/availability?date=${date}&quantity=1`)).body;
+  const slot = (
+    p: { minutes: number; slots: { start: string; available: boolean }[] },
+    s: string,
+  ) => p.slots.find((x) => x.start === s)!;
+  const fullHalf = full.plans.find((p: { minutes: number }) => p.minutes === 30);
+  assert.equal(slot(fullHalf, '18:00').available, false);
+  // Un intervalo contiguo no se solapa: 17:30-18:00 sigue libre.
+  assert.equal(slot(fullHalf, '17:30').available, true);
+  assert.equal((await call(publicPath, 'POST', body({ startTime: '17:45' }))).status, 409);
+
+  // Gestión: protegida y sin listado público.
+  assert.equal((await call('/api/v1/reservations')).status, 401);
+  assert.equal((await call('/api/v1/reservations/1')).status, 401);
+  const listed = await call(
+    `/api/v1/reservations?date=${date}&status=pending&sort=created_desc`,
+    'GET',
+    undefined,
+    admin,
+  );
+  assert.equal(listed.status, 200);
+  assert.equal(listed.body.total, capacity + 1);
+  const search = await call(
+    `/api/v1/reservations?search=${created.body.code as string}`,
+    'GET',
+    undefined,
+    admin,
+  );
+  assert.equal(search.body.total, 1);
+  const own = search.body.items[0];
+  assert.equal(own.startTime, '16:00');
+  assert.equal(own.endTime, '16:30');
+  assert.equal(
+    (await call(`/api/v1/reservations?search=3001234567`, 'GET', undefined, admin)).body.total,
+    1,
+  );
+
+  // Confirmar al recibir el WhatsApp: sin motivo, una sola vez y con autor.
+  const confirmPath = `/api/v1/reservations/${String(own.id)}/status`;
+  assert.equal((await call(confirmPath, 'POST', { status: 'confirmed' }, admin)).status, 200);
+  assert.equal((await call(confirmPath, 'POST', { status: 'confirmed' }, admin)).status, 409);
+  const confirmed = await call(`/api/v1/reservations/${String(own.id)}`, 'GET', undefined, admin);
+  assert.equal(confirmed.body.status, 'confirmed');
+  assert.equal(confirmed.body.statusChangedByName, 'Admin');
+  // Confirmada sigue ocupando cupo: no se libera el de las 16:00.
+  const afterConfirm = (await call(`${publicPath}/availability?date=${date}&quantity=1`)).body;
+  assert.equal(
+    afterConfirm.plans
+      .find((p: { minutes: number }) => p.minutes === 30)
+      .slots.find((s: { start: string }) => s.start === '18:00').available,
+    false,
+  );
+
+  // Cancelar libera el cupo.
+  const burstCodes = accepted.map((r) => r.body.code as string);
+  const victim = (
+    await call(`/api/v1/reservations?search=${burstCodes[0]!}`, 'GET', undefined, admin)
+  ).body.items[0];
+  const statusPath = `/api/v1/reservations/${String(victim.id)}/status`;
+  assert.equal(
+    (await call(statusPath, 'POST', { status: 'cancelled', reason: 'no' }, admin)).status,
+    400,
+  );
+  assert.equal(
+    (
+      await call(
+        statusPath,
+        'POST',
+        { status: 'cancelled', reason: 'Cliente cambió de plan' },
+        admin,
+      )
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await call(statusPath, 'POST', { status: 'no_show', reason: 'Segundo cambio' }, admin)).status,
+    409,
+  );
+  const detail = await call(`/api/v1/reservations/${String(victim.id)}`, 'GET', undefined, admin);
+  assert.equal(detail.body.status, 'cancelled');
+  assert.equal(detail.body.statusReason, 'Cliente cambió de plan');
+  assert.equal(detail.body.statusChangedByName, 'Admin');
+  assert.equal((await call(publicPath, 'POST', body({ startTime: '18:00' }))).status, 201);
+
+  // Iniciar alquiler desde la reserva: precio reservado, vínculo único y sin doble cupo.
+  const free = (kind: string) =>
+    dash.body.equipment.find(
+      (e: { kind: string; status: string; busy: boolean }) =>
+        e.kind === kind && e.status === 'available' && !e.busy,
+    ).id as number;
+  const rentalBody = (requestId: string) => ({
+    requestId,
+    reservationId: own.id,
+    customer: { fullName: own.customerName, document: 'RES-001', phone: own.phone },
+    rateId: own.rateId,
+    equipmentIds: [free('scooter'), free('helmet')],
+    notes: `Reserva ${own.code as string}`,
+    ...CLOSING,
+  });
+  await call(
+    `/api/v1/admin/rates/${String(own.rateId)}`,
+    'PATCH',
+    { priceCents: 7_777_700, active: true, validFrom: null, validUntil: null },
+    admin,
+  );
+  const rental = await call('/api/v1/rentals', 'POST', rentalBody(crypto.randomUUID()), admin);
+  assert.equal(rental.status, 201);
+  const linked = await call(`/api/v1/reservations/${String(own.id)}`, 'GET', undefined, admin);
+  assert.equal(linked.body.status, 'in_rental');
+  assert.equal(linked.body.rentalId, rental.body.id);
+  const rentals = (await call('/api/v1/dashboard', 'GET', undefined, admin)).body.rentals;
+  const started = rentals.find((r: { id: number }) => r.id === rental.body.id);
+  assert.equal(started.priceCents, own.priceCents);
+  assert.equal(started.finalPriceCents, null);
+  assert.equal(started.paymentMethod, null);
+  assert.equal(
+    (await call('/api/v1/rentals', 'POST', rentalBody(crypto.randomUUID()), admin)).status,
+    409,
+  );
+
+  // Al devolver el equipo la reserva queda completada.
+  const now = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/Bogota',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(new Date(Date.now() + 60_000));
+  assert.equal(
+    (
+      await call(
+        `/api/v1/rentals/${String(rental.body.id)}/finish`,
+        'POST',
+        { paymentMethod: 'cash', returnTime: now },
+        admin,
+      )
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await call(`/api/v1/reservations/${String(own.id)}`, 'GET', undefined, admin)).body.status,
+    'completed',
   );
 });

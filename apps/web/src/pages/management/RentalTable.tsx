@@ -5,7 +5,7 @@ import { Modal } from '../../components/Modal';
 import { api } from '../../lib/api';
 import { countdown, useTicker } from '../../lib/countdown';
 import { documentShort } from '../../lib/documents';
-import { datetime, lateCharge, money } from '../../lib/format';
+import { datetime, lateCharge, money, time, toBogotaTime } from '../../lib/format';
 import type { Rental } from '../../lib/types';
 import { PageHeading } from './Shared';
 
@@ -177,12 +177,12 @@ function RentalDialog({
   const [deleteReason, setDeleteReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [returnTime, setReturnTime] = useState(() => toBogotaTime(rental.dueAt));
 
-  // Se recalcula con el reloj: el recargo depende del minuto en que se cierre.
-  useTicker(1000, !rental.endedAt);
+  // La vista previa usa la hora de devolución elegida, igual que el servidor.
   const late = rental.endedAt
     ? { minutes: rental.lateMinutes ?? 0, cents: rental.lateFeeCents ?? 0 }
-    : lateCharge(rental.dueAt, lateFeePerMinuteCents);
+    : lateCharge(rental.dueAt, returnTime, lateFeePerMinuteCents);
   const total = rental.finalPriceCents ?? rental.priceCents + late.cents;
 
   async function finish() {
@@ -190,12 +190,16 @@ function RentalDialog({
       setError('Selecciona el método de pago.');
       return;
     }
+    if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(returnTime)) {
+      setError('Indica una hora de devolución válida.');
+      return;
+    }
     setBusy(true);
     setError('');
     try {
       await api(`/rentals/${rental.id}/finish`, {
         method: 'POST',
-        json: { notes, paymentMethod: payment },
+        json: { notes, paymentMethod: payment, returnTime },
       });
       onFinished();
     } catch (e) {
@@ -257,7 +261,35 @@ function RentalDialog({
         <strong>{money(rental.priceCents)}</strong>
       </div>
 
-      {late.minutes > 0 && (
+      {!rental.endedAt && (
+        <div className="return-time-layout">
+          <div className="field">
+            <label htmlFor="return-time">Hora real de devolución</label>
+            <input
+              id="return-time"
+              type="time"
+              required
+              aria-describedby="return-time-due"
+              value={returnTime}
+              onChange={(event) => {
+                setReturnTime(event.target.value);
+              }}
+            />
+            <small id="return-time-due">Vencía a las {time(rental.dueAt)}</small>
+          </div>
+          <div className="return-time-fee" aria-live="polite">
+            <span className="field-label">Recargo</span>
+            <div className="return-time-fee-value">
+              <strong className={late.cents > 0 ? 'is-surcharge' : undefined}>
+                {late.cents > 0 ? `+ ${money(late.cents)}` : money(0)}
+              </strong>
+              <small>{late.minutes > 0 ? `${String(late.minutes)} min tarde` : 'A tiempo'}</small>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rental.endedAt && late.minutes > 0 && (
         <div className="summary-row">
           <span>
             Recargo por retraso

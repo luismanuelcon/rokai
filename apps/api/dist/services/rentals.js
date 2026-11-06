@@ -1,13 +1,14 @@
 import { ensureTracking } from './tracking.js';
 import { trackingPath } from '../domain/tracking.js';
 import { eq, sql } from 'drizzle-orm';
-import { consents, notifications, rentalDrafts, rentalEquipment, rentals, settings, } from '@rokai/db';
+import { consents, notifications, rentalDrafts, rentalEquipment, rentals, reservations, settings, } from '@rokai/db';
 import { TERMS_VERSION, } from '@rokai/contracts';
-import { assertAssignable, lateCharge } from '../domain/rentals.js';
+import { assertAssignable, lateChargeAtTime } from '../domain/rentals.js';
 import { recordAudit } from '../lib/audit.js';
-import { addMinutes } from '../lib/time.js';
+import { addMinutes, todayInBogota } from '../lib/time.js';
 import { badRequest, conflict, notFound } from '../lib/http-error.js';
 import { activeRates } from '../repositories/catalog.js';
+import { completeReservationsForRental, lockReservationForRental, rateById, } from './reservations.js';
 import { findByRequestId, findRental, lockEquipmentForUpdate, upsertCustomer, } from '../repositories/rentals.js';
 export async function createRental(db, actor, input) {
     return db.transaction(async (tx) => {
@@ -24,9 +25,21 @@ export async function createRental(db, actor, input) {
                 trackingPath: link.revokedAt ? null : trackingPath(link.token),
             };
         }
-        const rate = (await activeRates(tx)).find((r) => r.id === input.rateId);
+        const reservation = input.reservationId
+            ? await lockReservationForRental(tx, input.reservationId)
+            : null;
+        const rate = (await activeRates(tx)).find((r) => r.id === input.rateId) ??
+            (reservation && reservation.rateId === input.rateId
+                ? await rateById(tx, input.rateId)
+                : null);
         if (!rate)
             throw badRequest('Selecciona una tarifa vigente.');
+        if (reservation &&
+            (rate.minutes !== reservation.durationMinutes || rate.quantity !== reservation.quantity)) {
+            throw badRequest('El plan debe coincidir con la reserva: misma duración y cantidad de patinetas.');
+        }
+        // El cliente conserva el valor que vio al reservar, aunque la tarifa haya cambiado.
+        const priceCents = reservation ? reservation.priceCents : rate.priceCents;
         const locked = await lockEquipmentForUpdate(tx, input.equipmentIds);
         assertAssignable(locked, input.equipmentIds, rate.quantity);
         const customerId = await upsertCustomer(tx, {
@@ -57,7 +70,7 @@ export async function createRental(db, actor, input) {
             customerId,
             rateId: rate.id,
             minutes: rate.minutes,
-            priceCents: rate.priceCents,
+            priceCents,
             startedAt,
             preparationMinutes,
             dueAt: addMinutes(startedAt, rate.minutes + preparationMinutes),
@@ -86,8 +99,24 @@ export async function createRental(db, actor, input) {
             action: 'crear_alquiler',
             entity: 'rental',
             entityId: rentalId,
-            after: { customer: input.customer.document, rateId: rate.id, priceCents: rate.priceCents },
+            after: {
+                customer: input.customer.document,
+                rateId: rate.id,
+                priceCents,
+                reservation: reservation?.code ?? null,
+            },
         });
+        if (reservation) {
+            await tx
+                .update(reservations)
+                .set({
+                status: 'in_rental',
+                rentalId,
+                statusChangedAt: startedAt,
+                statusChangedBy: actor.id,
+            })
+                .where(eq(reservations.id, reservation.id));
+        }
         await tx.delete(rentalDrafts).where(eq(rentalDrafts.userId, actor.id));
         const link = await ensureTracking(tx, rentalId);
         return { id: rentalId, idempotent: false, trackingPath: trackingPath(link.token) };
@@ -100,8 +129,14 @@ export async function finishRental(db, actor, rentalId, input) {
             throw notFound('Alquiler no encontrado.');
         if (rental.endedAt)
             throw conflict('El alquiler ya fue finalizado.');
-        const endedAt = new Date();
-        const late = lateCharge(rental.dueAt, endedAt, await lateFeePerMinute(tx));
+        const endedAt = new Date(`${todayInBogota()}T${input.returnTime}:00-05:00`);
+        if (endedAt < rental.startedAt) {
+            throw badRequest('La hora de devolución no puede ser anterior al inicio del alquiler.');
+        }
+        if (endedAt.getTime() > Date.now() + 5 * 60_000) {
+            throw badRequest('La hora de devolución no puede superar en cinco minutos la hora actual.');
+        }
+        const late = lateChargeAtTime(rental.dueAt, input.returnTime, await lateFeePerMinute(tx));
         const mergedNotes = [rental.notes, input.notes].filter(Boolean).join('\n');
         await tx
             .update(rentals)
@@ -121,6 +156,7 @@ export async function finishRental(db, actor, rentalId, input) {
             .set({ status: 'failed', lastError: 'Alquiler finalizado antes del envío.' })
             .where(sql `${notifications.rentalId} = ${rentalId} AND ${notifications.status} = 'pending'
             AND ${notifications.templateKey} IN ('rental.due_soon', 'rental.overdue')`);
+        await completeReservationsForRental(tx, [rentalId], endedAt);
         await recordAudit(tx, {
             userId: actor.id,
             action: 'finalizar_alquiler',
@@ -130,6 +166,7 @@ export async function finishRental(db, actor, rentalId, input) {
                 finalPriceCents: rental.priceCents + late.cents,
                 lateMinutes: late.minutes,
                 lateFeeCents: late.cents,
+                endedAt: endedAt.toISOString(),
                 paymentMethod: input.paymentMethod,
             },
         });

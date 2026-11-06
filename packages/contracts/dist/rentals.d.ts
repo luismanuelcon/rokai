@@ -46,6 +46,7 @@ export declare const CreateRentalRequest: z.ZodObject<{
     notes: z.ZodDefault<z.ZodString>;
     signature: z.ZodString;
     termsAccepted: z.ZodBoolean;
+    reservationId: z.ZodOptional<z.ZodNumber>;
 }, z.core.$strip>;
 export type CreateRentalRequest = z.infer<typeof CreateRentalRequest>;
 export declare const FinishRentalRequest: z.ZodObject<{
@@ -54,6 +55,7 @@ export declare const FinishRentalRequest: z.ZodObject<{
         cash: "cash";
         transfer: "transfer";
     }>;
+    returnTime: z.ZodString;
 }, z.core.$strip>;
 export type FinishRentalRequest = z.infer<typeof FinishRentalRequest>;
 export declare const RentalEquipment: z.ZodObject<{

@@ -22,6 +22,7 @@
     "db:generate": "npm run generate --workspace @rokai/db",
     "db:migrate": "npm run migrate --workspace @rokai/db",
     "db:seed": "npm run seed --workspace @rokai/db",
+    "db:demo": "npm run build --workspaces --if-present && node --env-file-if-exists=.env apps/api/dist/cli/seed-local-demo.js",
     "db:reset": "npm run reset --workspace @rokai/db",
     "db:studio": "npm run studio --workspace @rokai/db",
     "create-user": "npm run create-user --workspace @rokai/api",

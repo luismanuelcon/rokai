@@ -16,6 +16,14 @@ export const notifChannel = pgEnum('notif_channel', [
     'console',
 ]);
 export const notifCategory = pgEnum('notif_category', ['utility', 'internal', 'marketing']);
+export const reservationStatus = pgEnum('reservation_status', [
+    'pending',
+    'confirmed',
+    'cancelled',
+    'in_rental',
+    'completed',
+    'no_show',
+]);
 export const notifStatus = pgEnum('notif_status', [
     'pending',
     'sending',
@@ -274,6 +282,47 @@ export const rentalTracking = pgTable('rental_tracking', {
     createdAt: timestamp({ withTimezone: true }).notNull().default(now),
     revokedAt: timestamp({ withTimezone: true }),
 }, (t) => [uniqueIndex('rental_tracking_token_unique').on(t.token)]);
+/* ------------------------------------------------------------- reservas */
+export const reservations = pgTable('reservations', {
+    id: bigserial({ mode: 'number' }).primaryKey(),
+    code: text().notNull(),
+    requestId: text().notNull(),
+    customerName: text().notNull(),
+    phoneE164: text('phone_e164').notNull(),
+    /** Fecha civil en Bogotá: filtra el listado sin convertir zonas horarias. */
+    serviceDate: date().notNull(),
+    startsAt: timestamp({ withTimezone: true }).notNull(),
+    endsAt: timestamp({ withTimezone: true }).notNull(),
+    quantity: smallint().notNull(),
+    /** Snapshot comercial: un cambio de tarifa no reescribe la reserva. */
+    rateId: bigint({ mode: 'number' }).references(() => rates.id, { onDelete: 'set null' }),
+    ratePeriod: ratePeriod().notNull(),
+    durationMinutes: integer().notNull(),
+    priceCents: integer().notNull(),
+    planLabel: text().notNull(),
+    status: reservationStatus().notNull().default('confirmed'),
+    statusReason: text(),
+    statusChangedAt: timestamp({ withTimezone: true }),
+    statusChangedBy: bigint({ mode: 'number' }).references(() => users.id, {
+        onDelete: 'set null',
+    }),
+    rentalId: bigint({ mode: 'number' }).references(() => rentals.id, { onDelete: 'set null' }),
+    createdAt: timestamp({ withTimezone: true }).notNull().default(now),
+}, (t) => [
+    uniqueIndex('reservations_code_key').on(t.code),
+    uniqueIndex('reservations_request_id_key').on(t.requestId),
+    uniqueIndex('reservations_rental_id_key').on(t.rentalId),
+    index('reservations_blocking_idx')
+        .on(t.startsAt, t.endsAt)
+        // Sin nombrar `pending`: un valor de enum nuevo no se puede usar en la misma transacción.
+        .where(sql `${t.status} NOT IN ('cancelled', 'in_rental', 'completed', 'no_show')`),
+    index('reservations_service_date_idx').on(t.serviceDate),
+    index('reservations_created_at_idx').on(t.createdAt.desc()),
+    check('reservations_quantity_chk', sql `${t.quantity} BETWEEN 1 AND 2`),
+    check('reservations_interval_chk', sql `${t.endsAt} > ${t.startsAt}`),
+    check('reservations_price_chk', sql `${t.priceCents} >= 0`),
+    check('reservations_phone_chk', sql `${t.phoneE164} ~ '^\\+[1-9][0-9]{7,14}$'`),
+]);
 export const businessExpenses = pgTable('business_expenses', {
     id: bigserial({ mode: 'number' }).primaryKey(),
     requestId: text().notNull(),

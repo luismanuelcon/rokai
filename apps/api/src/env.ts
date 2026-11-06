@@ -14,6 +14,8 @@ const EnvSchema = z.object({
     .default('0')
     .transform((v) => v === '1'),
   SESSION_HOURS: z.coerce.number().int().min(1).max(24).default(8),
+  /** Altas públicas de reserva por IP cada 10 minutos. */
+  RESERVATION_RATE_LIMIT: z.coerce.number().int().min(1).max(10_000).default(10),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 });
 

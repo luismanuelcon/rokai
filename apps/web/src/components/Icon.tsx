@@ -47,6 +47,7 @@ const PATHS: Record<string, string> = {
   cash: 'M3 6h18v12H3z M14.5 12a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0 M6 9.5v.01 M18 14.5v.01',
   transfer: 'M4 8h15 M16 5l3 3-3 3 M20 16H5 M8 13l-3 3 3 3',
   trash: 'M4 7h16 M10 11v6 M14 11v6 M6 7l1 13h10l1-13 M9 7V4h6v3',
+  calendar: 'M3 5h18v16H3z M3 10h18 M8 3v4 M16 3v4',
 };
 
 /**

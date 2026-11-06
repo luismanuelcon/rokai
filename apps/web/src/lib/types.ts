@@ -59,6 +59,28 @@ export interface Dashboard {
   lateFeePerMinuteCents: number;
 }
 
+export interface ReservationItem {
+  id: number;
+  code: string;
+  customerName: string;
+  phone: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  durationMinutes: number;
+  quantity: number;
+  planLabel: string;
+  ratePeriod: 'special' | 'weekend';
+  rateId: number | null;
+  priceCents: number;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'in_rental' | 'completed' | 'no_show';
+  statusReason: string | null;
+  statusChangedAt: string | null;
+  statusChangedByName: string | null;
+  rentalId: number | null;
+  createdAt: string;
+}
+
 export interface SessionUser {
   id: number;
   name: string;

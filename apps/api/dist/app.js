@@ -14,6 +14,7 @@ import { registerAuthRoutes } from './routes/auth.js';
 import { registerPublicRoutes } from './routes/public.js';
 import { registerRentalRoutes } from './routes/rentals.js';
 import { registerDayClosingRoutes } from './routes/dayClosings.js';
+import { registerReservationRoutes } from './routes/reservations.js';
 import { registerWeb } from './web.js';
 export async function buildApp(env, db) {
     const app = Fastify({
@@ -56,6 +57,7 @@ export async function buildApp(env, db) {
     registerTrackingRoutes(app, db);
     registerDayClosingRoutes(app, db);
     registerBusinessExpenseRoutes(app, db);
+    registerReservationRoutes(app, db, env);
     await registerWeb(app, env.WEB_ROOT);
     return app;
 }

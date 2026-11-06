@@ -76,6 +76,16 @@ export function PublicHeader() {
           <a href="/#preguntas" tabIndex={wide || open ? 0 : -1} onClick={closeMenu}>
             Preguntas frecuentes
           </a>
+          <Link
+            className="nav-cta"
+            to="/reservar"
+            tabIndex={wide || open ? 0 : -1}
+            onClick={() => {
+              setOpen(false);
+            }}
+          >
+            Reservar
+          </Link>
         </nav>
         <div className="nav-actions">
           <Link

@@ -12,6 +12,7 @@ import './styles/polish.css';
 import './styles/interactions.css';
 import './styles/glass.css';
 import './styles/ux-refinement.css';
+import './styles/reservations.css';
 import './styles/click-ripple.css';
 
 const root = document.getElementById('root');

@@ -7,6 +7,7 @@ import {
   notifications,
   rates,
   rentals,
+  reservations,
   sessions,
   settings,
   users,
@@ -424,6 +425,10 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db): void {
 
       // `rental_equipment` y `notifications` caen por ON DELETE CASCADE, así que
       // el equipo vuelve a quedar libre sin tocarlo a mano.
+      await tx
+        .update(reservations)
+        .set({ status: 'pending', rentalId: null })
+        .where(eq(reservations.rentalId, id));
       await tx.delete(rentals).where(eq(rentals.id, id));
       await recordAudit(tx, {
         userId: req.session!.user.id,

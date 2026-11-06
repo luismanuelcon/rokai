@@ -5,15 +5,17 @@ import { Icon } from '../../components/Icon';
 import { NavRail, type NavRailItem } from '../../components/NavRail';
 import { api } from '../../lib/api';
 import { useSession } from '../../lib/session';
-import type { AdminData, Dashboard } from '../../lib/types';
+import type { AdminData, Dashboard, ReservationItem } from '../../lib/types';
 import { Overview } from './Overview';
 import { NewRental } from './NewRental';
 import { RentalTable } from './RentalTable';
 import { Fleet } from './Fleet';
 import { Reports } from './Reports';
 import { AdminPanel } from './AdminPanel';
+import { Reservations } from './Reservations';
 
-export type View = 'overview' | 'new' | 'active' | 'history' | 'fleet' | 'reports' | 'admin';
+export type View =
+  'overview' | 'new' | 'active' | 'reservations' | 'history' | 'fleet' | 'reports' | 'admin';
 
 /** Fuera de la pista desplazable: el registro es la acción más frecuente. */
 const CTA: NavRailItem<View> = { value: 'new', icon: 'plus', label: 'Registrar alquiler' };
@@ -21,6 +23,7 @@ const CTA: NavRailItem<View> = { value: 'new', icon: 'plus', label: 'Registrar a
 // Orden por frecuencia de uso durante la atención, no por jerarquía de menú.
 const NAV: NavRailItem<View>[] = [
   { value: 'active', icon: 'clock', label: 'Alquileres activos' },
+  { value: 'reservations', icon: 'calendar', label: 'Reservas' },
   { value: 'overview', icon: 'grid', label: 'Resumen' },
   { value: 'fleet', icon: 'scooter', label: 'Disponibilidad' },
   { value: 'history', icon: 'history', label: 'Historial' },
@@ -33,6 +36,12 @@ const ADMIN_ONLY: View[] = ['reports', 'admin'];
 export function Workspace() {
   const { user, logout, refresh } = useSession();
   const [view, setView] = useState<View>('overview');
+  const [fromReservation, setFromReservation] = useState<ReservationItem | null>(null);
+  // Cualquier navegación manual descarta la precarga de una reserva.
+  const go = useCallback((next: View) => {
+    setFromReservation(null);
+    setView(next);
+  }, []);
   const [dash, setDash] = useState<Dashboard | null>(null);
   const [admin, setAdmin] = useState<AdminData | null>(null);
   const [toast, setToast] = useState('');
@@ -99,7 +108,7 @@ export function Workspace() {
               <Icon name="logout" />
             </button>
           </div>
-          <NavRail label="Menú" items={visible} cta={CTA} active={view} onSelect={setView} />
+          <NavRail label="Menú" items={visible} cta={CTA} active={view} onSelect={go} />
         </div>
       </header>
 
@@ -137,12 +146,24 @@ export function Workspace() {
           )}
           {view === 'new' && (
             <NewRental
+              key={fromReservation?.id ?? 'walk-in'}
               dash={dash}
+              reservation={fromReservation}
               onDone={async (created) => {
                 setCreatedTracking(created);
+                setFromReservation(null);
                 await reload();
                 setView('active');
                 notify('Alquiler iniciado. ¡A rodar!');
+              }}
+            />
+          )}
+          {view === 'reservations' && (
+            <Reservations
+              notify={notify}
+              onStartRental={(r) => {
+                setFromReservation(r);
+                setView('new');
               }}
             />
           )}

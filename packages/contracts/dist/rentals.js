@@ -36,10 +36,12 @@ export const CreateRentalRequest = z.object({
     termsAccepted: z
         .boolean()
         .refine((v) => v, 'El cliente debe aceptar los términos y condiciones.'),
+    reservationId: Id.optional(),
 });
 export const FinishRentalRequest = z.object({
     notes: z.string().trim().max(2000).default(''),
     paymentMethod: PaymentMethod,
+    returnTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Indica una hora válida.'),
 });
 export const RentalEquipment = z.object({
     code: z.string(),

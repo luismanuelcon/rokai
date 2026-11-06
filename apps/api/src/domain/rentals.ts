@@ -52,6 +52,28 @@ export function lateCharge(
   return { minutes, cents: perMinuteCents > 0 ? minutes * perMinuteCents : 0 };
 }
 
+/** Calcula el recargo comparando solo la hora civil de Bogotá, sin fecha. */
+export function lateChargeAtTime(
+  dueAt: Date,
+  returnTime: string,
+  perMinuteCents: number,
+): { minutes: number; cents: number } {
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(returnTime);
+  if (!match) throw new RangeError('La hora de devolución no es válida.');
+
+  const dueTime = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/Bogota',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(dueAt);
+  const [dueHour, dueMinute] = dueTime.split(':').map(Number);
+  const returnMinutes = Number(match[1]) * 60 + Number(match[2]);
+  const dueMinutes = dueHour! * 60 + dueMinute!;
+  const minutes = Math.max(0, returnMinutes - dueMinutes);
+  return { minutes, cents: perMinuteCents > 0 ? minutes * perMinuteCents : 0 };
+}
+
 /** Una tarifa está vigente si está activa y la fecha civil cae dentro del rango. */
 export function isRateCurrent(
   rate: { active: boolean; validFrom: string | null; validUntil: string | null },

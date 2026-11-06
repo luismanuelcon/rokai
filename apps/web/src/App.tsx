@@ -14,6 +14,9 @@ const Workspace = lazy(() =>
 const TrackingPage = lazy(() =>
   import('./pages/TrackingPage').then((m) => ({ default: m.TrackingPage })),
 );
+const ReservationPage = lazy(() =>
+  import('./pages/ReservationPage').then((m) => ({ default: m.ReservationPage })),
+);
 
 function ManagementRoute() {
   const { user, loading } = useSession();
@@ -34,6 +37,7 @@ export function App() {
         <Suspense fallback={<main className="loading">Cargando…</main>}>
           <Routes>
             <Route path="/" element={<PublicPage />} />
+            <Route path="/reservar" element={<ReservationPage />} />
             <Route path="/alquiler/seguimiento/:token" element={<TrackingPage />} />
             <Route path="/terminos" element={<LegalPage />} />
             <Route path="/privacidad" element={<LegalPage />} />

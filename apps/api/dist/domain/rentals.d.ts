@@ -19,6 +19,11 @@ export declare function lateCharge(dueAt: Date, endedAt: Date, perMinuteCents: n
     minutes: number;
     cents: number;
 };
+/** Calcula el recargo comparando solo la hora civil de Bogotá, sin fecha. */
+export declare function lateChargeAtTime(dueAt: Date, returnTime: string, perMinuteCents: number): {
+    minutes: number;
+    cents: number;
+};
 /** Una tarifa está vigente si está activa y la fecha civil cae dentro del rango. */
 export declare function isRateCurrent(rate: {
     active: boolean;

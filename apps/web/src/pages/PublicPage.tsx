@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { Footer, PublicHeader } from '../components/Chrome';
 import { Icon } from '../components/Icon';
 import { money } from '../lib/format';
@@ -134,18 +135,18 @@ export function PublicPage() {
               parte favorita.
             </p>
             <div className="hero-actions">
-              <a className="button" href="#tarifas">
+              <Link className="button" to="/reservar">
+                Reserva tu paseo
+                <Icon name="calendar" />
+              </Link>
+              <a className="button outline" href="#tarifas">
                 Encuentra tu plan
                 <Icon name="arrow" />
-              </a>
-              <a className="button outline" href="#ubicacion">
-                Cómo llegar
-                <Icon name="pin" />
               </a>
             </div>
             <div className="hero-note">
               <Icon name="shield" />
-              Alquiler presencial · Casco incluido · Pura libertad
+              Reserva en línea · Casco incluido · Pagas en la estación
             </div>
           </div>
           <div className="hero-visual">

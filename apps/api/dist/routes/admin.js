@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, or, sql } from 'drizzle-orm';
-import { auditLog, equipment, faqs, notifications, rates, rentals, sessions, settings, users, } from '@rokai/db';
+import { auditLog, equipment, faqs, notifications, rates, rentals, reservations, sessions, settings, users, } from '@rokai/db';
 import { DeleteRentalRequest, CreateEquipmentRequest, CreateRateRequest, CreateUserRequest, PublicSettings, UpdateEquipmentRequest, UpdateRateRequest, UpdateUserRequest, UpsertFaqRequest, } from '@rokai/contracts';
 import { hashPassword } from '../lib/crypto.js';
 import { recordAudit } from '../lib/audit.js';
@@ -371,6 +371,10 @@ export function registerAdminRoutes(app, db) {
                 throw notFound('Alquiler no encontrado.');
             // `rental_equipment` y `notifications` caen por ON DELETE CASCADE, así que
             // el equipo vuelve a quedar libre sin tocarlo a mano.
+            await tx
+                .update(reservations)
+                .set({ status: 'pending', rentalId: null })
+                .where(eq(reservations.rentalId, id));
             await tx.delete(rentals).where(eq(rentals.id, id));
             await recordAudit(tx, {
                 userId: req.session.user.id,

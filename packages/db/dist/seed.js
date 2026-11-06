@@ -44,6 +44,10 @@ const SETTINGS = {
     email: 'rokai.pat@gmail.com',
     /** Recargo por minuto de retraso, en centavos. 0 desactiva el cobro. */
     lateFeePerMinuteCents: '0',
+    /** Reservas: número de ROKAI que recibe el WhatsApp, intervalo de horas y horizonte. */
+    reservationWhatsapp: '+573103700290',
+    reservationSlotMinutes: '15',
+    reservationMaxDaysAhead: '30',
     terms: 'Las condiciones definitivas del servicio están pendientes de aprobación por ROKAI. Antes de contratar, consulta con el personal las reglas de uso, edad permitida, devolución, daños y tiempo adicional.',
     privacy: 'El documento definitivo de privacidad está pendiente de aprobación por ROKAI. Esta versión registra datos de clientes para gestionar alquileres y restringe su acceso al personal autorizado. El responsable, canal de atención y plazo de conservación deben ser definidos antes de usar datos reales.',
     cookies: 'Utilizamos una cookie de sesión necesaria para proteger el acceso del personal. Guardamos tus preferencias de cookies en este navegador. Esta versión no incorpora analítica, publicidad ni rastreadores de terceros.',

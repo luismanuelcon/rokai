@@ -45,6 +45,9 @@ export const authPlugin = fp(function authPlugin(app, opts) {
     app.addHook('onRequest', async (req) => {
         if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS')
             return;
+        // Las rutas públicas no actúan con la autoridad de la sesión; el Origen ya se verificó.
+        if (req.url.startsWith('/api/v1/public/'))
+            return;
         if (!req.session)
             return;
         const header = req.headers['x-csrf-token'];
