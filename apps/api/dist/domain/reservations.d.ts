@@ -10,6 +10,6 @@ export interface Occupancy {
  */
 export declare function peakUsage(items: readonly Occupancy[], start: Date, end: Date): number;
 export declare function newReservationCode(): string;
-/** Reglas efectivas: el intervalo y el horizonte son ajustables desde `settings`. */
+/** Reglas efectivas: horario, intervalo y horizonte se ajustan desde Administración. */
 export declare function reservationRules(settings: Record<string, string>): ReservationRules;
 //# sourceMappingURL=reservations.d.ts.map

@@ -233,6 +233,7 @@ export function ReservationPage() {
   }, [done, options.error]);
 
   const today = options.data?.today ?? '';
+  const rules = options.data?.rules;
   useEffect(() => {
     if (today && !date) setDate(today);
   }, [today, date]);
@@ -387,9 +388,16 @@ export function ReservationPage() {
                           }}
                         />
                         <small>
-                          {availability?.periodLabel
-                            ? `Tarifa ${availability.periodLabel.toLowerCase()} · atención de 4:00 p. m. a 10:00 p. m.`
-                            : 'Atención de 4:00 p. m. a 10:00 p. m.'}
+                          {[
+                            availability?.periodLabel
+                              ? `Tarifa ${availability.periodLabel.toLowerCase()}`
+                              : null,
+                            rules && today
+                              ? `reservas de ${formatReservationTime(today, rules.openTime)} a ${formatReservationTime(today, rules.closeTime)}`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
                         </small>
                       </div>
                     </section>

@@ -1355,4 +1355,79 @@ test('reservas: horario, catálogo, idempotencia, cupo concurrente, gestión y a
     (await call(`/api/v1/reservations/${String(own.id)}`, 'GET', undefined, admin)).body.status,
     'completed',
   );
+
+  // El horario de reservas se ajusta desde Administración y se valida su coherencia.
+  const current = (await call('/api/v1/public')).body.settings as Record<string, string>;
+  const withHours = (open: string, last: string, close: string) => ({
+    ...current,
+    reservationOpenTime: open,
+    reservationLastStartTime: last,
+    reservationCloseTime: close,
+  });
+  const settingsPath = '/api/v1/admin/settings';
+  assert.equal((await call(settingsPath, 'PUT', withHours('17:00', '20:00', '21:00'))).status, 401);
+  assert.equal(
+    (await call(settingsPath, 'PUT', withHours('20:00', '19:00', '21:00'), admin)).status,
+    400,
+  );
+  assert.equal(
+    (await call(settingsPath, 'PUT', withHours('17:00', '21:00', '21:00'), admin)).status,
+    400,
+  );
+  assert.equal(
+    (await call(settingsPath, 'PUT', withHours('17:00', '20:00', '21:00'), admin)).status,
+    200,
+  );
+  const adjusted = (await call(`${publicPath}/options`)).body.rules;
+  assert.deepEqual(
+    [adjusted.openTime, adjusted.lastStartTime, adjusted.closeTime],
+    ['17:00', '20:00', '21:00'],
+  );
+  const hourPlan = (
+    await call(`${publicPath}/availability?date=${date}&quantity=1`)
+  ).body.plans.find((p: { minutes: number }) => p.minutes === 60);
+  assert.equal(hourPlan.slots[0].start, '17:00');
+  assert.equal(hourPlan.slots.at(-1).start, '20:00');
+  assert.equal((await call(publicPath, 'POST', body({ startTime: '16:30' }))).status, 400);
+  await call(settingsPath, 'PUT', withHours('16:00', '21:00', '22:00'), admin);
+
+  // Eliminar reservas: solo administración, con justificación y rastro en auditoría.
+  const created2 = await call(
+    '/api/v1/admin/users',
+    'POST',
+    {
+      name: 'Colaborador reservas',
+      email: 'reservas-colab@test.local',
+      password: PASSWORD,
+      role: 'collaborator',
+    },
+    admin,
+  );
+  assert.equal(created2.status, 201);
+  const collaborator = await login('reservas-colab@test.local');
+  const deletePath = `/api/v1/admin/reservations/${String(victim.id)}`;
+  const reason = { reason: 'Registro de prueba duplicado' };
+  assert.equal((await call(deletePath, 'DELETE', reason)).status, 401);
+  assert.equal((await call(deletePath, 'DELETE', reason, collaborator)).status, 403);
+  assert.equal((await call(deletePath, 'DELETE', { reason: 'corto' }, admin)).status, 400);
+  assert.equal((await call(deletePath, 'DELETE', reason, admin)).status, 200);
+  assert.equal(
+    (await call(`/api/v1/reservations/${String(victim.id)}`, 'GET', undefined, admin)).status,
+    404,
+  );
+  assert.equal((await call(deletePath, 'DELETE', reason, admin)).status, 404);
+  const trail = (await call('/api/v1/admin/data', 'GET', undefined, admin)).body.audit.find(
+    (a: { action: string; entityId: string }) =>
+      a.action === 'reservation.delete' && a.entityId === String(victim.id),
+  );
+  assert.ok(trail);
+  // Una reserva con alquiler vinculado se puede borrar sin tocar el alquiler.
+  assert.equal(
+    (await call(`/api/v1/admin/reservations/${String(own.id)}`, 'DELETE', reason, admin)).status,
+    200,
+  );
+  const stillThere = (await call('/api/v1/dashboard', 'GET', undefined, admin)).body.rentals.find(
+    (r: { id: number }) => r.id === rental.body.id,
+  );
+  assert.ok(stillThere);
 });

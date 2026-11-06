@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { Email, Id, PhoneE164 } from './common.js';
 import { Rate } from './catalog.js';
+import { RESERVATION_RULES, TimeOfDay, toMinutes } from './reservations.js';
 export const Faq = z.object({
     id: Id,
     question: z.string(),
@@ -14,7 +15,8 @@ export const UpsertFaqRequest = z.object({
     position: z.number().int().min(0).max(999),
     active: z.boolean().default(true),
 });
-export const PublicSettings = z.object({
+export const PublicSettings = z
+    .object({
     location: z.string().trim().max(300),
     /** Enlace para "Cómo llegar". Solo https, para no abrir esquemas arbitrarios. */
     mapsUrl: z
@@ -42,9 +44,27 @@ export const PublicSettings = z.object({
         .string()
         .regex(/^(?:[0-9]|[12][0-9]|30)$/, 'Preparación: escribe entre 0 y 30 minutos enteros.')
         .default('1'),
+    reservationOpenTime: TimeOfDay.default(RESERVATION_RULES.openTime),
+    reservationLastStartTime: TimeOfDay.default(RESERVATION_RULES.lastStartTime),
+    reservationCloseTime: TimeOfDay.default(RESERVATION_RULES.closeTime),
+    reservationSlotMinutes: z
+        .enum(['5', '10', '15', '20', '30', '60'], 'Intervalo: elige 5, 10, 15, 20, 30 o 60 minutos.')
+        .default('15'),
+    reservationMaxDaysAhead: z
+        .string()
+        .regex(/^(?:[1-9]|[1-9][0-9]|1[0-7][0-9]|180)$/, 'Anticipación: escribe entre 1 y 180 días.')
+        .default('30'),
     terms: z.string().max(10_000),
     privacy: z.string().max(10_000),
     cookies: z.string().max(10_000),
+})
+    .refine((s) => toMinutes(s.reservationOpenTime) <= toMinutes(s.reservationLastStartTime), {
+    message: 'Reservas: la primera hora de inicio no puede ser posterior a la última.',
+    path: ['reservationLastStartTime'],
+})
+    .refine((s) => toMinutes(s.reservationLastStartTime) < toMinutes(s.reservationCloseTime), {
+    message: 'Reservas: la última hora de inicio debe ser anterior al cierre.',
+    path: ['reservationCloseTime'],
 });
 export const PublicData = z.object({
     rates: z.array(Rate),

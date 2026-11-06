@@ -46,6 +46,9 @@ const SETTINGS = {
     lateFeePerMinuteCents: '0',
     /** Reservas: número de ROKAI que recibe el WhatsApp, intervalo de horas y horizonte. */
     reservationWhatsapp: '+573103700290',
+    reservationOpenTime: '16:00',
+    reservationLastStartTime: '21:00',
+    reservationCloseTime: '22:00',
     reservationSlotMinutes: '15',
     reservationMaxDaysAhead: '30',
     terms: 'Las condiciones definitivas del servicio están pendientes de aprobación por ROKAI. Antes de contratar, consulta con el personal las reglas de uso, edad permitida, devolución, daños y tiempo adicional.',

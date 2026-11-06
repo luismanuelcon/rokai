@@ -23,6 +23,18 @@ export declare const PublicSettings: z.ZodObject<{
     email: z.ZodUnion<[z.ZodEmail, z.ZodLiteral<"">]>;
     lateFeePerMinuteCents: z.ZodString;
     preparationMinutes: z.ZodDefault<z.ZodString>;
+    reservationOpenTime: z.ZodDefault<z.ZodString>;
+    reservationLastStartTime: z.ZodDefault<z.ZodString>;
+    reservationCloseTime: z.ZodDefault<z.ZodString>;
+    reservationSlotMinutes: z.ZodDefault<z.ZodEnum<{
+        5: "5";
+        10: "10";
+        15: "15";
+        20: "20";
+        30: "30";
+        60: "60";
+    }>>;
+    reservationMaxDaysAhead: z.ZodDefault<z.ZodString>;
     terms: z.ZodString;
     privacy: z.ZodString;
     cookies: z.ZodString;
@@ -58,6 +70,18 @@ export declare const PublicData: z.ZodObject<{
         email: z.ZodUnion<[z.ZodEmail, z.ZodLiteral<"">]>;
         lateFeePerMinuteCents: z.ZodString;
         preparationMinutes: z.ZodDefault<z.ZodString>;
+        reservationOpenTime: z.ZodDefault<z.ZodString>;
+        reservationLastStartTime: z.ZodDefault<z.ZodString>;
+        reservationCloseTime: z.ZodDefault<z.ZodString>;
+        reservationSlotMinutes: z.ZodDefault<z.ZodEnum<{
+            5: "5";
+            10: "10";
+            15: "15";
+            20: "20";
+            30: "30";
+            60: "60";
+        }>>;
+        reservationMaxDaysAhead: z.ZodDefault<z.ZodString>;
         terms: z.ZodString;
         privacy: z.ZodString;
         cookies: z.ZodString;

@@ -74,6 +74,20 @@ test('reglas configurables y códigos legibles', () => {
   assert.equal(reservationRules({ reservationSlotMinutes: '30' }).slotMinutes, 30);
   assert.equal(reservationRules({ reservationSlotMinutes: '7' }).slotMinutes, 15);
   assert.equal(reservationRules({ reservationMaxDaysAhead: 'x' }).maxDaysAhead, 30);
+  const custom = reservationRules({
+    reservationOpenTime: '15:00',
+    reservationLastStartTime: '20:30',
+    reservationCloseTime: '21:30',
+  });
+  assert.deepEqual(
+    [custom.openTime, custom.lastStartTime, custom.closeTime],
+    ['15:00', '20:30', '21:30'],
+  );
+  assert.equal(startTimesFor(custom, 60).at(-1), '20:30');
+  assert.equal(scheduleError(custom, '2026-11-06', '20:45', 30, noon) !== null, true);
+  // Horario incoherente: se ignora y rigen los valores por defecto.
+  const broken = reservationRules({ reservationOpenTime: '22:00', reservationCloseTime: '21:00' });
+  assert.deepEqual([broken.openTime, broken.closeTime], ['16:00', '22:00']);
   const codes = new Set(Array.from({ length: 500 }, newReservationCode));
   assert.equal(codes.size, 500);
   for (const code of codes) assert.match(code, /^RK-[2-9A-HJKMNP-Z]{6}$/);

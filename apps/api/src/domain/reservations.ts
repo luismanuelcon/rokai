@@ -1,5 +1,5 @@
 import { randomInt } from 'node:crypto';
-import { RESERVATION_RULES, type ReservationRules } from '@rokai/contracts';
+import { RESERVATION_RULES, toMinutes, type ReservationRules } from '@rokai/contracts';
 
 export interface Occupancy {
   start: Date;
@@ -43,11 +43,26 @@ function intSetting(value: string | undefined, min: number, max: number, fallbac
   return Number.isInteger(n) && n >= min && n <= max ? n : fallback;
 }
 
-/** Reglas efectivas: el intervalo y el horizonte son ajustables desde `settings`. */
+function timeSetting(value: string | undefined, fallback: string): string {
+  return value && /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : fallback;
+}
+
+/** Reglas efectivas: horario, intervalo y horizonte se ajustan desde Administración. */
 export function reservationRules(settings: Record<string, string>): ReservationRules {
   const slot = intSetting(settings['reservationSlotMinutes'], 5, 60, RESERVATION_RULES.slotMinutes);
+  const openTime = timeSetting(settings['reservationOpenTime'], RESERVATION_RULES.openTime);
+  const lastStartTime = timeSetting(
+    settings['reservationLastStartTime'],
+    RESERVATION_RULES.lastStartTime,
+  );
+  const closeTime = timeSetting(settings['reservationCloseTime'], RESERVATION_RULES.closeTime);
+  // Un horario incoherente guardado a mano no debe abrir reservas imposibles.
+  const coherent =
+    toMinutes(openTime) <= toMinutes(lastStartTime) &&
+    toMinutes(lastStartTime) < toMinutes(closeTime);
   return {
     ...RESERVATION_RULES,
+    ...(coherent ? { openTime, lastStartTime, closeTime } : {}),
     slotMinutes: 60 % slot === 0 ? slot : RESERVATION_RULES.slotMinutes,
     maxDaysAhead: intSetting(
       settings['reservationMaxDaysAhead'],

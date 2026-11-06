@@ -13,7 +13,7 @@ const FIELDS: { key: string; label: string; hint?: string; type?: string }[] = [
     hint: 'Se usa en el botón "Cómo llegar". Debe empezar por https://',
     type: 'url',
   },
-  { key: 'hours', label: 'Horario de atención' },
+  { key: 'hours', label: 'Horario de atención', hint: 'Texto informativo de la portada.' },
   {
     key: 'whatsapp',
     label: 'WhatsApp',
@@ -22,6 +22,27 @@ const FIELDS: { key: string; label: string; hint?: string; type?: string }[] = [
   },
   { key: 'instagram', label: 'Usuario de Instagram', hint: 'Sin @ ni enlace' },
   { key: 'email', label: 'Correo de contacto', type: 'email' },
+];
+
+const RESERVATION_TIMES = [
+  {
+    key: 'reservationOpenTime',
+    label: 'Primera hora de inicio',
+    hint: 'La reserva más temprana que se ofrece.',
+    fallback: '16:00',
+  },
+  {
+    key: 'reservationLastStartTime',
+    label: 'Última hora de inicio',
+    hint: 'Después de esta hora no se puede empezar una reserva.',
+    fallback: '21:00',
+  },
+  {
+    key: 'reservationCloseTime',
+    label: 'Hora de cierre',
+    hint: 'Ninguna reserva puede terminar después de esta hora.',
+    fallback: '22:00',
+  },
 ];
 
 const LEGAL_FIELDS: { key: string; label: string }[] = [
@@ -191,6 +212,76 @@ export function BusinessSettings({
           <small id="s-lateFee-hint">
             En pesos, por cada minuto empezado después de la hora de devolución. Escribe 0 para no
             cobrar recargo.
+          </small>
+        </div>
+      </div>
+
+      <h2>Horario de reservas</h2>
+      <p className="small-copy muted">
+        Define qué horas puede elegir el cliente en la página de reservas. Los cambios aplican a las
+        reservas nuevas; las ya registradas conservan su horario.
+      </p>
+      <div className="form-grid">
+        {RESERVATION_TIMES.map(({ key, label, hint, fallback }) => (
+          <div className="field" key={key}>
+            <label htmlFor={`s-${key}`}>{label}</label>
+            <input
+              id={`s-${key}`}
+              type="time"
+              step={300}
+              required
+              readOnly={!editing}
+              aria-readonly={!editing}
+              aria-describedby={`s-${key}-hint`}
+              value={draft[key] ?? fallback}
+              onChange={(e) => {
+                set(key, e.target.value);
+              }}
+            />
+            <small id={`s-${key}-hint`}>{hint}</small>
+          </div>
+        ))}
+        <div className="field">
+          <label htmlFor="s-reservationSlotMinutes">Intervalo entre horas</label>
+          <select
+            id="s-reservationSlotMinutes"
+            disabled={!editing}
+            aria-describedby="s-reservationSlotMinutes-hint"
+            value={draft['reservationSlotMinutes'] ?? '15'}
+            onChange={(e) => {
+              set('reservationSlotMinutes', e.target.value);
+            }}
+          >
+            {['5', '10', '15', '20', '30', '60'].map((m) => (
+              <option key={m} value={m}>
+                Cada {m} minutos
+              </option>
+            ))}
+          </select>
+          <small id="s-reservationSlotMinutes-hint">
+            Separación entre las horas de inicio que se ofrecen.
+          </small>
+        </div>
+        <div className="field">
+          <label htmlFor="s-reservationMaxDaysAhead">Días de anticipación</label>
+          <input
+            id="s-reservationMaxDaysAhead"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={180}
+            step={1}
+            required
+            readOnly={!editing}
+            aria-readonly={!editing}
+            aria-describedby="s-reservationMaxDaysAhead-hint"
+            value={draft['reservationMaxDaysAhead'] ?? '30'}
+            onChange={(e) => {
+              set('reservationMaxDaysAhead', e.target.value);
+            }}
+          />
+          <small id="s-reservationMaxDaysAhead-hint">
+            Hasta cuántos días antes se puede reservar. De 1 a 180.
           </small>
         </div>
       </div>

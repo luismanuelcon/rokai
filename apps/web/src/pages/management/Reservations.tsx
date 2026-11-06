@@ -45,21 +45,45 @@ function contactUrl(r: ReservationItem) {
 
 function ReservationDialog({
   reservation,
+  isAdmin,
   onClose,
   onChanged,
   onStartRental,
 }: {
   reservation: ReservationItem;
+  isAdmin: boolean;
   onClose: () => void;
   onChanged: (message: string) => void;
   onStartRental: (r: ReservationItem) => void;
 }) {
   const [closing, setClosing] = useState<'cancelled' | 'no_show' | null>(null);
   const [reason, setReason] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const r = reservation;
   const open = r.status === 'pending' || r.status === 'confirmed';
+
+  async function remove() {
+    if (busy) return;
+    if (deleteReason.trim().length < 10) {
+      setError('Explica el motivo de la eliminación con al menos 10 caracteres.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      await api(`/admin/reservations/${String(r.id)}`, {
+        method: 'DELETE',
+        json: { reason: deleteReason.trim() },
+      });
+      onChanged(`Reserva ${r.code} eliminada.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo eliminar la reserva.');
+      setBusy(false);
+    }
+  }
 
   async function confirm() {
     if (busy) return;
@@ -262,14 +286,81 @@ function ReservationDialog({
           )}
         </div>
       )}
+
+      {isAdmin && !closing && (
+        <div className="danger-zone">
+          {confirmDelete ? (
+            <>
+              <p className="small-copy">
+                Se eliminará la reserva <strong>{r.code}</strong> y su cupo quedará libre.
+                {r.rentalId ? ' El alquiler vinculado no se modifica.' : ''} La justificación
+                quedará en Trazabilidad. Esta acción no se puede deshacer.
+              </p>
+              <div className="field">
+                <label htmlFor="delete-reservation-reason">Justificación de la eliminación</label>
+                <textarea
+                  id="delete-reservation-reason"
+                  rows={3}
+                  required
+                  minLength={10}
+                  maxLength={1000}
+                  disabled={busy}
+                  value={deleteReason}
+                  aria-describedby="delete-reservation-hint"
+                  onChange={(event) => {
+                    setDeleteReason(event.target.value);
+                  }}
+                />
+                <small id="delete-reservation-hint">
+                  Entre 10 y 1000 caracteres. Indica por qué debe eliminarse esta reserva.
+                </small>
+              </div>
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="button small outline"
+                  disabled={busy}
+                  onClick={() => {
+                    setConfirmDelete(false);
+                  }}
+                >
+                  Conservar
+                </button>
+                <button
+                  type="button"
+                  className="button small danger"
+                  disabled={busy || deleteReason.trim().length < 10}
+                  onClick={() => void remove()}
+                >
+                  {busy ? 'Eliminando…' : 'Eliminar definitivamente'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="button small subtle"
+              onClick={() => {
+                setError('');
+                setConfirmDelete(true);
+              }}
+            >
+              <Icon name="trash" />
+              Eliminar reserva
+            </button>
+          )}
+        </div>
+      )}
     </Modal>
   );
 }
 
 export function Reservations({
+  isAdmin,
   notify,
   onStartRental,
 }: {
+  isAdmin: boolean;
   notify: (message: string) => void;
   onStartRental: (r: ReservationItem) => void;
 }) {
@@ -517,6 +608,7 @@ export function Reservations({
 
       {selected && (
         <ReservationDialog
+          isAdmin={isAdmin}
           reservation={selected}
           onClose={() => {
             setSelected(null);

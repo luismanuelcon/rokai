@@ -160,6 +160,7 @@ export function Workspace() {
           )}
           {view === 'reservations' && (
             <Reservations
+              isAdmin={isAdmin}
               notify={notify}
               onStartRental={(r) => {
                 setFromReservation(r);

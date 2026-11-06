@@ -5,6 +5,7 @@ import { reservations, users } from '@rokai/db';
 import {
   ChangeReservationStatus,
   CreateReservationRequest,
+  DeleteRentalRequest,
   ReservationAvailabilityQuery,
   ReservationListQuery,
   fromMinutes,
@@ -199,6 +200,38 @@ export function registerReservationRoutes(app: FastifyInstance, db: Db, env: Env
         entityId: id,
         before: { status: before.status },
         after: { status: body.status, reason: body.reason, code: before.code },
+      });
+    });
+    return { ok: true };
+  });
+
+  // Solo administración: el registro desaparece, pero la justificación queda en Trazabilidad.
+  app.delete('/api/v1/admin/reservations/:id', { onRequest: [app.requireAdmin] }, async (req) => {
+    const id = idParam(req.params);
+    const { reason } = DeleteRentalRequest.parse(req.body);
+    await db.transaction(async (tx) => {
+      const [before] = await tx
+        .select()
+        .from(reservations)
+        .where(eq(reservations.id, id))
+        .for('update');
+      if (!before) throw notFound('Reserva no encontrada.');
+      await tx.delete(reservations).where(eq(reservations.id, id));
+      // Sin nombre ni teléfono: la auditoría no debe conservar datos personales borrados.
+      await recordAudit(tx, {
+        userId: req.session!.user.id,
+        action: 'reservation.delete',
+        entity: 'reservation',
+        entityId: id,
+        before: {
+          code: before.code,
+          status: before.status,
+          startsAt: before.startsAt,
+          quantity: before.quantity,
+          priceCents: before.priceCents,
+          rentalId: before.rentalId,
+        },
+        after: { reason },
       });
     });
     return { ok: true };
