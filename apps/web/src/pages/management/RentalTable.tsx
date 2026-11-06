@@ -156,7 +156,7 @@ const PAYMENT_METHODS: [PaymentMethod, string][] = [
   ['transfer', 'Transferencia'],
 ];
 
-function RentalDialog({
+export function RentalDialog({
   rental,
   lateFeePerMinuteCents,
   isAdmin,

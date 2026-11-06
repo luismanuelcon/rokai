@@ -9,3 +9,4 @@ export * from './dayClosings.js';
 export * from './tracking.js';
 export * from './businessExpenses.js';
 export * from './reservations.js';
+export * from './rentalHistory.js';

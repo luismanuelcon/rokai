@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { customers, equipment, rentalEquipment, rentals, users } from '@rokai/db';
 import type { Executor } from '../db.js';
@@ -31,7 +31,7 @@ const endedByUser = alias(users, 'ended_user');
  */
 export async function listRentals(
   exec: Executor,
-  filter: { onlyActive?: boolean; limit?: number } = {},
+  filter: { onlyActive?: boolean; limit?: number; offset?: number; where?: SQL } = {},
 ): Promise<RentalRow[]> {
   const rows = await exec
     .select({
@@ -62,9 +62,10 @@ export async function listRentals(
     .innerJoin(customers, eq(customers.id, rentals.customerId))
     .innerJoin(users, eq(users.id, rentals.createdBy))
     .leftJoin(endedByUser, eq(endedByUser.id, rentals.endedBy))
-    .where(filter.onlyActive ? isNull(rentals.endedAt) : sql`true`)
+    .where(filter.where ?? (filter.onlyActive ? isNull(rentals.endedAt) : sql`true`))
     .orderBy(desc(rentals.id))
-    .limit(filter.limit ?? 200);
+    .limit(filter.limit ?? 200)
+    .offset(filter.offset ?? 0);
 
   return rows;
 }

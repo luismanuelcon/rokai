@@ -35,9 +35,10 @@ export async function listRentals(exec, filter = {}) {
         .innerJoin(customers, eq(customers.id, rentals.customerId))
         .innerJoin(users, eq(users.id, rentals.createdBy))
         .leftJoin(endedByUser, eq(endedByUser.id, rentals.endedBy))
-        .where(filter.onlyActive ? isNull(rentals.endedAt) : sql `true`)
+        .where(filter.where ?? (filter.onlyActive ? isNull(rentals.endedAt) : sql `true`))
         .orderBy(desc(rentals.id))
-        .limit(filter.limit ?? 200);
+        .limit(filter.limit ?? 200)
+        .offset(filter.offset ?? 0);
     return rows;
 }
 export async function findRental(exec, id) {

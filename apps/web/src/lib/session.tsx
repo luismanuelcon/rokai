@@ -14,6 +14,7 @@ import type { SessionUser } from './types';
 interface SessionState {
   user: SessionUser | null;
   loading: boolean;
+  error: string;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -26,11 +27,24 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
   const started = useRef(false);
+  const generation = useRef(0);
+  const [error, setError] = useState('');
 
   const refresh = useCallback(async () => {
-    const data = await api<{ user: SessionUser | null; csrf?: string }>('/auth/session');
-    setCsrf(data.csrf ?? null);
-    setUser(data.user);
+    const request = ++generation.current;
+    try {
+      const data = await api<{ user: SessionUser | null; csrf?: string }>('/auth/session');
+      if (request !== generation.current) return;
+      setCsrf(data.csrf ?? null);
+      setUser(data.user);
+      setError('');
+    } catch (cause) {
+      if (request !== generation.current) return;
+      setError('No se pudo verificar la sesión. Revisa tu conexión y vuelve a intentar.');
+      throw cause;
+    } finally {
+      if (request === generation.current) setLoading(false);
+    }
   }, []);
 
   // La portada pública no necesita sesión: sin este arranque perezoso, cada
@@ -38,9 +52,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const ensure = useCallback(() => {
     if (started.current) return;
     started.current = true;
-    void refresh().finally(() => {
-      setLoading(false);
-    });
+    void refresh().catch(() => {});
+  }, [refresh]);
+
+  useEffect(() => {
+    const expired = () => { ++generation.current; setCsrf(null); setUser(null); setError(''); setLoading(false); };
+    const resume = () => {
+      if (started.current && document.visibilityState === 'visible') void refresh().catch(() => {});
+    };
+    window.addEventListener('rokai:session-expired', expired);
+    window.addEventListener('online', resume);
+    document.addEventListener('visibilitychange', resume);
+    return () => {
+      window.removeEventListener('rokai:session-expired', expired);
+      window.removeEventListener('online', resume);
+      document.removeEventListener('visibilitychange', resume);
+    };
   }, [refresh]);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -48,19 +75,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       method: 'POST',
       json: { email, password },
     });
+    ++generation.current;
+    setError('');
     setCsrf(data.csrf);
     setUser(data.user);
   }, []);
 
   const logout = useCallback(async () => {
     await api('/auth/logout', { method: 'POST', json: {} });
+    ++generation.current;
     setCsrf(null);
     setUser(null);
   }, []);
 
   const value = useMemo(
-    () => ({ user, loading, login, logout, refresh, ensure }),
-    [user, loading, login, logout, refresh, ensure],
+    () => ({ user, loading, error, login, logout, refresh, ensure }),
+    [user, loading, error, login, logout, refresh, ensure],
   );
   return <SessionContext value={value}>{children}</SessionContext>;
 }

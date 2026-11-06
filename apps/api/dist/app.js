@@ -1,3 +1,4 @@
+import { registerRentalHistoryRoutes } from './routes/rentalHistory.js';
 import { registerBusinessExpenseRoutes } from './routes/businessExpenses.js';
 import rateLimit from '@fastify/rate-limit';
 import { registerTrackingRoutes } from './routes/tracking.js';
@@ -53,6 +54,7 @@ export async function buildApp(env, db) {
     registerPublicRoutes(app, db);
     registerAuthRoutes(app, db, env);
     registerRentalRoutes(app, db);
+    registerRentalHistoryRoutes(app, db);
     registerAdminRoutes(app, db);
     registerTrackingRoutes(app, db);
     registerDayClosingRoutes(app, db);

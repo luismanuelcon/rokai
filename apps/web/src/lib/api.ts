@@ -24,7 +24,18 @@ export async function api<T>(path: string, options: RequestInit & { json?: unkno
   if (json !== undefined) init.body = JSON.stringify(json);
   else if (body !== undefined && body !== null) init.body = body;
 
-  const res = await fetch(`/api/v1${path}`, init);
+  const timeout = AbortSignal.timeout(20000);
+  init.signal = rest.signal ? AbortSignal.any([rest.signal, timeout]) : timeout;
+  let res: Response;
+  try {
+    res = await fetch(`/api/v1${path}`, init);
+  } catch (error) {
+    if (timeout.aborted) throw new ApiError(408, 'La conexión tardó demasiado. Intenta nuevamente.');
+    throw error;
+  }
+  if (res.status === 401 && rest.credentials !== 'omit' && path !== '/auth/login') {
+    window.dispatchEvent(new Event('rokai:session-expired'));
+  }
 
   const data: unknown = res.status === 204 ? null : await res.json().catch(() => null);
   if (!res.ok) {
@@ -32,5 +43,6 @@ export async function api<T>(path: string, options: RequestInit & { json?: unkno
       (data as { error?: string } | null)?.error ?? 'No pudimos completar la solicitud.';
     throw new ApiError(res.status, message);
   }
+  if (res.status !== 204 && data === null) throw new ApiError(502, 'No se recibió una respuesta válida. Intenta nuevamente.');
   return data as T;
 }

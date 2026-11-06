@@ -1,3 +1,4 @@
+import { type SQL } from 'drizzle-orm';
 import type { Executor } from '../db.js';
 export interface RentalRow {
     id: number;
@@ -28,6 +29,8 @@ export interface RentalRow {
 export declare function listRentals(exec: Executor, filter?: {
     onlyActive?: boolean;
     limit?: number;
+    offset?: number;
+    where?: SQL;
 }): Promise<RentalRow[]>;
 export declare function findRental(exec: Executor, id: number): Promise<{
     id: number;
@@ -62,7 +65,7 @@ export declare function lockEquipmentForUpdate(exec: Executor, ids: readonly num
     busy: boolean;
     id: number;
     kind: "scooter" | "helmet";
-    status: "maintenance" | "available" | "inactive";
+    status: "available" | "maintenance" | "inactive";
 }[]>;
 export declare function upsertCustomer(exec: Executor, input: {
     fullName: string;

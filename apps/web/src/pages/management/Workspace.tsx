@@ -1,3 +1,4 @@
+import { RentalHistory } from './RentalHistory';
 import { TrackingActions } from '../../components/TrackingActions';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
@@ -51,15 +52,35 @@ export function Workspace() {
   } | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
 
+  const [loadError, setLoadError] = useState('');
+
   const isAdmin = user?.role === 'admin';
 
   const reload = useCallback(async () => {
-    setDash(await api<Dashboard>('/dashboard'));
-    if (isAdmin) setAdmin(await api<AdminData>('/admin/data'));
+    setLoadError('');
+    try {
+      setDash(await api<Dashboard>('/dashboard'));
+      if (isAdmin) setAdmin(await api<AdminData>('/admin/data'));
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'No se pudo cargar Gestión.');
+      throw error;
+    }
   }, [isAdmin]);
 
   useEffect(() => {
-    void reload();
+    void reload().catch(() => {});
+  }, [reload]);
+
+  useEffect(() => {
+    const resume = () => {
+      if (document.visibilityState === 'visible') void reload().catch(() => {});
+    };
+    document.addEventListener('visibilitychange', resume);
+    window.addEventListener('online', resume);
+    return () => {
+      document.removeEventListener('visibilitychange', resume);
+      window.removeEventListener('online', resume);
+    };
   }, [reload]);
 
   useEffect(() => {
@@ -81,12 +102,13 @@ export function Workspace() {
     }, 4500);
   }, []);
 
-  if (!dash || !user) return <main className="loading">Cargando la estación…</main>;
+  if (!dash || !user) return <main className="loading">{loadError ? <div><p role="alert">{loadError}</p><button className="button primary" onClick={() => void reload().catch(() => {})}>Reintentar</button></div> : 'Cargando la estación…'}</main>;
 
   const visible = NAV.filter((item) => isAdmin || !ADMIN_ONLY.includes(item.value));
 
   return (
     <>
+      {loadError && <div role="alert">{loadError} <button className="button ghost" onClick={() => void reload().catch(() => {})}>Reintentar</button></div>}
       <header className="appbar glass-nav">
         <div className="appbar-inner">
           <Link className="appbar-brand" to="/" aria-label="ROKAI, inicio">
@@ -182,9 +204,7 @@ export function Workspace() {
             />
           )}
           {view === 'history' && (
-            <RentalTable
-              title="Historial de alquileres"
-              rentals={dash.rentals.filter((r) => r.endedAt)}
+            <RentalHistory
               lateFeePerMinuteCents={dash.lateFeePerMinuteCents}
               isAdmin={isAdmin}
               onNew={() => {

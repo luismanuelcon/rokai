@@ -1,0 +1,95 @@
+.rental-history {
+  min-width: 0;
+}
+.history-export-actions,
+.history-pagination,
+.history-pagination > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.history-filters {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.5fr) repeat(2, minmax(145px, 1fr)) minmax(
+      90px,
+      0.65fr
+    ) minmax(120px, 1fr) minmax(75px, 0.5fr) auto;
+  gap: 12px;
+  align-items: end;
+  margin: 24px 0 16px;
+}
+.history-filters label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 650;
+}
+.history-filters :is(input, select) {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+}
+.history-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  margin: 16px 0;
+}
+.history-table {
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.history-table table {
+  min-width: 1100px;
+  width: 100%;
+  font-size: 13px;
+}
+.history-table :is(th, td) {
+  padding: 10px 12px;
+  vertical-align: middle;
+}
+.history-table td {
+  white-space: nowrap;
+}
+.history-table .history-money {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.history-table .iconbutton {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+}
+.history-pagination {
+  justify-content: space-between;
+  margin-top: 18px;
+  font-size: 13px;
+}
+@media (max-width: 1200px) {
+  .history-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .history-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .history-filters label:first-child {
+    grid-column: 1/-1;
+  }
+  .history-export-actions {
+    width: 100%;
+  }
+  .history-export-actions .button {
+    flex: 1;
+  }
+  .history-caption {
+    flex-wrap: wrap;
+  }
+}
