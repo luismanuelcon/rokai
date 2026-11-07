@@ -13,13 +13,18 @@ type Closing = {
   closesNextDay: boolean;
   cashCents: number;
   transferCents: number;
-  expenses: { description: string; amountCents: number }[];
+  expenses: { description: string; amountCents: number; paymentMethod?: 'cash' | 'transfer' }[];
   notes: string;
   version: number;
   createdAt: string;
   updatedAt: string;
 };
-type ExpenseInput = { key: number; description: string; amount: string };
+type ExpenseInput = {
+  key: number;
+  description: string;
+  amount: string;
+  paymentMethod: 'cash' | 'transfer';
+};
 const today = () =>
   new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Bogota',
@@ -157,6 +162,7 @@ export function DailyClosings({ onChanged }: { onChanged?: () => void }) {
         key,
         description: item.description,
         amount: centsToInput(item.amountCents),
+        paymentMethod: item.paymentMethod ?? 'cash',
       })) ?? [],
     );
     setNotes(row?.notes ?? '');
@@ -206,6 +212,7 @@ export function DailyClosings({ onChanged }: { onChanged?: () => void }) {
             expenses: expenses.map((item) => ({
               description: item.description.trim(),
               amountCents: cents(item.amount),
+              paymentMethod: item.paymentMethod,
             })),
             notes: notes.trim(),
             ...(editing ? { version: editing.version } : {}),
@@ -630,6 +637,7 @@ export function DailyClosings({ onChanged }: { onChanged?: () => void }) {
                         key: Math.max(-1, ...items.map((item) => item.key)) + 1,
                         description: '',
                         amount: '',
+                        paymentMethod: 'cash',
                       },
                     ])
                   }
@@ -663,6 +671,21 @@ export function DailyClosings({ onChanged }: { onChanged?: () => void }) {
                       }
                       required
                     />
+                  </div>
+                  <div className="field">
+                    <label htmlFor={`expense-payment-${item.key}`}>Medio de pago</label>
+                    <select
+                      id={`expense-payment-${item.key}`}
+                      value={item.paymentMethod}
+                      onChange={(e) =>
+                        updateExpense(item.key, {
+                          paymentMethod: e.target.value as 'cash' | 'transfer',
+                        })
+                      }
+                    >
+                      <option value="cash">Efectivo</option>
+                      <option value="transfer">Transferencia</option>
+                    </select>
                   </div>
                   <button
                     type="button"

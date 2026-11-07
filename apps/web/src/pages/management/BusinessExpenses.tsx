@@ -44,6 +44,8 @@ type ExpenseReport = {
     closingExpensesCents: number;
     additionalExpensesCents: number;
     netCents: number;
+    cashBalanceCents: number;
+    transferBalanceCents: number;
   };
   categories: { category: string; amountCents: number }[];
   monthly: { month: string; incomeCents: number; expensesCents: number }[];
@@ -254,6 +256,20 @@ export function BusinessExpenses({ revision = 0 }: { revision?: number }) {
             <div className={`expense-net${summary.netCents < 0 ? ' is-negative' : ''}`}>
               <span>{history ? 'Saldo del período' : 'Saldo acumulado'}</span>
               <strong>{money(summary.netCents)}</strong>
+              <dl className="expense-net-breakdown">
+                <div>
+                  <dt>Disponible en efectivo</dt>
+                  <dd className={summary.cashBalanceCents < 0 ? 'is-negative' : ''}>
+                    {money(summary.cashBalanceCents)}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Disponible en transferencias</dt>
+                  <dd className={summary.transferBalanceCents < 0 ? 'is-negative' : ''}>
+                    {money(summary.transferBalanceCents)}
+                  </dd>
+                </div>
+              </dl>
             </div>
           </div>
         </>

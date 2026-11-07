@@ -263,7 +263,9 @@ export const dayClosings = pgTable('day_closings', {
     closesNextDay: boolean().notNull().default(false),
     cashCents: integer().notNull(),
     transferCents: integer().notNull(),
-    expenses: jsonb().$type().notNull(),
+    expenses: jsonb()
+        .$type()
+        .notNull(),
     notes: text().notNull().default(''),
     version: integer().notNull().default(1),
     createdBy: bigint({ mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),

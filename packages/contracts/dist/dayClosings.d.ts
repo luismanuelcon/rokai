@@ -9,6 +9,10 @@ export declare const CreateDayClosingRequest: z.ZodObject<{
     transferCents: z.ZodNumber;
     expenses: z.ZodArray<z.ZodObject<{
         description: z.ZodString;
+        paymentMethod: z.ZodDefault<z.ZodEnum<{
+            cash: "cash";
+            transfer: "transfer";
+        }>>;
         amountCents: z.ZodNumber;
     }, z.core.$strip>>;
     notes: z.ZodDefault<z.ZodString>;
@@ -23,6 +27,10 @@ export declare const UpdateDayClosingRequest: z.ZodObject<{
     transferCents: z.ZodNumber;
     expenses: z.ZodArray<z.ZodObject<{
         description: z.ZodString;
+        paymentMethod: z.ZodDefault<z.ZodEnum<{
+            cash: "cash";
+            transfer: "transfer";
+        }>>;
         amountCents: z.ZodNumber;
     }, z.core.$strip>>;
     notes: z.ZodDefault<z.ZodString>;

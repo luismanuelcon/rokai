@@ -23,7 +23,7 @@ export function registerBusinessExpenseRoutes(app, db) {
       from business_expenses
       union all
       select 'closing:' || d.id || ':' || (e.ordinality - 1), null::bigint, d.id, 'closing', d.date::text,
-        'closing', e.item->>'description', (e.item->>'amountCents')::integer, null::text, '', '', d.version, 'active', null::text
+        'closing', e.item->>'description', (e.item->>'amountCents')::integer, coalesce(e.item->>'paymentMethod', 'cash'), '', '', d.version, 'active', null::text
       from day_closings d cross join lateral jsonb_array_elements(d.expenses) with ordinality as e(item, ordinality)
     )`;
         const dates = sql `(${q.from ?? null}::date is null or date::date >= ${q.from ?? null}::date) and (${q.to ?? null}::date is null or date::date <= ${q.to ?? null}::date)`;
@@ -35,6 +35,7 @@ export function registerBusinessExpenseRoutes(app, db) {
             const rows = await tx.execute(sql `${ledger} select * from ledger where ${filters} order by date desc, "expenseId" desc nulls last, "closingId" desc nulls last, id desc limit 25 offset ${(page - 1) * 25}`);
             const income = await tx.execute(sql `select coalesce(sum(cash_cents),0) as cash, coalesce(sum(transfer_cents),0) as transfer from day_closings where ${dates}`);
             const expenseTotals = await tx.execute(sql `${ledger} select source, coalesce(sum("amountCents"),0) as amount from ledger where ${dates} and status = 'active' group by source`);
+            const byPayment = await tx.execute(sql `${ledger} select "paymentMethod", coalesce(sum("amountCents"),0) as amount from ledger where ${dates} and status = 'active' group by "paymentMethod"`);
             const categories = await tx.execute(sql `${ledger} select category, sum("amountCents") as "amountCents" from ledger where ${dates} and status = 'active' group by category order by sum("amountCents") desc`);
             const monthly = await tx.execute(sql `${ledger}, movements as (
         select left(date::text,7) as month, cash_cents::bigint + transfer_cents as income, 0::bigint as expense from day_closings where ${dates}
@@ -58,6 +59,10 @@ export function registerBusinessExpenseRoutes(app, db) {
                     transferCents,
                     closingExpensesCents,
                     additionalExpensesCents,
+                    cashBalanceCents: cashCents -
+                        Number(byPayment.rows.find((r) => r.paymentMethod === 'cash')?.amount ?? 0),
+                    transferBalanceCents: transferCents -
+                        Number(byPayment.rows.find((r) => r.paymentMethod === 'transfer')?.amount ?? 0),
                     netCents: cashCents + transferCents - closingExpensesCents - additionalExpensesCents,
                 },
                 categories: categories.rows.map((r) => ({ ...r, amountCents: Number(r.amountCents) })),

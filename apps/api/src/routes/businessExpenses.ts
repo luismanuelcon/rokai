@@ -30,7 +30,7 @@ export function registerBusinessExpenseRoutes(app: FastifyInstance, db: Db) {
       from business_expenses
       union all
       select 'closing:' || d.id || ':' || (e.ordinality - 1), null::bigint, d.id, 'closing', d.date::text,
-        'closing', e.item->>'description', (e.item->>'amountCents')::integer, null::text, '', '', d.version, 'active', null::text
+        'closing', e.item->>'description', (e.item->>'amountCents')::integer, coalesce(e.item->>'paymentMethod', 'cash'), '', '', d.version, 'active', null::text
       from day_closings d cross join lateral jsonb_array_elements(d.expenses) with ordinality as e(item, ordinality)
     )`;
     const dates = sql`(${q.from ?? null}::date is null or date::date >= ${q.from ?? null}::date) and (${q.to ?? null}::date is null or date::date <= ${q.to ?? null}::date)`;
@@ -50,6 +50,9 @@ export function registerBusinessExpenseRoutes(app: FastifyInstance, db: Db) {
         );
         const expenseTotals = await tx.execute(
           sql`${ledger} select source, coalesce(sum("amountCents"),0) as amount from ledger where ${dates} and status = 'active' group by source`,
+        );
+        const byPayment = await tx.execute(
+          sql`${ledger} select "paymentMethod", coalesce(sum("amountCents"),0) as amount from ledger where ${dates} and status = 'active' group by "paymentMethod"`,
         );
         const categories = await tx.execute(
           sql`${ledger} select category, sum("amountCents") as "amountCents" from ledger where ${dates} and status = 'active' group by category order by sum("amountCents") desc`,
@@ -80,6 +83,12 @@ export function registerBusinessExpenseRoutes(app: FastifyInstance, db: Db) {
             transferCents,
             closingExpensesCents,
             additionalExpensesCents,
+            cashBalanceCents:
+              cashCents -
+              Number(byPayment.rows.find((r) => r.paymentMethod === 'cash')?.amount ?? 0),
+            transferBalanceCents:
+              transferCents -
+              Number(byPayment.rows.find((r) => r.paymentMethod === 'transfer')?.amount ?? 0),
             netCents: cashCents + transferCents - closingExpensesCents - additionalExpensesCents,
           },
           categories: categories.rows.map((r) => ({ ...r, amountCents: Number(r.amountCents) })),

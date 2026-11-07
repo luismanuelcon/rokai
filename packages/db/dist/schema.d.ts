@@ -2099,6 +2099,7 @@ export declare const dayClosings: import("drizzle-orm/pg-core").PgTableWithColum
             data: {
                 description: string;
                 amountCents: number;
+                paymentMethod?: "cash" | "transfer";
             }[];
             driverParam: unknown;
             notNull: true;
@@ -2114,6 +2115,7 @@ export declare const dayClosings: import("drizzle-orm/pg-core").PgTableWithColum
             $type: {
                 description: string;
                 amountCents: number;
+                paymentMethod?: "cash" | "transfer";
             }[];
         }>;
         notes: import("drizzle-orm/pg-core").PgColumn<{

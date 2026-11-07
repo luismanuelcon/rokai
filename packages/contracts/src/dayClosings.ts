@@ -14,6 +14,7 @@ const fields = {
     .array(
       z.object({
         description: z.string().trim().min(1, 'Describe el gasto.').max(160),
+        paymentMethod: z.enum(['cash', 'transfer']).default('cash'),
         amountCents: Amount.positive('El gasto debe ser mayor que cero.'),
       }),
     )

@@ -360,7 +360,9 @@ export const dayClosings = pgTable(
     closesNextDay: boolean().notNull().default(false),
     cashCents: integer().notNull(),
     transferCents: integer().notNull(),
-    expenses: jsonb().$type<{ description: string; amountCents: number }[]>().notNull(),
+    expenses: jsonb()
+      .$type<{ description: string; amountCents: number; paymentMethod?: 'cash' | 'transfer' }[]>()
+      .notNull(),
     notes: text().notNull().default(''),
     version: integer().notNull().default(1),
     createdBy: bigint({ mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),

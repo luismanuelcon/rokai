@@ -1070,6 +1070,8 @@ test('gastos del negocio: permisos, cierre sin duplicados, idempotencia, edició
     closingExpensesCents: 2000,
     additionalExpensesCents: 3000,
     netCents: 10000,
+    cashBalanceCents: 5000,
+    transferBalanceCents: 5000,
   });
   assert.equal(result.body.monthly[0].expensesCents, 5000);
   assert.equal((await call(query + '&category=salary', 'GET', undefined, admin)).body.total, 1);
@@ -1100,6 +1102,24 @@ test('gastos del negocio: permisos, cierre sin duplicados, idempotencia, edició
   result = await call(query, 'GET', undefined, admin);
   assert.equal(result.body.total, 1);
   assert.equal(result.body.summary.netCents, 13000);
+  assert.equal(result.body.summary.cashBalanceCents, 8000);
+  assert.equal(result.body.summary.transferBalanceCents, 5000);
+  const changed = await call(
+    '/api/v1/admin/day-closings/' + closing.date,
+    'PUT',
+    {
+      ...closing,
+      version: 1,
+      expenses: [{ description: 'Transporte', amountCents: 2000, paymentMethod: 'transfer' }],
+    },
+    admin,
+  );
+  assert.equal(changed.status, 200);
+  result = await call(query, 'GET', undefined, admin);
+  assert.equal(result.body.summary.cashBalanceCents, 10000);
+  assert.equal(result.body.summary.transferBalanceCents, 3000);
+  assert.equal(result.body.summary.netCents, 13000);
+
   assert.equal((await call(query + '&status=voided', 'GET', undefined, admin)).body.total, 1);
   const audit = await call('/api/v1/admin/data', 'GET', undefined, admin);
   assert.equal(
