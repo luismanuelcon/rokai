@@ -64,7 +64,11 @@
 .expense-net > span {
   color: white;
 }
-.expense-net > strong {
+.expense-balance .expense-net > strong {
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.035em;
   color: var(--lime);
   margin-left: auto;
 }
@@ -328,7 +332,7 @@
   .expense-balance span {
     font-size: 0.75rem;
   }
-  .expense-net > strong {
+  .expense-balance .expense-net > strong {
     margin-left: 0;
     width: 100%;
   }
@@ -422,8 +426,8 @@
 }
 .expense-net-breakdown dd {
   margin: 8px 0 0;
-  font-size: clamp(1.25rem, 3vw, 1.8rem);
-  font-weight: 750;
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  font-weight: 650;
   font-variant-numeric: tabular-nums;
 }
 .expense-net-breakdown .is-negative {
