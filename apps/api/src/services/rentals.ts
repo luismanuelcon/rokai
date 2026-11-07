@@ -183,9 +183,6 @@ export async function finishRental(
     if (endedAt < rental.startedAt) {
       throw badRequest('La hora de devolución no puede ser anterior al inicio del alquiler.');
     }
-    if (endedAt.getTime() > Date.now() + 5 * 60_000) {
-      throw badRequest('La hora de devolución no puede superar en cinco minutos la hora actual.');
-    }
     const late = lateChargeAtTime(rental.dueAt, input.returnTime, await lateFeePerMinute(tx));
 
     const mergedNotes = [rental.notes, input.notes].filter(Boolean).join('\n');

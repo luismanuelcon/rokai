@@ -218,10 +218,16 @@ test('Ciclo de alquiler: idempotencia, colisión, precio inmutable y auditoría'
     const beforeStart = timeInBogota(new Date(startedAt.getTime() - 60_000));
     const invalidPast = await call(`/api/v1/rentals/${rentalId}/finish`, 'POST', { paymentMethod: 'cash', returnTime: beforeStart }, worker);
     assert.equal(invalidPast.status, 400);
-    const invalidFuture = await call(`/api/v1/rentals/${rentalId}/finish`, 'POST', { paymentMethod: 'cash', returnTime: timeInBogota(new Date(Date.now() + 10 * 60_000)) }, worker);
-    assert.equal(invalidFuture.status, 400);
-    const finished = await call(`/api/v1/rentals/${rentalId}/finish`, 'POST', { notes: 'Sin novedades', paymentMethod: 'cash', returnTime }, worker);
-    assert.equal(finished.status, 200);
+    // La devolución manual puede estar más de cinco minutos por delante del reloj.
+    const realNow = Date.now;
+    Date.now = () => endedAt.getTime() - 10 * 60_000;
+    try {
+        const finished = await call(`/api/v1/rentals/${rentalId}/finish`, 'POST', { notes: 'Sin novedades', paymentMethod: 'cash', returnTime }, worker);
+        assert.equal(finished.status, 200);
+    }
+    finally {
+        Date.now = realNow;
+    }
     assert.equal((await call(`/api/v1/rentals/${rentalId}/finish`, 'POST', { paymentMethod: 'cash', returnTime }, worker)).status, 409);
     const final = await call('/api/v1/dashboard', 'GET', undefined, worker);
     assert.equal(timeInBogota(new Date(final.body.rentals[0].endedAt)), returnTime);
