@@ -56,7 +56,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   useEffect(() => {
-    const expired = () => { ++generation.current; setCsrf(null); setUser(null); setError(''); setLoading(false); };
+    const expired = () => {
+      ++generation.current;
+      setCsrf(null);
+      setUser(null);
+      setError('');
+      setLoading(false);
+    };
     const resume = () => {
       if (started.current && document.visibilityState === 'visible') void refresh().catch(() => {});
     };

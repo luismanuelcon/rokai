@@ -11,10 +11,9 @@
 }
 .history-filters {
   display: grid;
-  grid-template-columns: minmax(160px, 1.5fr) repeat(2, minmax(145px, 1fr)) minmax(
-      90px,
-      0.65fr
-    ) minmax(120px, 1fr) minmax(75px, 0.5fr) auto;
+  grid-template-columns:
+    minmax(160px, 1.5fr) repeat(2, minmax(145px, 1fr)) minmax(90px, 0.65fr)
+    minmax(120px, 1fr) minmax(75px, 0.5fr) auto;
   gap: 12px;
   align-items: end;
   margin: 24px 0 16px;

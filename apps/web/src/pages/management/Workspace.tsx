@@ -102,13 +102,34 @@ export function Workspace() {
     }, 4500);
   }, []);
 
-  if (!dash || !user) return <main className="loading">{loadError ? <div><p role="alert">{loadError}</p><button className="button primary" onClick={() => void reload().catch(() => {})}>Reintentar</button></div> : 'Cargando la estación…'}</main>;
+  if (!dash || !user)
+    return (
+      <main className="loading">
+        {loadError ? (
+          <div>
+            <p role="alert">{loadError}</p>
+            <button className="button primary" onClick={() => void reload().catch(() => {})}>
+              Reintentar
+            </button>
+          </div>
+        ) : (
+          'Cargando la estación…'
+        )}
+      </main>
+    );
 
   const visible = NAV.filter((item) => isAdmin || !ADMIN_ONLY.includes(item.value));
 
   return (
     <>
-      {loadError && <div role="alert">{loadError} <button className="button ghost" onClick={() => void reload().catch(() => {})}>Reintentar</button></div>}
+      {loadError && (
+        <div role="alert">
+          {loadError}{' '}
+          <button className="button ghost" onClick={() => void reload().catch(() => {})}>
+            Reintentar
+          </button>
+        </div>
+      )}
       <header className="appbar glass-nav">
         <div className="appbar-inner">
           <Link className="appbar-brand" to="/" aria-label="ROKAI, inicio">

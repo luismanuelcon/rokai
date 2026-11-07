@@ -20,14 +20,30 @@ const ReservationPage = lazy(() =>
 
 function ManagementRoute() {
   const { user, loading, error, refresh } = useSession();
-  if (error && !user) return <main className="loading"><p role="alert">{error}</p><button className="button primary" onClick={() => void refresh().catch(() => {})}>Reintentar</button></main>;
+  if (error && !user)
+    return (
+      <main className="loading">
+        <p role="alert">{error}</p>
+        <button className="button primary" onClick={() => void refresh().catch(() => {})}>
+          Reintentar
+        </button>
+      </main>
+    );
   if (loading) return <main className="loading">Verificando sesión…</main>;
   return user ? <Workspace /> : <Navigate to="/login" replace />;
 }
 
 function LoginRoute() {
   const { user, loading, error, refresh } = useSession();
-  if (error && !user) return <main className="loading"><p role="alert">{error}</p><button className="button primary" onClick={() => void refresh().catch(() => {})}>Reintentar</button></main>;
+  if (error && !user)
+    return (
+      <main className="loading">
+        <p role="alert">{error}</p>
+        <button className="button primary" onClick={() => void refresh().catch(() => {})}>
+          Reintentar
+        </button>
+      </main>
+    );
   if (loading) return <main className="loading">Verificando sesión…</main>;
   return user ? <Navigate to="/gestion" replace /> : <LoginPage />;
 }

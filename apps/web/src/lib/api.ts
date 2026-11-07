@@ -30,7 +30,8 @@ export async function api<T>(path: string, options: RequestInit & { json?: unkno
   try {
     res = await fetch(`/api/v1${path}`, init);
   } catch (error) {
-    if (timeout.aborted) throw new ApiError(408, 'La conexión tardó demasiado. Intenta nuevamente.');
+    if (timeout.aborted)
+      throw new ApiError(408, 'La conexión tardó demasiado. Intenta nuevamente.');
     throw error;
   }
   if (res.status === 401 && rest.credentials !== 'omit' && path !== '/auth/login') {
@@ -43,6 +44,7 @@ export async function api<T>(path: string, options: RequestInit & { json?: unkno
       (data as { error?: string } | null)?.error ?? 'No pudimos completar la solicitud.';
     throw new ApiError(res.status, message);
   }
-  if (res.status !== 204 && data === null) throw new ApiError(502, 'No se recibió una respuesta válida. Intenta nuevamente.');
+  if (res.status !== 204 && data === null)
+    throw new ApiError(502, 'No se recibió una respuesta válida. Intenta nuevamente.');
   return data as T;
 }
