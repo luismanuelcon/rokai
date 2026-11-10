@@ -294,27 +294,35 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db): void {
 
   app.delete('/api/v1/admin/rates/:id', admin, async (req) => {
     const id = idParam(req);
-    const before = await db.select().from(rates).where(eq(rates.id, id)).limit(1);
-    if (before.length === 0) throw notFound('Tarifa no encontrada.');
-
-    // `rentals.rate_id` guarda la tarifa aplicada: borrarla rompería la
-    // trazabilidad del histórico, así que esas solo se desactivan.
-    const used = await db
-      .select({ id: rentals.id })
-      .from(rentals)
-      .where(eq(rentals.rateId, id))
-      .limit(1);
-    if (used.length > 0) {
-      throw conflict('Esta tarifa ya se aplicó en un alquiler. Desactívala en lugar de borrarla.');
-    }
-
-    await db.delete(rates).where(eq(rates.id, id));
-    await recordAudit(db, {
-      userId: req.session!.user.id,
-      action: 'eliminar_tarifa',
-      entity: 'rate',
-      entityId: id,
-      before: before[0],
+    await db.transaction(async (tx) => {
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended('reservations:capacity', 0))`,
+      );
+      const [before] = await tx.select().from(rates).where(eq(rates.id, id)).limit(1);
+      if (!before) throw notFound('Tarifa no encontrada.');
+      const used = await tx
+        .select({ id: rentals.id })
+        .from(rentals)
+        .where(eq(rentals.rateId, id))
+        .limit(1);
+      const booked = await tx
+        .select({ id: reservations.id })
+        .from(reservations)
+        .where(eq(reservations.rateId, id))
+        .limit(1);
+      if (used.length > 0 || booked.length > 0) {
+        throw conflict(
+          'Esta tarifa ya se aplicó en un alquiler o reserva. Desactívala en lugar de borrarla.',
+        );
+      }
+      await tx.delete(rates).where(eq(rates.id, id));
+      await recordAudit(tx, {
+        userId: req.session!.user.id,
+        action: 'eliminar_tarifa',
+        entity: 'rate',
+        entityId: id,
+        before,
+      });
     });
     return { ok: true };
   });
@@ -343,18 +351,22 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db): void {
   app.patch('/api/v1/admin/equipment/:id', admin, async (req) => {
     const id = idParam(req);
     const body = UpdateEquipmentRequest.parse(req.body);
-    const current = await equipmentById(db, id);
-    if (!current) throw notFound('Equipo no encontrado.');
-    if (current.busy) throw conflict('No puedes modificar un equipo en alquiler.');
-
-    await db.update(equipment).set({ status: body.status }).where(eq(equipment.id, id));
-    await recordAudit(db, {
-      userId: req.session!.user.id,
-      action: 'editar_equipo',
-      entity: 'equipment',
-      entityId: id,
-      before: { status: current.status },
-      after: body,
+    await db.transaction(async (tx) => {
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended('reservations:capacity', 0))`,
+      );
+      const current = await equipmentById(tx, id);
+      if (!current) throw notFound('Equipo no encontrado.');
+      if (current.busy) throw conflict('No puedes modificar un equipo en alquiler.');
+      await tx.update(equipment).set({ status: body.status }).where(eq(equipment.id, id));
+      await recordAudit(tx, {
+        userId: req.session!.user.id,
+        action: 'editar_equipo',
+        entity: 'equipment',
+        entityId: id,
+        before: { status: current.status },
+        after: body,
+      });
     });
     return { ok: true };
   });

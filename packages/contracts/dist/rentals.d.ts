@@ -42,6 +42,7 @@ export declare const CreateRentalRequest: z.ZodObject<{
         phone: z.ZodDefault<z.ZodNullable<z.ZodString>>;
     }, z.core.$strip>;
     rateId: z.ZodNumber;
+    quantity: z.ZodOptional<z.ZodUnion<readonly [z.ZodLiteral<1>, z.ZodLiteral<2>, z.ZodLiteral<3>, z.ZodLiteral<4>]>>;
     equipmentIds: z.ZodArray<z.ZodNumber>;
     notes: z.ZodDefault<z.ZodString>;
     signature: z.ZodString;
@@ -126,6 +127,7 @@ export declare const RentalDraft: z.ZodObject<{
     phone: z.ZodDefault<z.ZodString>;
     notes: z.ZodDefault<z.ZodString>;
     rateId: z.ZodDefault<z.ZodNullable<z.ZodNumber>>;
+    quantity: z.ZodOptional<z.ZodUnion<readonly [z.ZodLiteral<1>, z.ZodLiteral<2>, z.ZodLiteral<3>, z.ZodLiteral<4>]>>;
     equipmentIds: z.ZodDefault<z.ZodArray<z.ZodNumber>>;
 }, z.core.$strip>;
 export type RentalDraft = z.infer<typeof RentalDraft>;

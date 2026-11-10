@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Id, IsoDate, PhoneE164, RequestId } from './common.js';
+import { planBreakdown } from './pricing.js';
 import type { RatePeriod } from './enums.js';
 
 export const ReservationStatus = z.enum([
@@ -261,12 +262,17 @@ export function whatsappUrl(phoneE164: string, message: string): string {
 
 export function planLabel(minutes: number, quantity: number): string {
   const time = minutes === 60 ? '1 hora' : `${String(minutes)} minutos`;
-  return `${time} · ${quantity === 1 ? '1 patineta' : `${String(quantity)} patinetas`}`;
+  return `${time} · ${quantity === 1 ? '1 patineta' : `${String(quantity)} patinetas`}${quantity > 2 ? ` · ${planBreakdown(quantity)}` : ''}`;
 }
 
 /* ---------------------------------------------------------------- DTOs */
 
-export const ReservationQuantity = z.union([z.literal(1), z.literal(2)]);
+export const ReservationQuantity = z.union([
+  z.literal(1),
+  z.literal(2),
+  z.literal(3),
+  z.literal(4),
+]);
 
 export const CreateReservationRequest = z.object({
   requestId: RequestId,

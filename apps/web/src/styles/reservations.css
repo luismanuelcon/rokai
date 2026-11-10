@@ -673,3 +673,27 @@
     transition: none;
   }
 }
+
+/* Selectores de grupo: dos columnas legibles incluso en teléfonos estrechos. */
+.reserve-plans.reserve-quantity {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.rental-quantity {
+  min-width: 0;
+  margin: 0 0 var(--s-md);
+  padding: 0;
+  border: 0;
+}
+.rental-quantity legend {
+  margin-bottom: 10px;
+}
+.reserve-quantity .reserve-plan strong {
+  white-space: normal;
+}
+.reserve-summary-list dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.reserve-mobilebar span {
+  white-space: normal;
+}

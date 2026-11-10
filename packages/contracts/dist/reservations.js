@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Id, IsoDate, PhoneE164, RequestId } from './common.js';
+import { planBreakdown } from './pricing.js';
 export const ReservationStatus = z.enum([
     'pending',
     'confirmed',
@@ -201,10 +202,15 @@ export function whatsappUrl(phoneE164, message) {
 }
 export function planLabel(minutes, quantity) {
     const time = minutes === 60 ? '1 hora' : `${String(minutes)} minutos`;
-    return `${time} · ${quantity === 1 ? '1 patineta' : `${String(quantity)} patinetas`}`;
+    return `${time} · ${quantity === 1 ? '1 patineta' : `${String(quantity)} patinetas`}${quantity > 2 ? ` · ${planBreakdown(quantity)}` : ''}`;
 }
 /* ---------------------------------------------------------------- DTOs */
-export const ReservationQuantity = z.union([z.literal(1), z.literal(2)]);
+export const ReservationQuantity = z.union([
+    z.literal(1),
+    z.literal(2),
+    z.literal(3),
+    z.literal(4),
+]);
 export const CreateReservationRequest = z.object({
     requestId: RequestId,
     customerName: z.string().trim().min(2, 'Escribe tu nombre.').max(120),

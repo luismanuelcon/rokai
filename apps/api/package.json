@@ -10,7 +10,7 @@
     "dev": "node --watch --env-file-if-exists=../../.env --experimental-transform-types src/server.ts",
     "start": "node --env-file-if-exists=../../.env dist/server.js",
     "create-user": "npm run build && node --env-file-if-exists=../../.env dist/cli/create-user.js",
-    "test": "npm run build && node --test --test-concurrency=1 --env-file-if-exists=../../.env dist/**/*.test.js"
+    "test": "npm run build && node --test --test-concurrency=1 --env-file-if-exists=../../.env dist/*.test.js dist/domain/*.test.js"
   },
   "dependencies": {
     "@fastify/compress": "^9.3.0",

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   RESERVATION_STATUS_LABEL,
   RATE_PERIOD_LABEL,
+  planBreakdown,
   formatReservationDate,
   formatReservationTime,
   whatsappUrl,
@@ -154,6 +155,12 @@ function ReservationDialog({
         <strong>{r.planLabel}</strong>
       </div>
       <div className="summary-row">
+        <span>Patinetas</span>
+        <strong>
+          {r.quantity} · {planBreakdown(r.quantity)}
+        </strong>
+      </div>
+      <div className="summary-row">
         <span>Tarifa</span>
         <strong>{RATE_PERIOD_LABEL[r.ratePeriod]}</strong>
       </div>
@@ -191,6 +198,12 @@ function ReservationDialog({
         </p>
       )}
 
+      {open && r.rateId === null && (
+        <p className="notice" role="note">
+          La tarifa original ya no existe. Al iniciar el alquiler podrás elegir una tarifa
+          compatible con la duración y categoría reservadas, conservando el importe original.
+        </p>
+      )}
       {error && (
         <div className="form-error" role="alert">
           {error}
@@ -260,6 +273,7 @@ function ReservationDialog({
                 type="button"
                 className={r.status === 'confirmed' ? 'button' : 'button outline'}
                 onClick={() => onStartRental(r)}
+                disabled={busy}
               >
                 <Icon name="scooter" />
                 Iniciar alquiler
@@ -545,6 +559,7 @@ export function Reservations({
                       </td>
                       <td>
                         {r.quantity} patineta{r.quantity > 1 ? 's' : ''}
+                        <small>{planBreakdown(r.quantity)}</small>
                         <small>{r.durationMinutes} minutos</small>
                       </td>
                       <td className="reservation-amount">{money(r.priceCents)}</td>

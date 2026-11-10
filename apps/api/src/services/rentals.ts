@@ -12,11 +12,13 @@ import {
 } from '@rokai/db';
 import {
   TERMS_VERSION,
+  quoteGroupRate,
   type CreateRentalRequest,
   type FinishRentalRequest,
 } from '@rokai/contracts';
 import type { Db, Executor } from '../db.js';
 import { assertAssignable, lateChargeAtTime } from '../domain/rentals.js';
+import { peakUsage } from '../domain/reservations.js';
 import { recordAudit } from '../lib/audit.js';
 import { addMinutes, todayInBogota } from '../lib/time.js';
 import { badRequest, conflict, notFound } from '../lib/http-error.js';
@@ -25,6 +27,8 @@ import {
   completeReservationsForRental,
   lockReservationForRental,
   rateById,
+  occupancy,
+  fleetCapacity,
 } from './reservations.js';
 import {
   findByRequestId,
@@ -57,28 +61,51 @@ export async function createRental(
       };
     }
 
+    // El mismo candado que reservas y confirmaciones protege todo el cupo.
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended('reservations:capacity', 0))`,
+    );
     const reservation = input.reservationId
       ? await lockReservationForRental(tx, input.reservationId)
       : null;
-    const rate =
-      (await activeRates(tx)).find((r) => r.id === input.rateId) ??
+    const catalog = await activeRates(tx);
+    const baseRate =
+      catalog.find((r) => r.id === input.rateId) ??
       (reservation && reservation.rateId === input.rateId
         ? await rateById(tx, input.rateId)
         : null);
-    if (!rate) throw badRequest('Selecciona una tarifa vigente.');
+    if (!baseRate) throw badRequest('Selecciona una tarifa vigente.');
+    const quantity = input.quantity ?? reservation?.quantity ?? baseRate.quantity;
     if (
       reservation &&
-      (rate.minutes !== reservation.durationMinutes || rate.quantity !== reservation.quantity)
+      (quantity !== reservation.quantity ||
+        (reservation.rateId !== null
+          ? input.rateId !== reservation.rateId
+          : baseRate.minutes !== reservation.durationMinutes ||
+            baseRate.period !== reservation.ratePeriod ||
+            baseRate.quantity !== (quantity === 1 ? 1 : 2)))
     ) {
       throw badRequest(
-        'El plan debe coincidir con la reserva: misma duración y cantidad de patinetas.',
+        'El plan debe coincidir con la reserva: misma duración, categoría y cantidad de patinetas.',
       );
     }
-    // El cliente conserva el valor que vio al reservar, aunque la tarifa haya cambiado.
-    const priceCents = reservation ? reservation.priceCents : rate.priceCents;
+    // La reserva es un snapshot: ni cambios de catálogo ni vigencia alteran lo contratado.
+    const rate = reservation
+      ? {
+          ...baseRate,
+          minutes: reservation.durationMinutes,
+          quantity,
+          priceCents: reservation.priceCents,
+        }
+      : quoteGroupRate(catalog, input.rateId, quantity);
+    if (!rate)
+      throw badRequest(
+        'Falta una tarifa vigente individual o de pareja para esa duración y categoría.',
+      );
+    const priceCents = rate.priceCents;
 
     const locked = await lockEquipmentForUpdate(tx, input.equipmentIds);
-    assertAssignable(locked, input.equipmentIds, rate.quantity);
+    assertAssignable(locked, input.equipmentIds, quantity);
 
     const customerId = await upsertCustomer(tx, {
       fullName: input.customer.fullName,
@@ -104,6 +131,17 @@ export async function createRental(
     const preparationMinutes = Number.isInteger(grace) && grace >= 0 && grace <= 30 ? grace : 1;
     // Conservar el momento de entrega; la preparación queda fijada por alquiler.
     const startedAt = new Date();
+    const dueAt = addMinutes(startedAt, rate.minutes + preparationMinutes);
+    const [capacity, busy] = await Promise.all([
+      fleetCapacity(tx),
+      occupancy(tx, startedAt, dueAt, reservation?.id),
+    ]);
+    if (capacity - peakUsage(busy, startedAt, dueAt) < quantity) {
+      throw conflict(
+        `No hay ${String(quantity)} patinetas disponibles durante todo el alquiler. Revisa las reservas y el horario.`,
+        'no_capacity',
+      );
+    }
     const inserted = await tx
       .insert(rentals)
       .values({
@@ -113,7 +151,7 @@ export async function createRental(
         priceCents,
         startedAt,
         preparationMinutes,
-        dueAt: addMinutes(startedAt, rate.minutes + preparationMinutes),
+        dueAt,
         createdBy: actor.id,
         notes: input.notes,
         signature: input.signature,

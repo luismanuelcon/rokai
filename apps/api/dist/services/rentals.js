@@ -2,13 +2,14 @@ import { ensureTracking } from './tracking.js';
 import { trackingPath } from '../domain/tracking.js';
 import { eq, sql } from 'drizzle-orm';
 import { consents, notifications, rentalDrafts, rentalEquipment, rentals, reservations, settings, } from '@rokai/db';
-import { TERMS_VERSION, } from '@rokai/contracts';
+import { TERMS_VERSION, quoteGroupRate, } from '@rokai/contracts';
 import { assertAssignable, lateChargeAtTime } from '../domain/rentals.js';
+import { peakUsage } from '../domain/reservations.js';
 import { recordAudit } from '../lib/audit.js';
 import { addMinutes, todayInBogota } from '../lib/time.js';
 import { badRequest, conflict, notFound } from '../lib/http-error.js';
 import { activeRates } from '../repositories/catalog.js';
-import { completeReservationsForRental, lockReservationForRental, rateById, } from './reservations.js';
+import { completeReservationsForRental, lockReservationForRental, rateById, occupancy, fleetCapacity, } from './reservations.js';
 import { findByRequestId, findRental, lockEquipmentForUpdate, upsertCustomer, } from '../repositories/rentals.js';
 export async function createRental(db, actor, input) {
     return db.transaction(async (tx) => {
@@ -25,23 +26,42 @@ export async function createRental(db, actor, input) {
                 trackingPath: link.revokedAt ? null : trackingPath(link.token),
             };
         }
+        // El mismo candado que reservas y confirmaciones protege todo el cupo.
+        await tx.execute(sql `select pg_advisory_xact_lock(hashtextextended('reservations:capacity', 0))`);
         const reservation = input.reservationId
             ? await lockReservationForRental(tx, input.reservationId)
             : null;
-        const rate = (await activeRates(tx)).find((r) => r.id === input.rateId) ??
+        const catalog = await activeRates(tx);
+        const baseRate = catalog.find((r) => r.id === input.rateId) ??
             (reservation && reservation.rateId === input.rateId
                 ? await rateById(tx, input.rateId)
                 : null);
-        if (!rate)
+        if (!baseRate)
             throw badRequest('Selecciona una tarifa vigente.');
+        const quantity = input.quantity ?? reservation?.quantity ?? baseRate.quantity;
         if (reservation &&
-            (rate.minutes !== reservation.durationMinutes || rate.quantity !== reservation.quantity)) {
-            throw badRequest('El plan debe coincidir con la reserva: misma duración y cantidad de patinetas.');
+            (quantity !== reservation.quantity ||
+                (reservation.rateId !== null
+                    ? input.rateId !== reservation.rateId
+                    : baseRate.minutes !== reservation.durationMinutes ||
+                        baseRate.period !== reservation.ratePeriod ||
+                        baseRate.quantity !== (quantity === 1 ? 1 : 2)))) {
+            throw badRequest('El plan debe coincidir con la reserva: misma duración, categoría y cantidad de patinetas.');
         }
-        // El cliente conserva el valor que vio al reservar, aunque la tarifa haya cambiado.
-        const priceCents = reservation ? reservation.priceCents : rate.priceCents;
+        // La reserva es un snapshot: ni cambios de catálogo ni vigencia alteran lo contratado.
+        const rate = reservation
+            ? {
+                ...baseRate,
+                minutes: reservation.durationMinutes,
+                quantity,
+                priceCents: reservation.priceCents,
+            }
+            : quoteGroupRate(catalog, input.rateId, quantity);
+        if (!rate)
+            throw badRequest('Falta una tarifa vigente individual o de pareja para esa duración y categoría.');
+        const priceCents = rate.priceCents;
         const locked = await lockEquipmentForUpdate(tx, input.equipmentIds);
-        assertAssignable(locked, input.equipmentIds, rate.quantity);
+        assertAssignable(locked, input.equipmentIds, quantity);
         const customerId = await upsertCustomer(tx, {
             fullName: input.customer.fullName,
             documentType: input.customer.documentType,
@@ -64,6 +84,14 @@ export async function createRental(db, actor, input) {
         const preparationMinutes = Number.isInteger(grace) && grace >= 0 && grace <= 30 ? grace : 1;
         // Conservar el momento de entrega; la preparación queda fijada por alquiler.
         const startedAt = new Date();
+        const dueAt = addMinutes(startedAt, rate.minutes + preparationMinutes);
+        const [capacity, busy] = await Promise.all([
+            fleetCapacity(tx),
+            occupancy(tx, startedAt, dueAt, reservation?.id),
+        ]);
+        if (capacity - peakUsage(busy, startedAt, dueAt) < quantity) {
+            throw conflict(`No hay ${String(quantity)} patinetas disponibles durante todo el alquiler. Revisa las reservas y el horario.`, 'no_capacity');
+        }
         const inserted = await tx
             .insert(rentals)
             .values({
@@ -73,7 +101,7 @@ export async function createRental(db, actor, input) {
             priceCents,
             startedAt,
             preparationMinutes,
-            dueAt: addMinutes(startedAt, rate.minutes + preparationMinutes),
+            dueAt,
             createdBy: actor.id,
             notes: input.notes,
             signature: input.signature,

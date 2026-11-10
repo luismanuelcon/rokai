@@ -6,7 +6,7 @@ type ReservationRow = typeof reservations.$inferSelect;
 /** Cada persona sale con patineta y casco: la flota útil es el menor de los dos. */
 export declare function fleetCapacity(exec: Executor): Promise<number>;
 /** Reservas que bloquean cupo y alquileres en curso que tocan el intervalo. */
-export declare function occupancy(exec: Executor, from: Date, to: Date): Promise<Occupancy[]>;
+export declare function occupancy(exec: Executor, from: Date, to: Date, excludeReservationId?: number): Promise<Occupancy[]>;
 export declare function reservationOptions(db: Db, now?: Date): Promise<ReservationOptions>;
 export declare function reservationAvailability(db: Db, date: string, quantity: number, now?: Date): Promise<ReservationAvailability>;
 export declare function toPublicReservation(row: ReservationRow, contact: string): PublicReservation;

@@ -1,10 +1,11 @@
-import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { reservations, users } from '@rokai/db';
 import { ChangeReservationStatus, CreateReservationRequest, DeleteRentalRequest, ReservationAvailabilityQuery, ReservationListQuery, fromMinutes, toMinutes, } from '@rokai/contracts';
 import { HttpError, badRequest, conflict, notFound } from '../lib/http-error.js';
+import { peakUsage } from '../domain/reservations.js';
 import { recordAudit } from '../lib/audit.js';
-import { createReservation, reservationAvailability, reservationOptions, } from '../services/reservations.js';
+import { createReservation, reservationAvailability, reservationOptions, fleetCapacity, occupancy, } from '../services/reservations.js';
 const PAGE_SIZE = 25;
 const changedBy = alias(users, 'status_user');
 const TIME = new Intl.DateTimeFormat('en-GB', {
@@ -124,6 +125,7 @@ export function registerReservationRoutes(app, db, env) {
         const body = ChangeReservationStatus.parse(req.body);
         const userId = req.session.user.id;
         await db.transaction(async (tx) => {
+            await tx.execute(sql `select pg_advisory_xact_lock(hashtextextended('reservations:capacity', 0))`);
             const [before] = await tx
                 .select()
                 .from(reservations)
@@ -137,6 +139,15 @@ export function registerReservationRoutes(app, db, env) {
                 throw conflict(body.status === 'confirmed'
                     ? 'Solo se confirma una reserva pendiente de WhatsApp.'
                     : 'Solo se puede cancelar o cerrar una reserva pendiente o confirmada.');
+            }
+            if (body.status === 'confirmed') {
+                const [capacity, busy] = await Promise.all([
+                    fleetCapacity(tx),
+                    occupancy(tx, before.startsAt, before.endsAt, before.id),
+                ]);
+                if (capacity - peakUsage(busy, before.startsAt, before.endsAt) < before.quantity) {
+                    throw conflict('No hay suficientes patinetas disponibles durante todo el horario de la reserva.', 'no_capacity');
+                }
             }
             const changedAt = new Date();
             await tx
@@ -164,6 +175,7 @@ export function registerReservationRoutes(app, db, env) {
         const id = idParam(req.params);
         const { reason } = DeleteRentalRequest.parse(req.body);
         await db.transaction(async (tx) => {
+            await tx.execute(sql `select pg_advisory_xact_lock(hashtextextended('reservations:capacity', 0))`);
             const [before] = await tx
                 .select()
                 .from(reservations)

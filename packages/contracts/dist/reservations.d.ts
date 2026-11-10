@@ -64,20 +64,20 @@ export interface ReservationSummary {
 export declare function reservationWhatsappMessage(r: ReservationSummary): string;
 export declare function whatsappUrl(phoneE164: string, message: string): string;
 export declare function planLabel(minutes: number, quantity: number): string;
-export declare const ReservationQuantity: z.ZodUnion<readonly [z.ZodLiteral<1>, z.ZodLiteral<2>]>;
+export declare const ReservationQuantity: z.ZodUnion<readonly [z.ZodLiteral<1>, z.ZodLiteral<2>, z.ZodLiteral<3>, z.ZodLiteral<4>]>;
 export declare const CreateReservationRequest: z.ZodObject<{
     requestId: z.ZodUUID;
     customerName: z.ZodString;
     phone: z.ZodString;
     date: z.ZodISODate;
     startTime: z.ZodString;
-    quantity: z.ZodUnion<readonly [z.ZodLiteral<1>, z.ZodLiteral<2>]>;
+    quantity: z.ZodUnion<readonly [z.ZodLiteral<1>, z.ZodLiteral<2>, z.ZodLiteral<3>, z.ZodLiteral<4>]>;
     rateId: z.ZodNumber;
 }, z.core.$strip>;
 export type CreateReservationRequest = z.infer<typeof CreateReservationRequest>;
 export declare const ReservationAvailabilityQuery: z.ZodObject<{
     date: z.ZodISODate;
-    quantity: z.ZodPipe<z.ZodCoercedNumber<unknown>, z.ZodUnion<readonly [z.ZodLiteral<1>, z.ZodLiteral<2>]>>;
+    quantity: z.ZodPipe<z.ZodCoercedNumber<unknown>, z.ZodUnion<readonly [z.ZodLiteral<1>, z.ZodLiteral<2>, z.ZodLiteral<3>, z.ZodLiteral<4>]>>;
 }, z.core.$strip>;
 export declare const ReservationSlot: z.ZodObject<{
     start: z.ZodString;

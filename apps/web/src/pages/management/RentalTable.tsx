@@ -1,3 +1,4 @@
+import { planBreakdown } from '@rokai/contracts';
 import { TrackingActions } from '../../components/TrackingActions';
 import { useState } from 'react';
 import { Icon } from '../../components/Icon';
@@ -125,6 +126,7 @@ function RentalCard({ rental, onSelect }: { rental: Rental; onSelect: () => void
         <div>
           <dt>Plan</dt>
           <dd>
+            {planBreakdown(rental.equipment.filter((e) => e.kind === 'scooter').length)} ·{' '}
             {rental.minutes} min · {money(rental.finalPriceCents ?? rental.priceCents)}
           </dd>
         </div>
@@ -255,6 +257,13 @@ export function RentalDialog({
       <div className="summary-row">
         <span>Inicio</span>
         <strong>{datetime(rental.startedAt)}</strong>
+      </div>
+      <div className="summary-row">
+        <span>Patinetas y plan</span>
+        <strong>
+          {rental.equipment.filter((e) => e.kind === 'scooter').length} ·{' '}
+          {planBreakdown(rental.equipment.filter((e) => e.kind === 'scooter').length)}
+        </strong>
       </div>
       <div className="summary-row">
         <span>Total contratado</span>

@@ -1,0 +1,2 @@
+ALTER TABLE "reservations" DROP CONSTRAINT "reservations_quantity_chk";--> statement-breakpoint
+ALTER TABLE "reservations" ADD CONSTRAINT "reservations_quantity_chk" CHECK ("reservations"."quantity" BETWEEN 1 AND 4);

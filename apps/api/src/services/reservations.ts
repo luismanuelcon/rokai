@@ -9,6 +9,7 @@ import {
   bogotaInstant,
   fromMinutes,
   planLabel,
+  quoteGroupRate,
   ratePeriodForDate,
   reservationDayError,
   reservationWhatsappMessage,
@@ -57,7 +58,12 @@ export async function fleetCapacity(exec: Executor): Promise<number> {
 }
 
 /** Reservas que bloquean cupo y alquileres en curso que tocan el intervalo. */
-export async function occupancy(exec: Executor, from: Date, to: Date): Promise<Occupancy[]> {
+export async function occupancy(
+  exec: Executor,
+  from: Date,
+  to: Date,
+  excludeReservationId?: number,
+): Promise<Occupancy[]> {
   const booked = await exec
     .select({
       start: reservations.startsAt,
@@ -68,6 +74,9 @@ export async function occupancy(exec: Executor, from: Date, to: Date): Promise<O
     .where(
       and(
         inArray(reservations.status, [...BLOCKING_RESERVATION_STATUSES]),
+        excludeReservationId === undefined
+          ? undefined
+          : sql`${reservations.id} <> ${excludeReservationId}`,
         lt(reservations.startsAt, to),
         gt(reservations.endsAt, from),
       ),
@@ -109,8 +118,12 @@ export async function reservationOptions(db: Db, now = new Date()): Promise<Rese
 async function plansFor(exec: Executor, date: string, quantity: number) {
   const period = ratePeriodForDate(date);
   if (!period) return { period, plans: [] };
-  const plans = (await activeRates(exec, date))
-    .filter((r) => r.period === period && r.quantity === quantity)
+  const catalog = (await activeRates(exec, date)).filter((r) => r.period === period);
+  const plans = catalog
+    .flatMap((r) => {
+      const quote = quoteGroupRate(catalog, r.id, quantity);
+      return quote ? [quote] : [];
+    })
     .sort((a, b) => a.minutes - b.minutes);
   return { period, plans };
 }
@@ -242,9 +255,7 @@ export async function createReservation(
     ]);
     if (capacity - peakUsage(busy, startsAt, endsAt) < input.quantity) {
       throw conflict(
-        input.quantity === 2
-          ? 'No quedan dos patinetas libres en ese horario. Prueba otra hora o reserva una sola.'
-          : 'No quedan patinetas libres en ese horario. Prueba otra hora o fecha.',
+        `No quedan ${String(input.quantity)} patinetas libres durante todo ese horario. Prueba otra hora o cantidad.`,
         'no_capacity',
       );
     }

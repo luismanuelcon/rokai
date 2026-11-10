@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import {
+  planBreakdown,
   formatReservationDate,
   formatReservationTime,
   fromMinutes,
@@ -166,6 +167,10 @@ function Confirmation({
           </dd>
         </div>
         <div>
+          <dt>Patinetas</dt>
+          <dd>{reservation.quantity}</dd>
+        </div>
+        <div>
           <dt>Plan</dt>
           <dd>{reservation.planLabel}</dd>
         </div>
@@ -200,7 +205,7 @@ function Confirmation({
 export function ReservationPage() {
   const options = useAsync<ReservationOptions>('/public/reservations/options');
   const [date, setDate] = useState('');
-  const [quantity, setQuantity] = useState<1 | 2>(1);
+  const [quantity, setQuantity] = useState<1 | 2 | 3 | 4>(1);
   const [rateId, setRateId] = useState<number | null>(null);
   const [startTime, setStartTime] = useState('');
   const [name, setName] = useState('');
@@ -215,6 +220,7 @@ export function ReservationPage() {
   const [error, setError] = useState('');
   const [done, setDone] = useState<PublicReservation | null>(null);
   const requestId = useRef(crypto.randomUUID());
+  const preferredMinutes = useRef<number | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLElement>(null);
   const [summaryVisible, setSummaryVisible] = useState(true);
@@ -242,6 +248,7 @@ export function ReservationPage() {
     if (!date) return;
     let cancelled = false;
     setLoadingSlots(true);
+    setAvailability(null);
     setSlotsError('');
     api<ReservationAvailability>(
       `/public/reservations/availability?date=${date}&quantity=${String(quantity)}`,
@@ -265,11 +272,17 @@ export function ReservationPage() {
   const plans = useMemo(() => availability?.plans ?? [], [availability]);
   const plan = plans.find((p) => p.rateId === rateId) ?? null;
 
+  useEffect(() => {
+    if (plan) preferredMinutes.current = plan.minutes;
+  }, [plan]);
+
   // Al cambiar fecha o cantidad cambian los planes: conservar la duración elegida si existe.
   useEffect(() => {
     if (plans.length === 0) return;
     if (plans.some((p) => p.rateId === rateId)) return;
-    setRateId(plans[0]?.rateId ?? null);
+    setRateId(
+      plans.find((p) => p.minutes === preferredMinutes.current)?.rateId ?? plans[0]?.rateId ?? null,
+    );
   }, [plans, rateId]);
 
   useEffect(() => {
@@ -285,15 +298,19 @@ export function ReservationPage() {
   const hint = phoneHint(dial, national);
   const endTime = plan && startTime ? fromMinutes(toMinutes(startTime) + plan.minutes) : '';
   const freeSlots = plan?.slots.filter((s) => s.available).length ?? 0;
-  const missing = !plan
-    ? 'Elige una fecha con planes disponibles.'
-    : !startTime
-      ? 'Elige la hora de inicio.'
-      : name.trim().length < 2
-        ? 'Escribe tu nombre.'
-        : !phone
-          ? 'Escribe tu número de WhatsApp.'
-          : hint;
+  const missing = loadingSlots
+    ? 'Actualizando precios y disponibilidad…'
+    : slotsError
+      ? 'Consulta de nuevo la disponibilidad antes de reservar.'
+      : !plan
+        ? 'Elige una fecha con planes disponibles.'
+        : !startTime
+          ? 'Elige la hora de inicio.'
+          : name.trim().length < 2
+            ? 'Escribe tu nombre.'
+            : !phone
+              ? 'Escribe tu número de WhatsApp.'
+              : hint;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -407,7 +424,7 @@ export function ReservationPage() {
                         <span className="step-badge">02</span>¿Cuántas patinetas?
                       </legend>
                       <div className="reserve-plans reserve-quantity">
-                        {([1, 2] as const).map((n) => (
+                        {([1, 2, 3, 4] as const).map((n) => (
                           <label className="reserve-plan" key={n}>
                             <input
                               type="radio"
@@ -419,14 +436,20 @@ export function ReservationPage() {
                             />
                             <span>
                               <Icon name={n === 1 ? 'scooter' : 'users'} />
-                              <strong>{n === 1 ? '1 patineta' : '2 patinetas'}</strong>
+                              <strong>
+                                {n} patineta{n > 1 ? 's' : ''}
+                              </strong>
                             </span>
                           </label>
                         ))}
                       </div>
                     </fieldset>
 
-                    <fieldset className="reserve-step" aria-busy={loadingSlots}>
+                    <fieldset
+                      className="reserve-step"
+                      aria-busy={loadingSlots}
+                      disabled={loadingSlots || busy}
+                    >
                       <legend>
                         <span className="step-badge">03</span>Plan
                       </legend>
@@ -440,8 +463,10 @@ export function ReservationPage() {
                       ) : plans.length === 0 ? (
                         <p className="reserve-empty" role="status">
                           {loadingSlots
-                            ? 'Buscando planes…'
-                            : 'Elige una fecha para ver los planes.'}
+                            ? 'Actualizando planes y disponibilidad…'
+                            : date
+                              ? 'No hay tarifas disponibles para esta cantidad y fecha.'
+                              : 'Elige una fecha para ver los planes.'}
                         </p>
                       ) : (
                         <div className="reserve-plans">
@@ -465,7 +490,11 @@ export function ReservationPage() {
                       )}
                     </fieldset>
 
-                    <fieldset className="reserve-step" aria-busy={loadingSlots}>
+                    <fieldset
+                      className="reserve-step"
+                      aria-busy={loadingSlots}
+                      disabled={loadingSlots || busy}
+                    >
                       <legend>
                         <span className="step-badge">04</span>Hora de inicio
                       </legend>
@@ -505,7 +534,7 @@ export function ReservationPage() {
                           {freeSlots === 0 && (
                             <p className="reserve-empty" role="status">
                               No quedan patinetas libres para este plan. Prueba otra fecha
-                              {quantity === 2 ? ' o reserva una sola' : ''}.
+                              {quantity > 1 ? ' o elige una cantidad menor' : ''}.
                             </p>
                           )}
                         </>
@@ -582,6 +611,10 @@ export function ReservationPage() {
                         <dd>{quantity}</dd>
                       </div>
                       <div>
+                        <dt>Desglose</dt>
+                        <dd>{planBreakdown(quantity)}</dd>
+                      </div>
+                      <div>
                         <dt>Duración</dt>
                         <dd>{plan ? `${String(plan.minutes)} minutos` : '—'}</dd>
                       </div>
@@ -590,7 +623,7 @@ export function ReservationPage() {
                         <dd>{availability?.periodLabel ?? '—'}</dd>
                       </div>
                     </dl>
-                    <div className="reserve-total">
+                    <div className="reserve-total" aria-live="polite" aria-atomic="true">
                       <span>Valor total</span>
                       <strong>{plan ? money(plan.priceCents) : '—'}</strong>
                     </div>
@@ -599,7 +632,11 @@ export function ReservationPage() {
                         {error}
                       </div>
                     )}
-                    <button className="button reserve-submit" type="submit" disabled={busy}>
+                    <button
+                      className="button reserve-submit"
+                      type="submit"
+                      disabled={busy || loadingSlots}
+                    >
                       {busy ? 'Guardando reserva…' : 'Confirmar reserva'}
                       {!busy && <Icon name="check" />}
                     </button>
@@ -629,7 +666,7 @@ export function ReservationPage() {
                           Ver resumen
                         </button>
                       ) : (
-                        <button className="button" type="submit" disabled={busy}>
+                        <button className="button" type="submit" disabled={busy || loadingSlots}>
                           {busy ? 'Guardando…' : 'Confirmar'}
                         </button>
                       )}

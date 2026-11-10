@@ -785,7 +785,14 @@ test('El alquiler activo expone el vencimiento para el contador en vivo', async 
   for (const rental of active.body) {
     assert.ok(rental.dueAt, 'cada alquiler debe traer dueAt');
     const span = new Date(rental.dueAt).getTime() - new Date(rental.startedAt).getTime();
-    assert.equal(span, rental.minutes * 60_000, 'dueAt debe coincidir con la duración contratada');
+    const snapshot = await handle.db.execute(
+      sql`select preparation_minutes from rentals where id = ${rental.id}`,
+    );
+    assert.equal(
+      span,
+      (rental.minutes + Number(snapshot.rows[0]!.preparation_minutes)) * 60_000,
+      'dueAt incluye la preparación guardada y la duración contratada',
+    );
   }
 });
 
@@ -868,6 +875,7 @@ test('Solo administración elimina alquileres; el equipo vuelve a quedar libre',
 });
 
 test('cierres: solo administradores, fecha única, edición auditada y conflicto de versión', async () => {
+  worker = await login('borrado@test.local');
   const body = {
     date: '2020-02-29',
     opensAt: '08:00',
@@ -919,6 +927,7 @@ test('cierres: solo administradores, fecha única, edición auditada y conflicto
 });
 
 test('seguimiento: idempotente, público mínimo, actualización y revocación', async () => {
+  worker = await login('borrado@test.local');
   const schema = await import('@rokai/db');
   const { eq } = await import('drizzle-orm');
   const [rate] = await handle.db
@@ -1449,4 +1458,202 @@ test('reservas: horario, catálogo, idempotencia, cupo concurrente, gestión y a
     (r: { id: number }) => r.id === rental.body.id,
   );
   assert.ok(stillThere);
+});
+
+test('grupos: precios 1–4, cupo concurrente, conversión con snapshot y asignación única', async () => {
+  // Aislar la flota de operaciones de otros casos sin cambiar sus importes históricos.
+  await handle.db.execute(sql`update rentals set ended_at = now() where ended_at is null`);
+  await handle.db.execute(
+    sql`update reservations set status = 'cancelled' where status in ('pending','confirmed')`,
+  );
+  await handle.db.execute(sql`update equipment set status = 'available'`);
+  await handle.db.execute(
+    sql`update rates set active = true, valid_from = null, valid_until = null`,
+  );
+  const dash = (await call('/api/v1/dashboard', 'GET', undefined, admin)).body;
+  const equipment = (kind: string) =>
+    dash.equipment.filter((e: JsonBody) => e.kind === kind).map((e: JsonBody) => e.id);
+  const scooters = equipment('scooter');
+  const helmets = equipment('helmet');
+  const capacity = Math.min(scooters.length, helmets.length);
+  assert.ok(capacity >= 4);
+  const pair = dash.rates.find((r: JsonBody) => r.quantity === 2 && r.minutes === 30);
+  const single = dash.rates.find(
+    (r: JsonBody) => r.quantity === 1 && r.minutes === pair.minutes && r.period === pair.period,
+  );
+  const expected = (quantity: number) =>
+    Math.floor(quantity / 2) * pair.priceCents + (quantity % 2) * single.priceCents;
+  const rentalInput = (quantity: number, extra = {}) => ({
+    requestId: crypto.randomUUID(),
+    customer: { fullName: 'Grupo de prueba', document: 'GROUP-TEST' },
+    quantity,
+    rateId: quantity === 1 ? single.id : pair.id,
+    equipmentIds: [...scooters.slice(0, quantity), ...helmets.slice(0, quantity)],
+    ...CLOSING,
+    ...extra,
+  });
+  for (const quantity of [1, 2, 3, 4]) {
+    const result = await call(
+      '/api/v1/rentals',
+      'POST',
+      rentalInput(quantity, { priceCents: 1 }),
+      admin,
+    );
+    assert.equal(result.status, 201, JSON.stringify(result.body));
+    const stored = (await call('/api/v1/rentals', 'GET', undefined, admin)).body.find(
+      (r: JsonBody) => r.id === result.body.id,
+    );
+    assert.equal(stored.priceCents, expected(quantity));
+    assert.equal(stored.equipment.length, quantity * 2);
+    assert.equal((await call('/api/v1/rentals', 'POST', rentalInput(quantity), admin)).status, 409);
+    await handle.db.execute(sql`update rentals set ended_at = now() where id = ${result.body.id}`);
+  }
+  const concurrent = await Promise.all([
+    call('/api/v1/rentals', 'POST', rentalInput(3), admin),
+    call('/api/v1/rentals', 'POST', rentalInput(3), admin),
+  ]);
+  assert.deepEqual(concurrent.map((r) => r.status).sort(), [201, 409]);
+  const winner = concurrent.find((r) => r.status === 201)!;
+  await handle.db.execute(sql`update rentals set ended_at = now() where id = ${winner.body.id}`);
+  for (const quantity of [0, 5, 1.5, '3']) {
+    assert.equal(
+      (await call('/api/v1/rentals', 'POST', rentalInput(1, { quantity }), admin)).status,
+      400,
+    );
+  }
+  // Equipos distintos no evaden la capacidad reservada para el intervalo completo.
+  const now = new Date();
+  const today = bogotaDate(now);
+  await handle.db.execute(sql`insert into reservations
+    (code, request_id, customer_name, phone_e164, service_date, starts_at, ends_at, quantity, rate_id, rate_period, duration_minutes, price_cents, plan_label, status)
+    values ('RK-GROUP1', ${crypto.randomUUID()}, 'Cupo prueba', '+573001234567', ${today}, ${new Date(now.getTime() + 5 * 60000)}, ${new Date(now.getTime() + 60 * 60000)}, ${Math.min(4, capacity)}, ${pair.id}, ${pair.period}, 30, ${pair.priceCents}, 'Grupo', 'confirmed')`);
+  const blockedQuantity = Math.min(4, capacity);
+  if (capacity < blockedQuantity * 2) {
+    assert.equal(
+      (await call('/api/v1/rentals', 'POST', rentalInput(blockedQuantity), admin)).status,
+      409,
+    );
+  }
+  await handle.db.execute(
+    sql`update reservations set status = 'cancelled' where code = 'RK-GROUP1'`,
+  );
+
+  let date = addDays(today, 5);
+  while (!ratePeriodForDate(date)) date = addDays(date, 1);
+  const path = '/api/v1/public/reservations';
+  const plans: Record<number, JsonBody> = {};
+  for (const quantity of [1, 2, 3, 4]) {
+    const response = await call(`${path}/availability?date=${date}&quantity=${quantity}`);
+    assert.equal(response.status, 200);
+    plans[quantity] = response.body.plans.find((p: JsonBody) => p.minutes === 30);
+    assert.ok(plans[quantity]);
+  }
+  assert.equal(plans[3].priceCents, plans[2].priceCents + plans[1].priceCents);
+  assert.equal(plans[4].priceCents, plans[2].priceCents * 2);
+  for (const quantity of [0, 5, 1.5])
+    assert.equal(
+      (await call(`${path}/availability?date=${date}&quantity=${quantity}`)).status,
+      400,
+    );
+  const reservationInput = (quantity: number, startTime = '16:00') => ({
+    requestId: crypto.randomUUID(),
+    customerName: 'Reserva grupo',
+    phone: '+573001234567',
+    date,
+    startTime,
+    quantity,
+    rateId: plans[quantity].rateId,
+  });
+  for (const quantity of [1, 2, 3, 4]) {
+    const result = await call(path, 'POST', reservationInput(quantity, `${15 + quantity}:00`));
+    assert.equal(result.status, 201, JSON.stringify(result.body));
+    assert.equal(result.body.quantity, quantity);
+    assert.equal(result.body.priceCents, plans[quantity].priceCents);
+    assert.equal(result.body.status, 'pending');
+    if (quantity >= 3)
+      assert.match(
+        decodeURIComponent(result.body.whatsappUrl),
+        quantity === 3 ? /1 plan de pareja \+ 1 individual/ : /2 planes de pareja/,
+      );
+  }
+  // Si falta el individual de esa categoría/duración, 3 se rechaza y 4 sigue cotizando.
+  await handle.db.execute(
+    sql`update rates set active = false where quantity = 1 and minutes = 30 and period = ${ratePeriodForDate(date)}`,
+  );
+  const missingIndividual = await call(`${path}/availability?date=${date}&quantity=3`);
+  assert.ok(!missingIndividual.body.plans.some((p: JsonBody) => p.minutes === 30));
+  assert.equal((await call(path, 'POST', reservationInput(3, '21:00'))).status, 400);
+  assert.ok(
+    (await call(`${path}/availability?date=${date}&quantity=4`)).body.plans.some(
+      (p: JsonBody) => p.minutes === 30,
+    ),
+  );
+  await handle.db.execute(
+    sql`update rates set active = true where quantity = 1 and minutes = 30 and period = ${ratePeriodForDate(date)}`,
+  );
+  const burst = await Promise.all(
+    Array.from({ length: capacity }, () => call(path, 'POST', reservationInput(3, '20:00'))),
+  );
+  assert.equal(burst.filter((r) => r.status === 201).length, Math.floor(capacity / 3));
+  assert.ok(burst.every((r) => r.status === 201 || r.status === 409));
+  const group = (
+    await call(`/api/v1/reservations?date=${date}`, 'GET', undefined, admin)
+  ).body.items.find((r: JsonBody) => r.quantity === 4);
+  assert.ok(group);
+  assert.equal(
+    (await call(`/api/v1/admin/rates/${group.rateId}`, 'DELETE', undefined, admin)).status,
+    409,
+  );
+  // Confirmación excluye el cupo propio, pero comprueba la flota actual.
+  await handle.db.execute(sql`update equipment set status = 'maintenance' where kind = 'scooter'`);
+  assert.equal(
+    (await call(`/api/v1/reservations/${group.id}/status`, 'POST', { status: 'confirmed' }, admin))
+      .status,
+    409,
+  );
+  await handle.db.execute(sql`update equipment set status = 'available'`);
+  assert.equal(
+    (await call(`/api/v1/reservations/${group.id}/status`, 'POST', { status: 'confirmed' }, admin))
+      .status,
+    200,
+  );
+  await handle.db.execute(
+    sql`update rates set active = false, price_cents = price_cents + 12345 where id = ${group.rateId}`,
+  );
+  const input = rentalInput(4, { rateId: group.rateId, reservationId: group.id });
+  const converted = await call('/api/v1/rentals', 'POST', input, admin);
+  assert.equal(converted.status, 201, JSON.stringify(converted.body));
+  const retry = await call('/api/v1/rentals', 'POST', input, admin);
+  assert.equal(retry.status, 200);
+  assert.equal(retry.body.id, converted.body.id);
+  assert.equal(
+    (await call('/api/v1/rentals', 'POST', { ...input, requestId: crypto.randomUUID() }, admin))
+      .status,
+    409,
+  );
+  const stored = (await call('/api/v1/rentals', 'GET', undefined, admin)).body.find(
+    (r: JsonBody) => r.id === converted.body.id,
+  );
+  assert.equal(stored.priceCents, group.priceCents);
+  assert.equal(stored.minutes, group.durationMinutes);
+  assert.equal(stored.equipment.length, 8);
+  // Reservas históricas cuya referencia fue borrada: tarifa compatible, mismo snapshot.
+  await handle.db.execute(sql`update rentals set ended_at = now() where id = ${converted.body.id}`);
+  const old = (
+    await call(`/api/v1/reservations?date=${date}`, 'GET', undefined, admin)
+  ).body.items.find((r: JsonBody) => r.quantity === 3);
+  await handle.db.execute(sql`update reservations set rate_id = null where id = ${old.id}`);
+  await handle.db.execute(sql`update rates set active = true where id = ${old.rateId}`);
+  const recovered = await call(
+    '/api/v1/rentals',
+    'POST',
+    rentalInput(3, { rateId: old.rateId, reservationId: old.id }),
+    admin,
+  );
+  assert.equal(recovered.status, 201, JSON.stringify(recovered.body));
+  const recoveredRental = (await call('/api/v1/rentals', 'GET', undefined, admin)).body.find(
+    (r: JsonBody) => r.id === recovered.body.id,
+  );
+  assert.equal(recoveredRental.priceCents, old.priceCents);
+  assert.equal(recoveredRental.minutes, old.durationMinutes);
 });

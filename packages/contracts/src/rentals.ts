@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Cents, Id, PhoneE164, RequestId } from './common.js';
+import { ReservationQuantity } from './reservations.js';
 import { DocumentType, EquipmentKind, PaymentMethod } from './enums.js';
 
 /**
@@ -32,10 +33,11 @@ export const CreateRentalRequest = z.object({
   requestId: RequestId,
   customer: CustomerInput,
   rateId: Id,
+  quantity: ReservationQuantity.optional(),
   equipmentIds: z
     .array(Id)
     .min(2)
-    .max(4)
+    .max(8)
     .refine((ids) => new Set(ids).size === ids.length, 'No repitas el mismo equipo.'),
   notes: z.string().trim().max(2000).default(''),
   signature: SignatureDataUrl,
@@ -94,7 +96,8 @@ export const RentalDraft = z.object({
   phone: z.string().max(20).default(''),
   notes: z.string().max(2000).default(''),
   rateId: Id.nullable().default(null),
-  equipmentIds: z.array(Id).max(4).default([]),
+  quantity: ReservationQuantity.optional(),
+  equipmentIds: z.array(Id).max(8).default([]),
 });
 export type RentalDraft = z.infer<typeof RentalDraft>;
 

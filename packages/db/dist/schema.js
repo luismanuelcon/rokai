@@ -320,7 +320,7 @@ export const reservations = pgTable('reservations', {
         .where(sql `${t.status} NOT IN ('cancelled', 'in_rental', 'completed', 'no_show')`),
     index('reservations_service_date_idx').on(t.serviceDate),
     index('reservations_created_at_idx').on(t.createdAt.desc()),
-    check('reservations_quantity_chk', sql `${t.quantity} BETWEEN 1 AND 2`),
+    check('reservations_quantity_chk', sql `${t.quantity} BETWEEN 1 AND 4`),
     check('reservations_interval_chk', sql `${t.endsAt} > ${t.startsAt}`),
     check('reservations_price_chk', sql `${t.priceCents} >= 0`),
     check('reservations_phone_chk', sql `${t.phoneE164} ~ '^\\+[1-9][0-9]{7,14}$'`),

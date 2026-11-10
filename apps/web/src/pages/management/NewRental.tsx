@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import {
   CreateRentalRequest,
+  planBreakdown,
+  quoteGroupRate,
   formatReservationDate,
   formatReservationTime,
   type DocumentType,
@@ -29,6 +31,7 @@ interface DraftState {
   phone: string;
   notes: string;
   rateId: number | null;
+  quantity?: number;
   equipmentIds: number[];
 }
 
@@ -52,17 +55,21 @@ export function NewRental({
   reservation?: ReservationItem | null;
   onDone: (result: { id: number; trackingPath: string | null }) => Promise<void>;
 }) {
-  // Desde una reserva solo valen planes de su misma duración y cantidad.
+  // La reserva mantiene su cotización aunque su tarifa ya no esté vigente.
   const rates = useMemo(() => {
     if (!reservation) return dash.rates;
-    const compatible = dash.rates.filter(
-      (r) => r.minutes === reservation.durationMinutes && r.quantity === reservation.quantity,
-    );
-    const reserved = reservation.rateId;
-    if (reserved === null || compatible.some((r) => r.id === reserved)) return compatible;
+    if (reservation.rateId === null) {
+      return dash.rates.filter(
+        (r) =>
+          r.active &&
+          r.minutes === reservation.durationMinutes &&
+          r.period === reservation.ratePeriod &&
+          r.quantity === (reservation.quantity === 1 ? 1 : 2),
+      );
+    }
     return [
       {
-        id: reserved,
+        id: reservation.rateId,
         period: reservation.ratePeriod,
         minutes: reservation.durationMinutes,
         quantity: reservation.quantity,
@@ -71,7 +78,6 @@ export function NewRental({
         validFrom: null,
         validUntil: null,
       },
-      ...compatible,
     ];
   }, [dash.rates, reservation]);
   const [draft, setDraft] = useState<DraftState>(() =>
@@ -82,7 +88,8 @@ export function NewRental({
           fullName: reservation.customerName,
           phone: reservation.phone,
           notes: `Reserva ${reservation.code}`,
-          rateId: rates.find((r) => r.id === reservation.rateId)?.id ?? rates[0]?.id ?? null,
+          quantity: reservation.quantity,
+          rateId: reservation.rateId,
         }
       : EMPTY,
   );
@@ -154,9 +161,17 @@ export function NewRental({
   }, [draft]);
 
   const rate = rates.find((r) => r.id === draft.rateId);
-  const priceCents = reservation ? reservation.priceCents : rate?.priceCents;
+  const quantity = reservation?.quantity ?? draft.quantity ?? rate?.quantity ?? 1;
+  const quotedRate = rate ? quoteGroupRate(rates, rate.id, quantity) : null;
+  const priceCents = reservation ? reservation.priceCents : quotedRate?.priceCents;
+  const selectableRates = reservation
+    ? rates
+    : rates.filter((r) => r.quantity === (quantity === 1 ? 1 : 2));
+  const missingReservedRate = !!reservation && reservation.rateId === null && rates.length === 0;
+  const pricingReady = priceCents !== undefined && !missingReservedRate;
+
   const hint = phoneHint(dial, national);
-  const needed = rate ? rate.quantity * 2 : 0;
+  const needed = rate ? quantity * 2 : 0;
   const equipmentReady =
     !!rate &&
     draft.equipmentIds.length === needed &&
@@ -168,25 +183,29 @@ export function NewRental({
             e.status === 'available' &&
             !e.busy &&
             draft.equipmentIds.includes(e.id),
-        ).length === rate.quantity,
+        ).length === quantity,
     );
   const identityReady = draft.fullName.trim() !== '' && draft.document.trim() !== '';
   const closingReady = termsAccepted && signature !== '';
-  const canSubmit = identityReady && equipmentReady && closingReady && !hint;
+  const canSubmit = identityReady && equipmentReady && closingReady && !hint && pricingReady;
   // Cuando solo falta el cierre, el paso 04 se resalta: el resto ya está hecho
   // y el operario necesita saber dónde mirar.
   const closingPending = identityReady && equipmentReady && !closingReady;
-  const blockingReason = !rate
-    ? 'Selecciona una tarifa vigente.'
-    : !equipmentReady
-      ? `Asigna ${String(rate.quantity)} patineta(s) y ${String(rate.quantity)} casco(s).`
-      : !identityReady
-        ? 'Completa el nombre y el documento del cliente.'
-        : hint
-          ? hint
-          : !termsAccepted
-            ? 'El cliente debe aceptar los términos y condiciones.'
-            : 'Falta la firma del cliente.';
+  const blockingReason = missingReservedRate
+    ? 'No hay una tarifa vigente compatible con la duración y categoría de esta reserva. Solicita al administrador revisar las tarifas; el importe reservado se conserva.'
+    : !rate
+      ? 'Selecciona una tarifa vigente.'
+      : !pricingReady
+        ? 'No está configurada una tarifa necesaria para esta cantidad. Elige otro plan o revisa las tarifas.'
+        : !equipmentReady
+          ? `Asigna ${String(quantity)} patineta(s) y ${String(quantity)} casco(s).`
+          : !identityReady
+            ? 'Completa el nombre y el documento del cliente.'
+            : hint
+              ? hint
+              : !termsAccepted
+                ? 'El cliente debe aceptar los términos y condiciones.'
+                : 'Falta la firma del cliente.';
   const available = (kind: Equipment['kind']) =>
     dash.equipment.filter((e) => e.kind === kind && !e.busy && e.status === 'available');
 
@@ -227,6 +246,7 @@ export function NewRental({
           phone: toE164(dial, national) || null,
         },
         rateId: draft.rateId,
+        quantity,
         equipmentIds: draft.equipmentIds,
         notes: draft.notes,
         signature: preparedSignature,
@@ -278,6 +298,17 @@ export function NewRental({
             <br />
             Se respeta el valor reservado. Falta el documento, los equipos y la firma.
           </span>
+        </p>
+      )}
+      {reservation?.rateId === null && !missingReservedRate && (
+        <p className="notice" role="status">
+          La tarifa original ya no existe. Elige una tarifa compatible de la lista; se mantienen la
+          cantidad, la duración y el importe reservado.
+        </p>
+      )}
+      {missingReservedRate && (
+        <p className="form-error" role="alert">
+          {blockingReason}
         </p>
       )}
       <form onSubmit={(e) => void submit(e)}>
@@ -373,11 +404,45 @@ export function NewRental({
               <h2 className="step-title">
                 <span className="step-badge">02</span>Plan y equipos
               </h2>
+              <fieldset className="rental-quantity" disabled={!!reservation || busy}>
+                <legend className="field-label">Cantidad de patinetas</legend>
+                <div className="reserve-plans reserve-quantity">
+                  {([1, 2, 3, 4] as const).map((n) => (
+                    <label className="reserve-plan" key={n}>
+                      <input
+                        type="radio"
+                        name="rental-quantity"
+                        checked={quantity === n}
+                        onChange={() =>
+                          setDraft((d) => ({
+                            ...d,
+                            quantity: n,
+                            rateId:
+                              rates.find(
+                                (r) =>
+                                  r.quantity === (n === 1 ? 1 : 2) &&
+                                  r.minutes === rate?.minutes &&
+                                  r.period === rate?.period,
+                              )?.id ?? null,
+                            equipmentIds: [],
+                          }))
+                        }
+                      />
+                      <span>
+                        <strong>
+                          {n} patineta{n > 1 ? 's' : ''}
+                        </strong>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
               <div className="field">
                 <label htmlFor="rateId">Tarifa vigente</label>
                 <select
                   id="rateId"
                   required
+                  disabled={(!!reservation && reservation.rateId !== null) || busy}
                   value={draft.rateId ?? ''}
                   onChange={(e) => {
                     setDraft((d) => ({
@@ -388,19 +453,39 @@ export function NewRental({
                   }}
                 >
                   <option value="">Selecciona un plan</option>
-                  {rates.map((r) => (
+                  {selectableRates.map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.period === 'special' ? 'Mar–Jue' : 'Vie–Dom / festivos'} · {r.minutes} min
-                      · {r.quantity} patineta{r.quantity > 1 ? 's' : ''} · {money(r.priceCents)}
                     </option>
                   ))}
                 </select>
+                {rate && (
+                  <p className="small-copy" role="status">
+                    {quantity} patineta{quantity > 1 ? 's' : ''} · Total:{' '}
+                    <strong>
+                      {priceCents !== undefined ? money(priceCents) : 'Tarifa incompleta'}
+                    </strong>
+                  </p>
+                )}
                 <small>
                   Confirma en la estación el período aplicable. Las tarifas no se pueden modificar
                   en el registro.
                 </small>
               </div>
 
+              <p className="small-copy" role="status">
+                {planBreakdown(quantity)}. Selecciona {quantity} patineta{quantity > 1 ? 's' : ''} y{' '}
+                {quantity} casco{quantity > 1 ? 's' : ''}.
+                {(available('scooter').length < quantity ||
+                  available('helmet').length < quantity) &&
+                  ' No hay suficientes equipos disponibles. Elige una cantidad menor o espera una devolución.'}
+              </p>
+              {rate && !pricingReady && (
+                <p className="form-error" role="alert">
+                  Falta una tarifa necesaria para este grupo. Revisa la configuración antes de
+                  registrar.
+                </p>
+              )}
               <span className="field-label">Patinetas disponibles</span>
               <div className="equipment-grid">
                 {available('scooter').map((e) => (
@@ -503,7 +588,11 @@ export function NewRental({
             </div>
             <div className="summary-row">
               <span>Patinetas + cascos</span>
-              <strong>{rate ? `${rate.quantity} de cada uno` : '—'}</strong>
+              <strong>{rate ? `${quantity} de cada uno` : '—'}</strong>
+            </div>
+            <div className="summary-row">
+              <span>Desglose</span>
+              <strong>{planBreakdown(quantity)}</strong>
             </div>
             <div className="summary-row">
               <span>Equipos</span>

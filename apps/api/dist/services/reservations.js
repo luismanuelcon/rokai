@@ -1,6 +1,6 @@
 import { and, eq, gt, inArray, isNull, lt, sql } from 'drizzle-orm';
 import { equipment, rates, rentalEquipment, rentals, reservations, settings } from '@rokai/db';
-import { BLOCKING_RESERVATION_STATUSES, DEFAULT_RESERVATION_WHATSAPP, RATE_PERIOD_LABEL, addDays, bogotaDate, bogotaInstant, fromMinutes, planLabel, ratePeriodForDate, reservationDayError, reservationWhatsappMessage, scheduleError, startTimesFor, toMinutes, whatsappUrl, } from '@rokai/contracts';
+import { BLOCKING_RESERVATION_STATUSES, DEFAULT_RESERVATION_WHATSAPP, RATE_PERIOD_LABEL, addDays, bogotaDate, bogotaInstant, fromMinutes, planLabel, quoteGroupRate, ratePeriodForDate, reservationDayError, reservationWhatsappMessage, scheduleError, startTimesFor, toMinutes, whatsappUrl, } from '@rokai/contracts';
 import { newReservationCode, peakUsage, reservationRules, } from '../domain/reservations.js';
 import { badRequest, conflict } from '../lib/http-error.js';
 import { recordAudit } from '../lib/audit.js';
@@ -24,7 +24,7 @@ export async function fleetCapacity(exec) {
     return Math.min(count('scooter'), count('helmet'));
 }
 /** Reservas que bloquean cupo y alquileres en curso que tocan el intervalo. */
-export async function occupancy(exec, from, to) {
+export async function occupancy(exec, from, to, excludeReservationId) {
     const booked = await exec
         .select({
         start: reservations.startsAt,
@@ -32,7 +32,9 @@ export async function occupancy(exec, from, to) {
         quantity: reservations.quantity,
     })
         .from(reservations)
-        .where(and(inArray(reservations.status, [...BLOCKING_RESERVATION_STATUSES]), lt(reservations.startsAt, to), gt(reservations.endsAt, from)));
+        .where(and(inArray(reservations.status, [...BLOCKING_RESERVATION_STATUSES]), excludeReservationId === undefined
+        ? undefined
+        : sql `${reservations.id} <> ${excludeReservationId}`, lt(reservations.startsAt, to), gt(reservations.endsAt, from)));
     // Un alquiler vencido sigue ocupando el equipo hasta que se devuelve.
     const rented = await exec
         .select({
@@ -63,8 +65,12 @@ async function plansFor(exec, date, quantity) {
     const period = ratePeriodForDate(date);
     if (!period)
         return { period, plans: [] };
-    const plans = (await activeRates(exec, date))
-        .filter((r) => r.period === period && r.quantity === quantity)
+    const catalog = (await activeRates(exec, date)).filter((r) => r.period === period);
+    const plans = catalog
+        .flatMap((r) => {
+        const quote = quoteGroupRate(catalog, r.id, quantity);
+        return quote ? [quote] : [];
+    })
         .sort((a, b) => a.minutes - b.minutes);
     return { period, plans };
 }
@@ -175,9 +181,7 @@ export async function createReservation(db, input, now = new Date()) {
             occupancy(tx, startsAt, endsAt),
         ]);
         if (capacity - peakUsage(busy, startsAt, endsAt) < input.quantity) {
-            throw conflict(input.quantity === 2
-                ? 'No quedan dos patinetas libres en ese horario. Prueba otra hora o reserva una sola.'
-                : 'No quedan patinetas libres en ese horario. Prueba otra hora o fecha.', 'no_capacity');
+            throw conflict(`No quedan ${String(input.quantity)} patinetas libres durante todo ese horario. Prueba otra hora o cantidad.`, 'no_capacity');
         }
         let code = newReservationCode();
         while ((await tx
