@@ -349,7 +349,9 @@ body {
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
-  box-shadow: var(--g-glow-lime), inset 0 1px 0 rgb(255 255 255 / 35%);
+  box-shadow:
+    var(--g-glow-lime),
+    inset 0 1px 0 rgb(255 255 255 / 35%);
   transition:
     transform var(--t-fast) var(--g-spring),
     background var(--t-fast) var(--ease-out);
@@ -512,7 +514,9 @@ body {
   background-color: var(--c-lime);
   background-image: var(--g-sheen-tinted);
   border-color: rgb(177 215 46 / 55%);
-  box-shadow: var(--g-glow-lime), inset 0 1px 0 rgb(255 255 255 / 35%);
+  box-shadow:
+    var(--g-glow-lime),
+    inset 0 1px 0 rgb(255 255 255 / 35%);
   color: var(--c-graphite-deep);
 }
 
@@ -596,7 +600,9 @@ body {
 .topbar .navlinks a.nav-cta:hover {
   background-image: var(--g-sheen-tinted);
   border: 1px solid rgb(255 255 255 / 35%);
-  box-shadow: var(--g-glow-lime), inset 0 1px 0 rgb(255 255 255 / 35%);
+  box-shadow:
+    var(--g-glow-lime),
+    inset 0 1px 0 rgb(255 255 255 / 35%);
 }
 
 .topbar .team-access,
@@ -691,7 +697,9 @@ dialog::backdrop {
 /* Botón primario: la lima es luz, así que proyecta luz. */
 .button:not(.outline):not(.subtle):not(.dark):not(.danger) {
   background-image: var(--g-sheen-tinted);
-  box-shadow: var(--g-glow-lime), inset 0 1px 0 rgb(255 255 255 / 35%);
+  box-shadow:
+    var(--g-glow-lime),
+    inset 0 1px 0 rgb(255 255 255 / 35%);
 }
 
 .button:not(.outline):not(.subtle):not(.dark):not(.danger):hover:not([disabled]),
@@ -1538,7 +1546,9 @@ dialog::backdrop {
   background-color: var(--c-lime);
   background-image: var(--g-sheen-tinted);
   color: var(--c-graphite-deep);
-  box-shadow: var(--g-glow-lime), inset 0 1px 0 rgb(255 255 255 / 35%);
+  box-shadow:
+    var(--g-glow-lime),
+    inset 0 1px 0 rgb(255 255 255 / 35%);
 }
 
 .xnav-team .xnav-item[aria-current='page'] .icon {
