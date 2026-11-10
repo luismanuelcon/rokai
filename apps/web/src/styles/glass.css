@@ -66,6 +66,12 @@
     rgb(255 255 255 / 4%) 34%,
     rgb(255 255 255 / 0%) 62%
   );
+  --g-sheen-tinted: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 26%) 0%,
+    rgb(255 255 255 / 6%) 34%,
+    rgb(255 255 255 / 0%) 62%
+  );
   /* El acento costero: la lima solo aparece como luz filtrada, nunca como
      relleno de una superficie de vidrio. */
   --g-glow-lime: 0 0 0 1px rgb(177 215 46 / 45%), 0 6px 20px -6px rgb(177 215 46 / 45%);
@@ -241,10 +247,13 @@ body {
   color: var(--c-on-dark);
   border: 1px solid var(--g-hairline-dark);
   background: var(--g-inset-on-dark);
+  background-image: var(--g-sheen-dark);
+  box-shadow: inset 0 1px 0 var(--g-edge-dark);
 }
 
 .appbar .iconbutton:hover {
-  background: rgb(255 255 255 / 16%);
+  background-color: rgb(255 255 255 / 16%);
+  background-image: var(--g-sheen-dark);
 }
 
 /* Hasta escritorio la barra de destinos baja a su propia línea: en tablet el
@@ -333,12 +342,14 @@ body {
   min-height: 44px;
   padding: 10px 18px;
   border-radius: var(--r-pill);
+  border: 1px solid rgb(255 255 255 / 28%);
   background: var(--c-lime);
+  background-image: var(--g-sheen-tinted);
   color: var(--c-graphite);
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
-  box-shadow: var(--g-glow-lime);
+  box-shadow: var(--g-glow-lime), inset 0 1px 0 rgb(255 255 255 / 35%);
   transition:
     transform var(--t-fast) var(--g-spring),
     background var(--t-fast) var(--ease-out);
@@ -346,6 +357,7 @@ body {
 
 .navrail-cta:hover {
   background: var(--c-lime-bright);
+  background-image: var(--g-sheen-tinted);
 }
 
 .navrail-cta:active {
@@ -354,6 +366,7 @@ body {
 
 .navrail-cta[aria-current='page'] {
   background: var(--c-lime-bright);
+  background-image: var(--g-sheen-tinted);
   box-shadow:
     var(--g-glow-lime),
     0 0 0 2px rgb(255 255 255 / 35%);
@@ -430,6 +443,22 @@ body {
   box-shadow: var(--g-elev-card);
 }
 
+.workspace .panel,
+.workspace .step-panel {
+  background-color: var(--g-solid);
+  background-image: var(--g-sheen);
+  border-color: var(--g-hairline);
+  box-shadow: var(--g-elev-card);
+}
+
+.workspace .metric,
+.workspace .equipment-card {
+  background-color: var(--g-raised);
+  background-image: var(--g-sheen);
+  border-color: var(--g-hairline);
+  box-shadow: var(--g-elev-card);
+}
+
 /* Tarjetas de un vistazo: translúcidas de verdad. */
 .metric,
 .fleet-card,
@@ -441,6 +470,166 @@ body {
   background-image: var(--g-sheen);
   border-color: var(--g-hairline);
   box-shadow: var(--g-elev-card);
+}
+
+.workspace .xnav-item {
+  background-color: var(--g-raised);
+  background-image: var(--g-sheen);
+  border-color: var(--g-hairline);
+  box-shadow: var(--g-elev-card);
+  color: var(--c-text);
+}
+
+.workspace .xnav-item[aria-current='page'] {
+  background-color: var(--c-graphite);
+  background-image: var(--g-sheen-dark);
+  border-color: var(--c-graphite);
+  box-shadow: var(--g-elev-dark);
+  color: var(--c-on-dark);
+}
+
+.workspace .xnav-item[aria-current='page'] .icon {
+  color: var(--c-lime);
+}
+
+.workspace .xnav-trigger {
+  background-color: var(--g-raised);
+  background-image: var(--g-sheen);
+  border-color: var(--g-hairline);
+  box-shadow: var(--g-elev-card);
+  backdrop-filter: blur(var(--g-blur-sm)) saturate(var(--g-saturate));
+  -webkit-backdrop-filter: blur(var(--g-blur-sm)) saturate(var(--g-saturate));
+}
+
+.xnav-team .xnav-trigger {
+  background-color: var(--g-nav);
+  background-image: var(--g-sheen-dark);
+  border-color: var(--g-hairline-dark);
+  box-shadow: var(--g-elev-nav);
+}
+
+.xnav-team .xnav-item[aria-current='page'] {
+  background-color: var(--c-lime);
+  background-image: var(--g-sheen-tinted);
+  border-color: rgb(177 215 46 / 55%);
+  box-shadow: var(--g-glow-lime), inset 0 1px 0 rgb(255 255 255 / 35%);
+  color: var(--c-graphite-deep);
+}
+
+.xnav-team .xnav-item[aria-current='page'] .icon {
+  color: inherit;
+}
+
+.workspace .rental-mobile-card,
+.business-expenses .expense-balance > div:not(.expense-net),
+.business-expenses .expense-chart {
+  background-color: var(--g-raised);
+  background-image: var(--g-sheen);
+  border-color: var(--g-hairline);
+  box-shadow: var(--g-elev-card);
+}
+
+.tracking-page .tracking-public-card,
+.reserve-page .reserve-step,
+.reserve-page .reserve-done {
+  background-color: var(--g-solid);
+  background-image: var(--g-sheen);
+  border-color: var(--g-hairline);
+  box-shadow: var(--g-elev-card);
+}
+
+.reserve-page .reserve-summary,
+.reserve-page .reserve-code {
+  background-color: var(--g-nav-strong);
+  background-image: var(--g-sheen-dark);
+  border: 1px solid var(--g-hairline-dark);
+  box-shadow: var(--g-elev-dark);
+}
+
+.reserve-page .reserve-mobilebar {
+  background-image: var(--g-sheen-dark);
+}
+
+.reserve-page .reserve-plan > span,
+.reserve-page .reserve-slot > span {
+  background-color: var(--g-raised);
+  background-image: var(--g-sheen);
+  border-color: var(--g-hairline);
+  box-shadow: var(--g-elev-card);
+}
+
+.reserve-page .reserve-plan input:checked + span,
+.reserve-page .reserve-slot input:checked + span {
+  background-image: var(--g-sheen-dark);
+  border-color: var(--c-graphite);
+}
+
+.reserve-page .reserve-progress .is-current {
+  background-image: var(--g-sheen-dark);
+  box-shadow: var(--g-elev-dark);
+}
+
+.business-expenses .expense-balance .expense-net {
+  background-image: var(--g-sheen-dark);
+  border-color: var(--g-hairline-dark);
+  box-shadow: var(--g-elev-dark);
+}
+
+.tracking-page .tracking-clock {
+  background-image: var(--g-sheen-dark);
+}
+
+.tracking-page .tracking-public-card.is-closed .tracking-clock {
+  background-image: var(--g-sheen);
+}
+
+.topbar .navlinks.open {
+  background-color: var(--g-solid);
+  background-image: var(--g-sheen);
+  border-color: var(--g-hairline);
+  box-shadow: var(--g-elev-card);
+  backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
+  -webkit-backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
+}
+
+.topbar .navlinks a.nav-cta,
+.topbar .navlinks a.nav-cta:hover {
+  background-image: var(--g-sheen-tinted);
+  border: 1px solid rgb(255 255 255 / 35%);
+  box-shadow: var(--g-glow-lime), inset 0 1px 0 rgb(255 255 255 / 35%);
+}
+
+.topbar .team-access,
+.topbar .mobile-menu {
+  background-image: var(--g-sheen);
+  box-shadow: var(--g-elev-card);
+}
+
+.topbar .mobile-menu:hover {
+  background-image: var(--g-sheen-dark);
+  box-shadow: var(--g-elev-dark);
+}
+
+.workspace .panel,
+.workspace .step-panel,
+.reserve-page .reserve-step,
+.reserve-page .reserve-done,
+.tracking-page .tracking-public-card {
+  border: 1px solid var(--g-hairline);
+}
+
+.field input,
+.field select,
+.field textarea,
+.country-search,
+.toolbar input[type='search'] {
+  background-image: var(--g-sheen);
+}
+
+.notice,
+.form-error,
+.offline:not(:empty) {
+  background-image: var(--g-sheen-tinted);
 }
 
 /* Respuesta al puntero: el vidrio sube, no cambia de color. */
@@ -501,7 +690,35 @@ dialog::backdrop {
 
 /* Botón primario: la lima es luz, así que proyecta luz. */
 .button:not(.outline):not(.subtle):not(.dark):not(.danger) {
-  box-shadow: var(--g-glow-lime);
+  background-image: var(--g-sheen-tinted);
+  box-shadow: var(--g-glow-lime), inset 0 1px 0 rgb(255 255 255 / 35%);
+}
+
+.button:not(.outline):not(.subtle):not(.dark):not(.danger):hover:not([disabled]),
+.navrail-cta:hover,
+.navrail-cta[aria-current='page'] {
+  box-shadow: var(--g-elev-float), var(--g-glow-lime);
+}
+
+.button.dark {
+  background-image: var(--g-sheen-dark);
+  border-color: var(--g-hairline-dark);
+  box-shadow: var(--g-elev-dark);
+}
+
+.button.dark:hover:not([disabled]) {
+  background-image: var(--g-sheen-dark);
+  box-shadow: var(--g-elev-float);
+}
+
+.button.danger {
+  background-image: var(--g-sheen-tinted);
+  box-shadow: var(--g-elev-card);
+}
+
+.button.danger:hover:not([disabled]) {
+  background-image: var(--g-sheen-tinted);
+  box-shadow: var(--g-elev-float);
 }
 
 .button.outline {
@@ -512,6 +729,20 @@ dialog::backdrop {
 
 .button.subtle {
   background-color: var(--g-inset);
+  background-image: var(--g-sheen);
+  border-color: var(--g-hairline);
+  box-shadow: var(--g-elev-card);
+}
+
+.button.subtle.active {
+  background-image: var(--g-sheen-dark);
+  box-shadow: var(--g-elev-dark);
+}
+
+.button:disabled,
+.button[aria-disabled='true'] {
+  background-image: none;
+  box-shadow: none;
 }
 
 .button:active:not([disabled]) {
@@ -679,26 +910,28 @@ dialog::backdrop {
 
 /* Rótulo inferior del hero: vidrio oscuro sobre la foto, no texto suelto. */
 .visual-bottom {
-  background-color: var(--g-nav);
-  background-image: var(--g-sheen-dark);
+  background-color: var(--g-raised);
+  background-image: var(--g-sheen);
   backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
   -webkit-backdrop-filter: blur(var(--g-blur-md)) saturate(var(--g-saturate));
-  border: 1px solid var(--g-hairline-dark);
+  border: 1px solid var(--g-edge);
   border-radius: var(--r-lg);
-  padding: 16px 18px;
-  box-shadow: var(--g-elev-nav);
+  padding: 10px 14px;
+  box-shadow: var(--g-elev-card);
 }
 
 .visual-arrow {
-  background-color: var(--g-inset-on-dark);
-  border-color: var(--g-edge-dark);
+  background-color: var(--g-raised);
+  background-image: var(--g-sheen);
+  border-color: var(--g-edge);
+  box-shadow: var(--g-elev-card);
   transition:
     background-color var(--t-fast) var(--ease-out),
     transform var(--t-fast) var(--g-spring);
 }
 
 .visual-arrow:hover {
-  background-color: rgb(255 255 255 / 20%);
+  background-color: var(--g-inset);
   transform: translateX(2px);
 }
 
@@ -790,7 +1023,10 @@ dialog::backdrop {
     background-color: rgb(255 255 255 / 95%);
   }
 
-  .visual-bottom,
+  .visual-bottom {
+    background-color: var(--c-surface);
+  }
+
   .contact-place-copy {
     background-color: var(--c-graphite);
   }
@@ -807,7 +1043,13 @@ dialog::backdrop {
     -webkit-backdrop-filter: none;
   }
 
-  .visual-bottom,
+  .visual-bottom {
+    background-color: var(--c-surface);
+    background-image: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
   .contact-place-copy,
   .contact-card,
   .footer {
@@ -1293,14 +1535,14 @@ dialog::backdrop {
 
 .xnav-team .xnav-item[aria-current='page'] {
   border-color: rgb(177 215 46 / 55%);
-  background-color: rgb(255 255 255 / 14%);
-  background-image: none;
-  color: var(--c-on-dark);
-  box-shadow: none;
+  background-color: var(--c-lime);
+  background-image: var(--g-sheen-tinted);
+  color: var(--c-graphite-deep);
+  box-shadow: var(--g-glow-lime), inset 0 1px 0 rgb(255 255 255 / 35%);
 }
 
 .xnav-team .xnav-item[aria-current='page'] .icon {
-  color: var(--c-lime);
+  color: inherit;
 }
 
 .xnav-team .xnav-panel nav {
@@ -1364,6 +1606,110 @@ dialog::backdrop {
   .row-actions {
     gap: 10px;
     flex-wrap: wrap;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .topbar .navlinks.open,
+  .workspace .xnav-trigger {
+    background-color: var(--c-surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .xnav-team .xnav-trigger {
+    background-color: var(--c-graphite);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .workspace .panel,
+  .workspace .step-panel,
+  .workspace .metric,
+  .workspace .equipment-card,
+  .workspace .rental-mobile-card,
+  .business-expenses .expense-balance > div:not(.expense-net),
+  .business-expenses .expense-chart,
+  .tracking-page .tracking-public-card,
+  .reserve-page .reserve-step,
+  .reserve-page .reserve-done,
+  .reserve-page .reserve-plan > span,
+  .reserve-page .reserve-slot > span,
+  .topbar .team-access,
+  .topbar .mobile-menu {
+    background-color: var(--c-surface);
+    background-image: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: var(--g-elev-card);
+  }
+
+  .topbar .navlinks.open,
+  .workspace .xnav-trigger {
+    background-color: var(--c-surface);
+    background-image: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: var(--g-elev-card);
+  }
+
+  .workspace .xnav-item {
+    background-color: var(--c-surface);
+    background-image: none;
+    box-shadow: var(--g-elev-card);
+  }
+
+  .workspace .xnav-item[aria-current='page'] {
+    background-color: var(--c-graphite);
+    color: var(--c-on-dark);
+    box-shadow: var(--g-elev-dark);
+  }
+
+  .xnav-team .xnav-trigger,
+  .reserve-page .reserve-summary,
+  .reserve-page .reserve-code,
+  .reserve-page .reserve-mobilebar,
+  .business-expenses .expense-balance .expense-net {
+    background-color: var(--c-graphite);
+    background-image: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: var(--g-elev-dark);
+  }
+
+  .xnav-team .xnav-item[aria-current='page'] {
+    background-color: var(--c-lime);
+    background-image: none;
+    color: var(--c-graphite-deep);
+  }
+
+  .reserve-page .reserve-plan input:checked + span,
+  .reserve-page .reserve-slot input:checked + span,
+  .reserve-page .reserve-progress .is-current {
+    background-color: var(--c-graphite);
+    background-image: none;
+    color: var(--c-on-dark);
+  }
+
+  .business-expenses .expense-balance .expense-net,
+  .tracking-page .tracking-clock {
+    background-image: none;
+  }
+
+  .topbar .navlinks a.nav-cta,
+  .topbar .navlinks a.nav-cta:hover,
+  .button,
+  .navrail-cta,
+  .visual-arrow,
+  .notice,
+  .form-error,
+  .offline:not(:empty),
+  .field input,
+  .field select,
+  .field textarea,
+  .country-search,
+  .toolbar input[type='search'] {
+    background-image: none;
   }
 }
 

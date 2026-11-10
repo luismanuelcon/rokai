@@ -154,7 +154,7 @@ export function PublicPage() {
               src="/assets/hero-rokai-atardecer.webp"
               srcSet="/assets/hero-rokai-atardecer-640.webp 640w, /assets/hero-rokai-atardecer.webp 1100w"
               sizes="(max-width: 900px) 100vw, 550px"
-              alt="Una pareja con casco se toma una foto junto a sus dos patinetas ROKAI, frente al mar y al atardecer"
+              alt="Tres personas junto a sus patinetas eléctricas ROKAI frente al mar"
               width={1100}
               height={917}
               fetchPriority="high"

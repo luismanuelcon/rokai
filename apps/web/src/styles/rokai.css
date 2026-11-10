@@ -293,36 +293,40 @@ summary {
 }
 .visual-bottom {
   position: absolute;
-  bottom: 27px;
-  left: 28px;
-  right: 28px;
+  bottom: 18px;
+  left: 18px;
+  right: auto;
+  width: fit-content;
+  max-width: calc(100% - 36px);
   z-index: 1;
-  color: white;
+  color: var(--c-text);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  gap: 12px;
   justify-content: space-between;
 }
 .visual-bottom .eyebrow {
-  color: var(--lime);
-  margin-bottom: 9px;
+  color: var(--c-lime-ink);
+  margin-bottom: 5px;
 }
 /* Rótulo decorativo sobre la imagen: no es un encabezado de sección, por eso no
    usa <h3> (rompía la jerarquía h1→h3 del portal). */
 .visual-bottom .visual-title {
-  font-size: 25px;
+  font-size: 20px;
   font-weight: 700;
   line-height: 1.15;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
 }
 .visual-bottom p {
-  color: #d3d8cc;
+  color: var(--c-text-muted);
   font-size: 12px;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 .visual-arrow {
   border: 1px solid #ffffff66;
-  width: 43px;
-  height: 43px;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
   border-radius: 50%;
   display: grid;
   place-items: center;

@@ -3,8 +3,8 @@
  * descargaban en PNG/JPEG al triple de resolución de la que se renderiza; aquí se
  * reescalan al tamaño real y se pasan a WebP.
  *
- * Se parte de los recortes de `imagenes/recortes` para no alterar el encuadre,
- * salvo el logo, que se rehace desde el master por tener transparencia.
+ * Se parte de los recortes y originales ya encuadrados; el logo se rehace desde
+ * el master por tener transparencia.
  *
  *   node scripts/optimize-assets.mjs
  */
@@ -26,13 +26,13 @@ const JOBS = [
     options: { quality: 90, alphaQuality: 90 },
   },
   {
-    from: join(crops, 'hero-rokai-atardecer.jpg'),
+    from: join(root, 'imagenes/ROKAI_hero_atardecer.png'),
     to: 'hero-rokai-atardecer.webp',
     width: 1100,
     options: { quality: 70 },
   },
   {
-    from: join(crops, 'hero-rokai-atardecer.jpg'),
+    from: join(root, 'imagenes/ROKAI_hero_atardecer.png'),
     to: 'hero-rokai-atardecer-640.webp',
     width: 640,
     options: { quality: 70 },
