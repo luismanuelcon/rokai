@@ -156,6 +156,12 @@ test('Información pública accesible y APIs privadas protegidas', async () => {
   assert.equal((await call('/api/v1/rentals', 'POST', {})).status, 401);
 });
 
+test('Los assets públicos con nombre estable se revalidan', async () => {
+  const hero = await app.inject('/assets/hero-rokai-atardecer.webp');
+  assert.equal(hero.statusCode, 200);
+  assert.equal(hero.headers['cache-control'], 'no-cache');
+});
+
 test('Login rechaza credenciales malas; la cookie es HttpOnly y SameSite', async () => {
   const bad = await app.inject({
     method: 'POST',

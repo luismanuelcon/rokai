@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fastifyStatic from '@fastify/static';
 /** Build de Vite: desde `apps/api/dist` hasta `apps/web/dist`. */
@@ -23,9 +23,10 @@ export async function registerWeb(app, root) {
         wildcard: false,
         index: ['index.html'],
         setHeaders(reply, path) {
-            // Los nombres de los recursos de Vite llevan hash; `index.html` no, y si
-            // se cachea el despliegue siguiente seguiría sirviendo el bundle viejo.
-            reply.header('Cache-Control', path.endsWith('.html') ? 'no-cache' : 'public, max-age=31536000, immutable');
+            // Solo los archivos con hash de Vite pueden ser inmutables. Los assets
+            // de `public` conservan nombres estables y deben revalidarse al cambiarlos.
+            const hasViteHash = /-[a-z0-9_-]{8}\.[a-z0-9]+$/i.test(basename(path));
+            reply.header('Cache-Control', path.endsWith('.html') || !hasViteHash ? 'no-cache' : 'public, max-age=31536000, immutable');
         },
     });
     return true;
