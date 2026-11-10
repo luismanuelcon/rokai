@@ -285,7 +285,9 @@ body {
   scrollbar-width: none;
   /* Sin esto el gesto horizontal compite con el scroll vertical de la página. */
   touch-action: pan-x;
-  padding: 2px;
+  /* overflow-x:auto también recorta en vertical: reservar espacio para el
+      relieve del vidrio y el contorno de foco de cada opción. */
+  padding: 6px 2px;
   /* El elemento que asoma a medio cortar se desvanece: así se lee como "hay
      más a los lados" y no como un fallo de maquetación. */
   mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 22px), transparent);
