@@ -34,6 +34,12 @@ const NAV: NavRailItem<View>[] = [
 
 const ADMIN_ONLY: View[] = ['reports', 'admin'];
 
+const updatedAt = new Intl.DateTimeFormat('es-CO', {
+  dateStyle: 'short',
+  timeStyle: 'short',
+  timeZone: 'America/Bogota',
+}).format(new Date(import.meta.env.VITE_APP_UPDATED_AT));
+
 export function Workspace() {
   const { user, logout, refresh } = useSession();
   const [view, setView] = useState<View>('overview');
@@ -249,6 +255,13 @@ export function Workspace() {
             />
           )}
         </main>
+        <footer className="app-version">
+          <span>Versión {import.meta.env.VITE_APP_VERSION}</span>
+          <span>
+            Actualización: <time dateTime={import.meta.env.VITE_APP_UPDATED_AT}>{updatedAt}</time>{' '}
+            (Colombia)
+          </span>
+        </footer>
       </div>
 
       <div id="toast" role="status" aria-live="polite">

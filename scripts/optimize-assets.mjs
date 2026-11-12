@@ -26,14 +26,14 @@ const JOBS = [
     options: { quality: 90, alphaQuality: 90 },
   },
   {
-    from: join(root, 'imagenes/ROKAI_hero_atardecer.png'),
-    to: 'hero-rokai-atardecer.webp',
+    from: join(root, 'imagenes/ROKAI_foto_web_1374x1145.webp'),
+    to: 'hero-rokai-costa.webp',
     width: 1100,
     options: { quality: 70 },
   },
   {
-    from: join(root, 'imagenes/ROKAI_hero_atardecer.png'),
-    to: 'hero-rokai-atardecer-640.webp',
+    from: join(root, 'imagenes/ROKAI_foto_web_1374x1145.webp'),
+    to: 'hero-rokai-costa-640.webp',
     width: 640,
     options: { quality: 70 },
   },

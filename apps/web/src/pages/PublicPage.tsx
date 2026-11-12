@@ -151,8 +151,8 @@ export function PublicPage() {
           </div>
           <div className="hero-visual">
             <img
-              src="/assets/hero-rokai-atardecer.webp?v=7242a0d2e0e7"
-              srcSet="/assets/hero-rokai-atardecer-640.webp?v=7242a0d2e0e7 640w, /assets/hero-rokai-atardecer.webp?v=7242a0d2e0e7 1100w"
+              src="/assets/hero-rokai-costa.webp"
+              srcSet="/assets/hero-rokai-costa-640.webp 640w, /assets/hero-rokai-costa.webp 1100w"
               sizes="(max-width: 900px) 100vw, 550px"
               alt="Tres personas junto a sus patinetas eléctricas ROKAI frente al mar"
               width={1100}

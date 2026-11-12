@@ -15,6 +15,8 @@ RUN npm ci
 
 FROM deps AS build
 COPY . .
+ARG APP_BUILD_DATE
+ENV APP_BUILD_DATE=$APP_BUILD_DATE
 RUN npm run build
 
 # Árbol de dependencias sin las de desarrollo, para la imagen final.

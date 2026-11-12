@@ -2,6 +2,14 @@
 
 Cada push a main construye la imagen en GHCR y después actualiza Azure Container Apps con la etiqueta exacta del commit. Publicar una imagen por sí solo no actualiza el sitio.
 
+## Versión visible
+
+El pie derecho del portal de gestión muestra la versión de `package.json` más un identificador de compilación UTC (`2.0.0+AAAAMMDDhhmmss`) y la fecha de actualización en hora de Colombia. No cambia al recargar la página.
+
+Cada construcción genera estos datos automáticamente. El workflow pasa `APP_BUILD_DATE` al Dockerfile para renovar también las compilaciones con caché o del mismo commit. El paquete de App Service y las compilaciones locales los generan al ejecutar `npm run build`. Si se reutiliza una imagen ya construida, se conserva su versión y fecha original; para registrar una nueva actualización, construir una imagen nueva.
+
+La leyenda no necesita App Registration ni permisos adicionales. La autenticación OIDC descrita abajo pertenece al despliegue automático existente, no a esta funcionalidad; no ejecutar ese despliegue sin disponer de la identidad y los permisos necesarios.
+
 ## Configuración inicial en GitHub
 
 En Settings → Secrets and variables → Actions del repositorio:

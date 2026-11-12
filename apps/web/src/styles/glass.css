@@ -418,14 +418,27 @@ body {
 
 /* La gestión deja de ser una rejilla con barra lateral: una sola columna. */
 .management {
-  display: block;
-  min-height: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 87px);
 }
 
 .workspace {
+  flex: 1;
   padding: clamp(16px, 3vw, 36px);
   padding-bottom: 72px;
   margin-inline: auto;
+}
+
+.app-version {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px 12px;
+  padding: 0 clamp(16px, 3vw, 36px) 16px;
+  color: var(--c-text-muted);
+  font-size: 11px;
+  text-align: right;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────

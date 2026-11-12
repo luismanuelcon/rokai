@@ -39,7 +39,10 @@ export function LoginPage() {
       </header>
       <main id="main" className="auth-layout">
         <div className="auth-photo">
-          <img src="/assets/scooter-coast.webp" alt="Patineta frente al mar" />
+          <img
+            src="/assets/login-rokai-costa.webp"
+            alt="Integrante del equipo ROKAI en patineta eléctrica por la carretera costera"
+          />
           <div className="auth-caption">
             <span className="eyebrow">El equipo detrás de cada paseo</span>
             <h2>
