@@ -5,7 +5,7 @@ import { Icon } from '../components/Icon';
 import { useSession } from '../lib/session';
 
 export function LoginPage() {
-  const { login } = useSession();
+  const { login, expired } = useSession();
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -62,6 +62,11 @@ export function LoginPage() {
             </div>
             <h1>Hola de nuevo.</h1>
 
+            {expired && (
+              <p className="notice" role="status">
+                Tu sesión venció. Inicia sesión nuevamente para continuar.
+              </p>
+            )}
             <form onSubmit={(e) => void onSubmit(e)}>
               {error && (
                 <div className="form-error" role="alert">

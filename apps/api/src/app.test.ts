@@ -1663,3 +1663,175 @@ test('grupos: precios 1–4, cupo concurrente, conversión con snapshot y asigna
   assert.equal(recoveredRental.priceCents, old.priceCents);
   assert.equal(recoveredRental.minutes, old.durationMinutes);
 });
+
+test('sesión: vencimiento autoritativo, respuesta sin caché y rechazo tras expirar', async () => {
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/login',
+    headers: { origin: ORIGIN },
+    payload: { email: 'admin@test.local', password: PASSWORD },
+  });
+  assert.equal(response.statusCode, 200);
+  const data = response.json<JsonBody>();
+  assert.ok(Date.parse(data.expiresAt) > Date.parse(data.serverNow));
+  const cookie = `rokai_session=${response.cookies.find((item) => item.name === 'rokai_session')!.value}`;
+  const session = await app.inject({
+    method: 'GET',
+    url: '/api/v1/auth/session',
+    headers: { cookie },
+  });
+  assert.equal(session.headers['cache-control'], 'no-store');
+  assert.equal(session.json<JsonBody>().expiresAt, data.expiresAt);
+  await handle.db.execute(
+    sql`update sessions set expires_at = now() - interval '1 second' where csrf_token = ${data.csrf}`,
+  );
+  const expired = await app.inject({
+    method: 'GET',
+    url: '/api/v1/auth/session',
+    headers: { cookie },
+  });
+  assert.equal(expired.json<JsonBody>().user, null);
+  assert.equal(expired.json<JsonBody>().expiresAt, null);
+  assert.equal(
+    (await app.inject({ method: 'GET', url: '/api/v1/dashboard', headers: { cookie } })).statusCode,
+    401,
+  );
+  const dashboard = await app.inject({
+    method: 'GET',
+    url: '/api/v1/dashboard',
+    headers: { cookie: admin.cookie },
+  });
+  assert.equal(dashboard.statusCode, 200);
+  assert.equal(dashboard.headers['cache-control'], 'no-store');
+  assert.equal(dashboard.json<JsonBody>().completedTrips.date, bogotaDate(new Date()));
+  assert.ok(Number.isFinite(Date.parse(dashboard.json<JsonBody>().updatedAt)));
+});
+
+test('viajes completados: fecha Bogotá, más de 200, grupos, activos y cierre de jornada', async () => {
+  const { completedTrips } = await import('./services/dashboard.js');
+  const schema = await import('@rokai/db');
+  const { eq } = await import('drizzle-orm');
+  const rollback = new Error('rollback de fixtures');
+  await assert.rejects(
+    handle.db.transaction(async (tx) => {
+      const [customer] = await tx
+        .select({ id: schema.customers.id })
+        .from(schema.customers)
+        .limit(1);
+      const [rate] = await tx.select({ id: schema.rates.id }).from(schema.rates).limit(1);
+      const at = (time: string) => new Date(`2040-02-03T${time}:00-05:00`);
+      const insert = async (startedAt: Date, endedAt: Date | null) => {
+        const [rental] = await tx
+          .insert(schema.rentals)
+          .values({
+            customerId: customer!.id,
+            rateId: rate!.id,
+            minutes: 30,
+            priceCents: 1234,
+            startedAt,
+            dueAt: new Date(startedAt.getTime() + 1800000),
+            endedAt,
+            createdBy: admin.id,
+            requestId: crypto.randomUUID(),
+          })
+          .returning({ id: schema.rentals.id });
+        return rental!.id;
+      };
+      assert.deepEqual(await completedTrips(tx, at('10:00')), {
+        date: '2040-02-03',
+        count: 0,
+        firstStartedAt: null,
+        closedAt: null,
+      });
+      await insert(new Date('2040-02-03T04:30:00Z'), at('00:15')); // Ayer en Colombia.
+      await insert(at('15:00'), null); // Primero del día, todavía activo.
+      for (let i = 0; i < 205; i++) await insert(at('16:00'), at('16:30'));
+      const group = await insert(at('17:00'), at('17:30'));
+      const scooters = await tx
+        .select({ id: schema.equipment.id })
+        .from(schema.equipment)
+        .where(eq(schema.equipment.kind, 'scooter'))
+        .limit(4);
+      await tx
+        .insert(schema.rentalEquipment)
+        .values(scooters.map((e) => ({ rentalId: group, equipmentId: e.id })));
+      await insert(at('18:00'), at('19:15')); // Se devuelve después del cierre.
+      await insert(at('19:05'), at('19:35')); // Inicia después del cierre.
+      await insert(at('22:00'), at('22:30')); // Futuro: no cuenta aún.
+      const open = await completedTrips(tx, at('20:00'));
+      assert.equal(open.count, 208);
+      assert.equal(open.firstStartedAt, at('15:00').toISOString());
+      assert.equal(open.closedAt, null);
+      await tx.insert(schema.dayClosings).values({
+        date: '2040-02-03',
+        opensAt: '16:00',
+        closesAt: '19:00',
+        cashCents: 0,
+        transferCents: 0,
+        expenses: [],
+      });
+      const closed = await completedTrips(tx, at('20:00'));
+      assert.equal(closed.count, 206);
+      assert.equal(closed.closedAt, at('19:00').toISOString());
+      assert.equal(closed.firstStartedAt, at('15:00').toISOString());
+      assert.equal((await completedTrips(tx, at('18:30'))).closedAt, null);
+      throw rollback;
+    }),
+    (error: unknown) => error === rollback,
+  );
+});
+
+test('viajes completados: cierre al día siguiente sin duplicar viajes entre jornadas', async () => {
+  const { completedTrips } = await import('./services/dashboard.js');
+  const schema = await import('@rokai/db');
+  const rollback = new Error('rollback de fixtures nocturnas');
+  await assert.rejects(
+    handle.db.transaction(async (tx) => {
+      const [customer] = await tx
+        .select({ id: schema.customers.id })
+        .from(schema.customers)
+        .limit(1);
+      const [rate] = await tx.select({ id: schema.rates.id }).from(schema.rates).limit(1);
+      await tx.insert(schema.dayClosings).values({
+        date: '2040-02-03',
+        opensAt: '16:00',
+        closesAt: '01:00',
+        closesNextDay: true,
+        cashCents: 0,
+        transferCents: 0,
+        expenses: [],
+      });
+      for (const start of [
+        '2040-02-03T23:00:00-05:00',
+        '2040-02-04T00:00:00-05:00',
+        '2040-02-04T16:00:00-05:00',
+      ]) {
+        const startedAt = new Date(start);
+        const endedAt = new Date(startedAt.getTime() + 1800000);
+        await tx.insert(schema.rentals).values({
+          customerId: customer!.id,
+          rateId: rate!.id,
+          minutes: 30,
+          priceCents: 1234,
+          startedAt,
+          endedAt,
+          dueAt: endedAt,
+          createdBy: admin.id,
+          requestId: crypto.randomUUID(),
+        });
+      }
+      const overnight = await completedTrips(tx, new Date('2040-02-04T00:45:00-05:00'));
+      assert.equal(overnight.date, '2040-02-03');
+      assert.equal(overnight.count, 2);
+      assert.equal(overnight.closedAt, null);
+      const closed = await completedTrips(tx, new Date('2040-02-04T01:00:00-05:00'));
+      assert.equal(closed.closedAt, '2040-02-04T06:00:00.000Z');
+      const next = await completedTrips(tx, new Date('2040-02-04T17:00:00-05:00'));
+      assert.equal(next.date, '2040-02-04');
+      assert.equal(next.count, 1);
+      assert.equal(next.firstStartedAt, '2040-02-04T21:00:00.000Z');
+      throw rollback;
+    }),
+    (error: unknown) => error === rollback,
+  );
+});

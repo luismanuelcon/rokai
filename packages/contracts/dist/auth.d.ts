@@ -27,6 +27,8 @@ export declare const SessionResponse: z.ZodObject<{
         }>;
     }, z.core.$strip>>;
     csrf: z.ZodOptional<z.ZodString>;
+    expiresAt: z.ZodNullable<z.ZodISODateTime>;
+    serverNow: z.ZodISODateTime;
 }, z.core.$strip>;
 export type SessionResponse = z.infer<typeof SessionResponse>;
 export declare const CreateUserRequest: z.ZodObject<{

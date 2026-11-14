@@ -11,13 +11,22 @@ import {
 import { api, setCsrf } from './api';
 import type { SessionUser } from './types';
 
+interface SessionData {
+  user: SessionUser | null;
+  csrf?: string;
+  expiresAt?: string | null;
+  serverNow?: string;
+}
+
 interface SessionState {
   user: SessionUser | null;
   loading: boolean;
   error: string;
+  expired: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
+  validate: () => Promise<SessionUser | null>;
   ensure: () => void;
 }
 
@@ -26,29 +35,81 @@ const SessionContext = createContext<SessionState | null>(null);
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [expired, setExpired] = useState(false);
+  const [error, setError] = useState('');
+  const [deadline, setDeadline] = useState<number | null>(null);
   const started = useRef(false);
   const generation = useRef(0);
-  const [error, setError] = useState('');
+  const currentUser = useRef<SessionUser | null>(null);
+  const expires = useRef<number | null>(null);
+  const pending = useRef<Promise<SessionUser | null> | null>(null);
 
-  const refresh = useCallback(async () => {
-    const request = ++generation.current;
-    try {
-      const data = await api<{ user: SessionUser | null; csrf?: string }>('/auth/session');
-      if (request !== generation.current) return;
-      setCsrf(data.csrf ?? null);
-      setUser(data.user);
-      setError('');
-    } catch (cause) {
-      if (request !== generation.current) return;
-      setError('No se pudo verificar la sesión. Revisa tu conexión y vuelve a intentar.');
-      throw cause;
-    } finally {
-      if (request === generation.current) setLoading(false);
-    }
+  const endSession = useCallback((wasExpired: boolean) => {
+    ++generation.current;
+    pending.current = null;
+    expires.current = null;
+    currentUser.current = null;
+    setDeadline(null);
+    setCsrf(null);
+    setUser(null);
+    setError('');
+    setExpired(wasExpired);
+    setLoading(false);
   }, []);
 
-  // La portada pública no necesita sesión: sin este arranque perezoso, cada
-  // visita anónima pagaba una consulta de sesión contra la base de datos.
+  const applySession = useCallback((data: SessionData) => {
+    currentUser.current = data.user;
+    setUser(data.user);
+    setCsrf(data.csrf ?? null);
+    // Usa el tiempo restante del servidor: no depende de un reloj local bien ajustado.
+    const ttl = data.expiresAt
+      ? Date.parse(data.expiresAt) - Date.parse(data.serverNow ?? new Date().toISOString())
+      : NaN;
+    expires.current = data.user && Number.isFinite(ttl) ? Date.now() + Math.max(0, ttl) : null;
+    setDeadline(expires.current);
+    setError('');
+  }, []);
+
+  const validate = useCallback((): Promise<SessionUser | null> => {
+    if (expires.current !== null && Date.now() >= expires.current) {
+      endSession(true);
+      return Promise.resolve(null);
+    }
+    if (pending.current) return pending.current;
+    const request = generation.current;
+    const operation = (async () => {
+      try {
+        const data = await api<SessionData>('/auth/session', { cache: 'no-store' });
+        if (request !== generation.current) return currentUser.current;
+        if (!data.user) {
+          endSession(currentUser.current !== null);
+          return null;
+        }
+        applySession(data);
+        return data.user;
+      } catch (cause) {
+        if (request === generation.current) {
+          setError('No se pudo verificar la sesión. Revisa tu conexión y vuelve a intentar.');
+        }
+        throw cause;
+      } finally {
+        if (request === generation.current) setLoading(false);
+      }
+    })();
+    pending.current = operation;
+    void operation
+      .finally(() => {
+        if (pending.current === operation) pending.current = null;
+      })
+      .catch(() => {});
+    return operation;
+  }, [applySession, endSession]);
+
+  const refresh = useCallback(async () => {
+    await validate();
+  }, [validate]);
+
+  // Las visitas a páginas públicas no consultan la sesión.
   const ensure = useCallback(() => {
     if (started.current) return;
     started.current = true;
@@ -56,47 +117,40 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   useEffect(() => {
-    const expired = () => {
-      ++generation.current;
-      setCsrf(null);
-      setUser(null);
-      setError('');
-      setLoading(false);
-    };
-    const resume = () => {
-      if (started.current && document.visibilityState === 'visible') void refresh().catch(() => {});
-    };
-    window.addEventListener('rokai:session-expired', expired);
-    window.addEventListener('online', resume);
-    document.addEventListener('visibilitychange', resume);
-    return () => {
-      window.removeEventListener('rokai:session-expired', expired);
-      window.removeEventListener('online', resume);
-      document.removeEventListener('visibilitychange', resume);
-    };
-  }, [refresh]);
+    const expiredSession = () => endSession(true);
+    window.addEventListener('rokai:session-expired', expiredSession);
+    return () => window.removeEventListener('rokai:session-expired', expiredSession);
+  }, [endSession]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const data = await api<{ user: SessionUser; csrf: string }>('/auth/login', {
-      method: 'POST',
-      json: { email, password },
-    });
-    ++generation.current;
-    setError('');
-    setCsrf(data.csrf);
-    setUser(data.user);
-  }, []);
+  useEffect(() => {
+    if (deadline === null) return;
+    const timer = window.setTimeout(() => endSession(true), Math.max(0, deadline - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [deadline, endSession]);
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const data = await api<SessionData>('/auth/login', {
+        method: 'POST',
+        json: { email, password },
+      });
+      ++generation.current;
+      pending.current = null;
+      applySession(data);
+      setExpired(false);
+      setLoading(false);
+    },
+    [applySession],
+  );
 
   const logout = useCallback(async () => {
     await api('/auth/logout', { method: 'POST', json: {} });
-    ++generation.current;
-    setCsrf(null);
-    setUser(null);
-  }, []);
+    endSession(false);
+  }, [endSession]);
 
   const value = useMemo(
-    () => ({ user, loading, error, login, logout, refresh, ensure }),
-    [user, loading, error, login, logout, refresh, ensure],
+    () => ({ user, loading, error, expired, login, logout, refresh, validate, ensure }),
+    [user, loading, error, expired, login, logout, refresh, validate, ensure],
   );
   return <SessionContext value={value}>{children}</SessionContext>;
 }

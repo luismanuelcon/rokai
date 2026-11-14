@@ -1673,3 +1673,95 @@ dialog:has(.closing-form) {
     transform: none;
   }
 }
+
+/* Resumen: actualización explícita y acumulado de la jornada. */
+.overview-refresh {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  min-width: 0;
+}
+.overview-refresh .button {
+  min-height: 44px;
+}
+.workspace-head .overview-refresh p {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: right;
+}
+.workspace .overview-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.workspace .completed-trips {
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.completed-trips-total {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.completed-trips-total .icon-box {
+  flex: none;
+}
+.completed-trips-unit {
+  margin-left: 10px;
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+.completed-trips-period {
+  min-width: 0;
+  text-align: right;
+}
+.workspace .completed-trips p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.completed-trips-period p:first-child {
+  color: var(--c-text);
+  font-weight: 600;
+}
+.completed-trips-period small {
+  display: block;
+  color: var(--c-text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+@media (max-width: 1100px) {
+  .workspace .overview-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .overview-refresh {
+    justify-items: stretch;
+    width: 100%;
+  }
+  .workspace-head .overview-refresh p,
+  .completed-trips-period {
+    text-align: left;
+  }
+  .completed-trips-period {
+    width: 100%;
+  }
+  .completed-trips-unit {
+    display: inline-block;
+  }
+}
+.workspace .completed-trips-period p {
+  text-transform: none;
+  letter-spacing: normal;
+}
+.overview-refresh .button {
+  min-width: 190px;
+}
+@media (max-width: 560px) {
+  .workspace-head .overview-refresh p {
+    min-height: 3em;
+  }
+}

@@ -15,6 +15,7 @@ async function lookup(db, token) {
         .select({
         tokenHash: sessions.tokenHash,
         csrfToken: sessions.csrfToken,
+        expiresAt: sessions.expiresAt,
         id: users.id,
         name: users.name,
         email: users.email,
@@ -30,6 +31,7 @@ async function lookup(db, token) {
     return {
         tokenHash: row.tokenHash,
         csrfToken: row.csrfToken,
+        expiresAt: row.expiresAt,
         user: { id: row.id, name: row.name, email: row.email, role: publicRole(row.role) },
     };
 }

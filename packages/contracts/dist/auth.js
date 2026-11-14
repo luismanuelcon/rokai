@@ -19,6 +19,8 @@ export const SessionUser = z.object({
 export const SessionResponse = z.object({
     user: SessionUser.nullable(),
     csrf: z.string().optional(),
+    expiresAt: z.iso.datetime().nullable(),
+    serverNow: z.iso.datetime(),
 });
 export const CreateUserRequest = z.object({
     name: z.string().trim().min(1).max(120),

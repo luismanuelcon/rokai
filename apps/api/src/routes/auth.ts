@@ -37,10 +37,15 @@ async function registerFailure(db: Db, key: string): Promise<void> {
 }
 
 export function registerAuthRoutes(app: FastifyInstance, db: Db, env: Env): void {
-  app.get('/api/v1/auth/session', (req) => ({
-    user: req.session?.user ?? null,
-    csrf: req.session?.csrfToken,
-  }));
+  app.get('/api/v1/auth/session', (req, reply) => {
+    void reply.header('Cache-Control', 'no-store');
+    return {
+      user: req.session?.user ?? null,
+      csrf: req.session?.csrfToken,
+      expiresAt: req.session?.expiresAt.toISOString() ?? null,
+      serverNow: new Date().toISOString(),
+    };
+  });
 
   app.post('/api/v1/auth/login', async (req, reply) => {
     const body = LoginRequest.parse(req.body);
@@ -89,6 +94,8 @@ export function registerAuthRoutes(app: FastifyInstance, db: Db, env: Env): void
     return {
       user: { id: user.id, name: user.name, email: user.email, role: publicRole(user.role) },
       csrf: csrfToken,
+      expiresAt: expiresAt.toISOString(),
+      serverNow: new Date().toISOString(),
     };
   });
 

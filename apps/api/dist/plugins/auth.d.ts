@@ -7,6 +7,7 @@ export declare function publicRole(role: typeof users.$inferSelect.role): UserRo
 export interface SessionInfo {
     tokenHash: string;
     csrfToken: string;
+    expiresAt: Date;
     user: {
         id: number;
         name: string;

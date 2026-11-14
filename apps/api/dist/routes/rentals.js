@@ -5,19 +5,25 @@ import { badRequest } from '../lib/http-error.js';
 import { activeRates, equipmentWithBusy } from '../repositories/catalog.js';
 import { listRentals } from '../repositories/rentals.js';
 import { readSettings } from './public.js';
+import { completedTrips } from '../services/dashboard.js';
 import { createRental, finishRental } from '../services/rentals.js';
 export function registerRentalRoutes(app, db) {
     const guarded = { onRequest: [app.requireAuth] };
-    app.get('/api/v1/dashboard', guarded, async () => {
-        const [rentals, equipment, rates, config] = await Promise.all([
+    app.get('/api/v1/dashboard', guarded, async (_req, reply) => {
+        void reply.header('Cache-Control', 'no-store');
+        const now = new Date();
+        const [rentals, equipment, rates, config, trips] = await Promise.all([
             listRentals(db),
             equipmentWithBusy(db),
             activeRates(db),
             readSettings(db),
+            completedTrips(db, now),
         ]);
         // El colaborador necesita el recargo vigente para anticipar el total en la
         // devolución; el resto de ajustes no sale de aquí.
         return {
+            updatedAt: now.toISOString(),
+            completedTrips: trips,
             rentals,
             equipment,
             rates,

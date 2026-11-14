@@ -25,6 +25,8 @@ export type SessionUser = z.infer<typeof SessionUser>;
 export const SessionResponse = z.object({
   user: SessionUser.nullable(),
   csrf: z.string().optional(),
+  expiresAt: z.iso.datetime().nullable(),
+  serverNow: z.iso.datetime(),
 });
 export type SessionResponse = z.infer<typeof SessionResponse>;
 

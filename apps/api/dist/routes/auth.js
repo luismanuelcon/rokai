@@ -30,10 +30,15 @@ async function registerFailure(db, key) {
     });
 }
 export function registerAuthRoutes(app, db, env) {
-    app.get('/api/v1/auth/session', (req) => ({
-        user: req.session?.user ?? null,
-        csrf: req.session?.csrfToken,
-    }));
+    app.get('/api/v1/auth/session', (req, reply) => {
+        void reply.header('Cache-Control', 'no-store');
+        return {
+            user: req.session?.user ?? null,
+            csrf: req.session?.csrfToken,
+            expiresAt: req.session?.expiresAt.toISOString() ?? null,
+            serverNow: new Date().toISOString(),
+        };
+    });
     app.post('/api/v1/auth/login', async (req, reply) => {
         const body = LoginRequest.parse(req.body);
         // `req.ip` respeta trustProxy, configurado solo para proxies conocidos.
@@ -74,6 +79,8 @@ export function registerAuthRoutes(app, db, env) {
         return {
             user: { id: user.id, name: user.name, email: user.email, role: publicRole(user.role) },
             csrf: csrfToken,
+            expiresAt: expiresAt.toISOString(),
+            serverNow: new Date().toISOString(),
         };
     });
     app.post('/api/v1/auth/logout', { onRequest: [app.requireAuth] }, async (req, reply) => {

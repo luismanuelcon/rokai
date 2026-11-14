@@ -1,6 +1,6 @@
 import { RentalHistory } from './RentalHistory';
 import { TrackingActions } from '../../components/TrackingActions';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { Icon } from '../../components/Icon';
 import { NavRail, type NavRailItem } from '../../components/NavRail';
@@ -41,7 +41,7 @@ const updatedAt = new Intl.DateTimeFormat('es-CO', {
 }).format(new Date(import.meta.env.VITE_APP_UPDATED_AT));
 
 export function Workspace() {
-  const { user, logout, refresh } = useSession();
+  const { user, logout, refresh, validate } = useSession();
   const [view, setView] = useState<View>('overview');
   const [fromReservation, setFromReservation] = useState<ReservationItem | null>(null);
   // Cualquier navegación manual descarta la precarga de una reserva.
@@ -62,30 +62,96 @@ export function Workspace() {
 
   const isAdmin = user?.role === 'admin';
 
-  const reload = useCallback(async () => {
-    setLoadError('');
-    try {
-      setDash(await api<Dashboard>('/dashboard'));
-      if (isAdmin) setAdmin(await api<AdminData>('/admin/data'));
-    } catch (error) {
-      setLoadError(error instanceof Error ? error.message : 'No se pudo cargar Gestión.');
-      throw error;
-    }
-  }, [isAdmin]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
+  const pendingReload = useRef<Promise<void> | null>(null);
+  const mounted = useRef(true);
+  const needsAdmin = isAdmin && (view === 'reports' || view === 'admin');
 
-  useEffect(() => {
-    void reload().catch(() => {});
+  const reload = useCallback((): Promise<void> => {
+    if (pendingReload.current) return pendingReload.current;
+    setRefreshing(true);
+    setLoadError('');
+    const operation = (async () => {
+      try {
+        // La sesión se comprueba antes de pedir datos protegidos al reanudar.
+        const session = await validate();
+        if (!session || !mounted.current) return;
+        const data = await api<Dashboard>('/dashboard', { cache: 'no-store' });
+        if (!mounted.current) return;
+        setDash(data);
+        setLastUpdatedAt(data.updatedAt);
+      } catch (error) {
+        if (mounted.current)
+          setLoadError(error instanceof Error ? error.message : 'No se pudo cargar Gestión.');
+        throw error;
+      } finally {
+        if (mounted.current) setRefreshing(false);
+      }
+    })();
+    pendingReload.current = operation;
+    void operation
+      .finally(() => {
+        if (pendingReload.current === operation) pendingReload.current = null;
+      })
+      .catch(() => {});
+    return operation;
+  }, [validate]);
+
+  // Una devolución/alta debe ver datos posteriores a su escritura, aunque hubiera
+  // una consulta automática en curso cuando se guardó la operación.
+  const reloadAfterChange = useCallback(async () => {
+    if (pendingReload.current) await pendingReload.current.catch(() => {});
+    await reload();
   }, [reload]);
 
   useEffect(() => {
+    mounted.current = true;
+    void reload().catch(() => {});
+    return () => {
+      mounted.current = false;
+    };
+  }, [reload]);
+
+  // El resumen no espera el historial/auditoría completos de Administración.
+  useEffect(() => {
+    if (!needsAdmin) return;
+    let cancelled = false;
+    void api<AdminData>('/admin/data', { cache: 'no-store' })
+      .then((data) => {
+        if (!cancelled) setAdmin(data);
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled)
+          setLoadError(
+            cause instanceof Error ? cause.message : 'No se pudo cargar Administración.',
+          );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [needsAdmin, lastUpdatedAt]);
+
+  useEffect(() => {
+    let lastResume = 0;
     const resume = () => {
-      if (document.visibilityState === 'visible') void reload().catch(() => {});
+      if (document.visibilityState !== 'visible' || !navigator.onLine) return;
+      // Foco y visibilidad suelen llegar juntos al despertar el navegador.
+      if (Date.now() - lastResume < 1000) return;
+      lastResume = Date.now();
+      void reload().catch(() => {});
     };
     document.addEventListener('visibilitychange', resume);
+    window.addEventListener('focus', resume);
+    window.addEventListener('pageshow', resume);
     window.addEventListener('online', resume);
+    const timer = window.setInterval(resume, 60_000);
     return () => {
       document.removeEventListener('visibilitychange', resume);
+      window.removeEventListener('focus', resume);
+      window.removeEventListener('pageshow', resume);
       window.removeEventListener('online', resume);
+      window.clearInterval(timer);
     };
   }, [reload]);
 
@@ -184,12 +250,15 @@ export function Workspace() {
           {view === 'overview' && (
             <Overview
               dash={dash}
+              onRefresh={reload}
+              refreshing={refreshing}
+              lastUpdatedAt={lastUpdatedAt}
               user={user}
               isAdmin={isAdmin}
               onNew={() => {
                 setView('new');
               }}
-              onReload={reload}
+              onReload={reloadAfterChange}
               notify={notify}
             />
           )}
@@ -201,7 +270,7 @@ export function Workspace() {
               onDone={async (created) => {
                 setCreatedTracking(created);
                 setFromReservation(null);
-                await reload();
+                await reloadAfterChange();
                 setView('active');
                 notify('Alquiler iniciado. ¡A rodar!');
               }}
@@ -226,7 +295,7 @@ export function Workspace() {
               onNew={() => {
                 setView('new');
               }}
-              onReload={reload}
+              onReload={reloadAfterChange}
               notify={notify}
             />
           )}
@@ -237,20 +306,21 @@ export function Workspace() {
               onNew={() => {
                 setView('new');
               }}
-              onReload={reload}
+              onReload={reloadAfterChange}
               notify={notify}
             />
           )}
           {view === 'fleet' && (
-            <Fleet dash={dash} isAdmin={isAdmin} onReload={reload} notify={notify} />
+            <Fleet dash={dash} isAdmin={isAdmin} onReload={reloadAfterChange} notify={notify} />
           )}
-          {view === 'reports' && admin && <Reports dash={dash} admin={admin} />}
-          {view === 'admin' && admin && (
+          {needsAdmin && !admin && <p role="status">Cargando Administración…</p>}
+          {isAdmin && view === 'reports' && admin && <Reports dash={dash} admin={admin} />}
+          {isAdmin && view === 'admin' && admin && (
             <AdminPanel
               admin={admin}
               currentUserId={user.id}
               refreshSession={refresh}
-              onReload={reload}
+              onReload={reloadAfterChange}
               notify={notify}
             />
           )}

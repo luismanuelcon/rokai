@@ -53,6 +53,13 @@ export interface Rental {
 }
 
 export interface Dashboard {
+  updatedAt: string;
+  completedTrips: {
+    date: string;
+    count: number;
+    firstStartedAt: string | null;
+    closedAt: string | null;
+  };
   rentals: Rental[];
   equipment: Equipment[];
   rates: Rate[];

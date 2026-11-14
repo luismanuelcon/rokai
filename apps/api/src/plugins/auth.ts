@@ -16,6 +16,7 @@ export function publicRole(role: typeof users.$inferSelect.role): UserRole {
 export interface SessionInfo {
   tokenHash: string;
   csrfToken: string;
+  expiresAt: Date;
   user: { id: number; name: string; email: string; role: UserRole };
 }
 
@@ -38,6 +39,7 @@ async function lookup(db: Db, token: string): Promise<SessionInfo | null> {
     .select({
       tokenHash: sessions.tokenHash,
       csrfToken: sessions.csrfToken,
+      expiresAt: sessions.expiresAt,
       id: users.id,
       name: users.name,
       email: users.email,
@@ -59,6 +61,7 @@ async function lookup(db: Db, token: string): Promise<SessionInfo | null> {
   return {
     tokenHash: row.tokenHash,
     csrfToken: row.csrfToken,
+    expiresAt: row.expiresAt,
     user: { id: row.id, name: row.name, email: row.email, role: publicRole(row.role) },
   };
 }
